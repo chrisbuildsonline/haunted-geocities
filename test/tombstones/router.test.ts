@@ -94,6 +94,19 @@ describe("CHECK_LINKS (requirements 14-21, 66)", () => {
     await bg.handle({ type: "CHECK_LINKS", urls }, content);
     expect(asked).toEqual(["https://ok.test/missing"]);
   });
+  test("cross-site checks are HEAD only: no GET retry on 405", async () => {
+    const m = createChromeMock({ tabs: [WEB] });
+    const methods: string[] = [];
+    const fetchFn = (async (_u: string, init: RequestInit) => {
+      methods.push(init.method!);
+      return { status: 405, type: "basic" } as Response;
+    }) as unknown as typeof fetch;
+    const bg = createBackground(asChrome(m), undefined, fetchFn);
+    m.chrome.storage.session.data[hauntKey(7)] = true;
+    for (const origin of LINK_CHECK_ORIGINS) m.granted.add(origin);
+    await bg.handle({ type: "CHECK_LINKS", urls: ["https://a.test/x"] }, content);
+    expect(methods).toEqual(["HEAD"]);
+  });
   test("req 15: capped at 30 URLs", async () => {
     const { bg, asked } = setup();
     await bg.handle({ type: "CHECK_LINKS", urls: Array.from({ length: 45 }, (_, i) => `https://a.test/${i}`) }, content);

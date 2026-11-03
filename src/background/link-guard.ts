@@ -1,7 +1,7 @@
 // Hosts the cross-site link checker must never fetch: this machine and the local network.
 // ponytail: a public hostname that resolves to a private IP at fetch time (DNS rebinding) is not caught here; the ceiling is accepted.
 
-const NAMES = /(^|\.)(localhost|local|internal|lan|corp|home|intranet|home\.arpa)$/;
+const NAMES = /(^|\.)(localhost|local|internal|lan|corp|home|intranet|home\.arpa|nip\.io|sslip\.io|xip\.io|localtest\.me|lvh\.me|traefik\.me)$/; // last five: wildcard DNS that resolves to the IP in the name
 
 function privateV4([a, b]: number[]): boolean {
   return a === 0 || a === 10 || a === 127 || (a === 100 && b! >= 64 && b! <= 127) || (a === 169 && b === 254) || (a === 172 && b! >= 16 && b! <= 31) || (a === 192 && b === 168);
@@ -30,8 +30,9 @@ export function refusedHost(hostname: string): boolean {
     const v4 = (hi: number, lo: number) => privateV4([hi >> 8, hi & 255, lo >> 8, lo & 255]);
     if (g.slice(0, 5).every((x) => x === 0) && g[5] === 0xffff) return v4(g[6]!, g[7]!); // IPv4-mapped
     if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0)) return v4(g[6]!, g[7]!); // NAT64
-    if (g.slice(0, 7).every((x) => x === 0) && g[7]! <= 1) return true; // :: and ::1
-    return (g[0]! & 0xfe00) === 0xfc00 || (g[0]! & 0xffc0) === 0xfe80; // fc00::/7, fe80::/10
+    if (g[0] === 0x2002) return v4(g[1]!, g[2]!); // 6to4
+    if (g.slice(0, 6).every((x) => x === 0)) return true; // ::/96: ::, ::1, IPv4-compatible
+    return (g[0]! & 0xfe00) === 0xfc00 || (g[0]! & 0xff80) === 0xfe80; // fc00::/7, fe80::/9 (link-local and site-local)
   }
   if (/^[\d.]+$/.test(host)) {
     const parts = host.split(".");

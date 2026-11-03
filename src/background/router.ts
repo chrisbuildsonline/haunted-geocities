@@ -184,7 +184,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     if (sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) || !Array.isArray(urls)) return;
     if ((await session.get(hauntKey(tabId)))[hauntKey(tabId)] !== true) return;
     if (!(await api.permissions.contains({ origins: LINK_CHECK_ORIGINS }))) return;
-    const dead = await checkLinks(urls.filter(checkable).slice(0, 30), fetchFn);
+    const dead = await checkLinks(urls.filter(checkable).slice(0, 30), fetchFn, { getRetry: false });
     if (dead.length) await api.tabs.sendMessage(tabId, { type: "tombstones", dead } satisfies ContentMessage).catch(() => undefined);
   }
 

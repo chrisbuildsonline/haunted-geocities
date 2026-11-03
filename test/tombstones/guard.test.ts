@@ -18,7 +18,7 @@ describe("refusedHost (requirements 19, 65)", () => {
     "refuses IPv4-mapped %s",
     (u) => expect(refusedHost(host(u))).toBe(true),
   );
-  test.each(["example.com", "notlocalhost.com", "localhost.example.com", "internal.example.com", "8.8.8.8", "172.15.0.1", "172.32.0.1", "11.0.0.1", "192.169.0.1", "169.255.0.1", "2606:4700::1111", "fec0::1"])(
+  test.each(["example.com", "notlocalhost.com", "localhost.example.com", "internal.example.com", "8.8.8.8", "172.15.0.1", "172.32.0.1", "11.0.0.1", "192.169.0.1", "169.255.0.1", "2606:4700::1111", "nip.io.example.com", "notnip.io", "2002:808:808::1"])(
     "allows %s",
     (h) => expect(refusedHost(h)).toBe(false),
   );
@@ -44,6 +44,13 @@ describe("refusedHost (requirements 19, 65)", () => {
   test.each(["[zzzz::1]", "[1:2:3:4:5:6:7:8:9]", "[1::2::3]", "[12345::1]", "1.2.3", "1.2.3.4.5", "999.1.1.1", "[]"])("fails closed on unparseable IP literal %s", (h) => {
     expect(refusedHost(h)).toBe(true);
   });
+  test.each(["127.0.0.1.nip.io", "nip.io", "10.0.0.1.sslip.io", "a.xip.io", "foo.localtest.me", "localtest.me", "x.lvh.me", "app.traefik.me"])("refuses wildcard-DNS name %s", (h) => {
+    expect(refusedHost(h)).toBe(true);
+  });
+  test.each(["http://[::127.0.0.1]/", "http://[::7f00:1]/", "http://[::808:808]/", "http://[2002:7f00:1::]/", "http://[2002:a00:1::1]/", "http://[2002:c0a8:101::1]/", "http://[fec0::1]/", "http://[feff::1]/"])(
+    "refuses IPv6 %s",
+    (u) => expect(refusedHost(host(u))).toBe(true),
+  );
   test("a trailing dot does not slip through", () => {
     expect(refusedHost("localhost.")).toBe(true);
   });

@@ -18,20 +18,20 @@ async function statusOf(url: string, method: "HEAD" | "GET", fetchFn: typeof fet
   }
 }
 
-async function check(url: string, fetchFn: typeof fetch, timeoutMs: number): Promise<DeadLink | null> {
+async function check(url: string, fetchFn: typeof fetch, timeoutMs: number, getRetry: boolean): Promise<DeadLink | null> {
   let status = await statusOf(url, "HEAD", fetchFn, timeoutMs);
-  if (status === 405 || status === 501) status = await statusOf(url, "GET", fetchFn, timeoutMs);
+  if (getRetry && (status === 405 || status === 501)) status = await statusOf(url, "GET", fetchFn, timeoutMs);
   return status === 404 || status === 410 ? { url, path: new URL(url).pathname, status } : null;
 }
 
 /** The dead links among `urls`, in input order. */
-export async function checkLinks(urls: string[], fetchFn: typeof fetch = fetch, opts: { timeoutMs?: number } = {}): Promise<DeadLink[]> {
+export async function checkLinks(urls: string[], fetchFn: typeof fetch = fetch, opts: { timeoutMs?: number; getRetry?: boolean } = {}): Promise<DeadLink[]> {
   const results: (DeadLink | null)[] = new Array(urls.length).fill(null);
   let next = 0;
   const worker = async () => {
     while (next < urls.length) {
       const i = next++;
-      results[i] = await check(urls[i]!, fetchFn, opts.timeoutMs ?? TIMEOUT_MS);
+      results[i] = await check(urls[i]!, fetchFn, opts.timeoutMs ?? TIMEOUT_MS, opts.getRetry ?? true);
     }
   };
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, urls.length) }, worker));
