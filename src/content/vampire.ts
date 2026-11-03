@@ -13,6 +13,11 @@ export function mergeVampire(companies: CompanyHit[], company: string, api: Api)
   return [...companies, extend({ company, domains: [company], count: 0, categories: [], fingerprinting: 0 })];
 }
 
+const API_NAMES: Record<Api, string> = { canvas: "canvas readback", audio: "AudioContext", fonts: "font probing" };
+
+/** What a vampire was caught doing, in a fixed order: "canvas readback · AudioContext · font probing". */
+export const caughtLine = (caught: readonly Api[]) => (["canvas", "audio", "fonts"] as const).filter((a) => caught.includes(a)).map((a) => API_NAMES[a]).join(" · ");
+
 /** Companies the Tracker Radar scores 2 or more for fingerprinting, and nothing was caught, are known vampires. */
 export function markKnownVampires(companies: CompanyHit[]): CompanyHit[] {
   return companies.map((c) =>

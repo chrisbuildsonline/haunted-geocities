@@ -103,7 +103,8 @@ describe("costume tokens", () => {
   });
 
   test("the costume CSS uses no hex colour outside the costume palette", () => {
-    const allowed = new Set<string>([...Object.values(T.PALETTE), ...T.HEM_TINTS]);
+    // #ff9999: the vampire glow's inner highlight, named in DESIGN.md "Vampires" (not a palette token).
+    const allowed = new Set<string>([...Object.values(T.PALETTE), ...T.HEM_TINTS, "#ff9999"]);
     const found = hexes(costumeCss({ stars: "data:x", twinkle: "data:y" }));
     expect(found.length).toBeGreaterThan(10);
     expect(found.filter((h) => !allowed.has(h))).toEqual([]);
@@ -368,7 +369,7 @@ describe("renderCostume", () => {
   test("only the HUD, the Show tab, ghost sprites and cards take pointer events", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const autos = [...css.matchAll(/([^{}]+)\{[^}]*pointer-events:\s*auto/g)].map((m) => m[1]!.trim());
-    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".ghost"]);
+    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".ghost, .vampire"]);
     expect(css).toMatch(/#crypt-root\s*\{[^}]*pointer-events:\s*none/);
   });
 

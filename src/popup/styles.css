@@ -276,6 +276,63 @@ p {
   font-size: 12px;
   font-weight: 600;
 }
+.tag-pill.caught {
+  background: #f1ecfb;
+  color: var(--accent);
+}
+.tag-pill.known {
+  background: #e3e6ec;
+  color: var(--muted);
+}
+.vampires-head {
+  margin-top: 12px;
+}
+/* Vampire rows: name and Exorcise on the first line; the pill and what was caught on the second,
+   running under the button so the full width is used and the caught line wraps, never cut. */
+.vampire-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: center;
+  padding-block: 10px;
+}
+.vampire-row .icon-tile {
+  grid-row: 1 / span 2;
+  align-self: start;
+}
+.vampire-row .row-text {
+  display: contents;
+}
+.vampire-row .row-title {
+  grid-column: 2;
+}
+.vampire-row .row-line {
+  display: block;
+  grid-column: 2 / -1;
+}
+.vampire-row .tag-pill {
+  float: left; /* the caught line wraps back to full width under the pill */
+  margin-right: 6px;
+}
+.vampire-row button {
+  grid-column: 3;
+  grid-row: 1;
+  margin-block: -6px; /* the 32px button sits on the name's line without making it taller */
+}
+.ghost-row.vampire-row .row-sub {
+  line-height: 18px;
+  white-space: normal;
+  text-wrap: wrap; /* greedy: "pretty" balances this into three lines with a leading "·" */
+  overflow: visible;
+}
+.ghost-row.exorcised .tag-pill.caught,
+.ghost-row.exorcised .tag-pill.known {
+  opacity: 0.6;
+}
+.no-vampires {
+  margin-top: 12px;
+}
 .secondary,
 .quiet {
   flex: none;

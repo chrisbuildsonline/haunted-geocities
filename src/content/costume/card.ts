@@ -1,5 +1,6 @@
-// The ghost card: a Win95 window in #cards, one at a time, beside its ghost toward the page centre.
+// The ghost (or vampire) card: a Win95 window in #cards, one at a time, beside its sprite toward the page centre.
 import type { CompanyHit, ContentRequest } from "../../data/types";
+import { caughtLine } from "../vampire";
 import { categoryOf } from "./ghosts";
 import { LAYOUT as L, MOTION as M } from "./tokens";
 
@@ -9,6 +10,8 @@ export interface CardOptions {
   /** Viewport band the card must stay in: below the top bands, above the HUD. */
   bounds: { top: number; bottom: number };
   reduced?: boolean;
+  /** A tracker company in trackers.json (false for an unlisted host: nothing to block, no Exorcise). */
+  listed?: boolean;
 }
 
 const openers = new WeakMap<Element, HTMLElement>();
@@ -24,30 +27,62 @@ export function closeCard(cards: HTMLElement): void {
 /** Reflect the exorcised set on the open card's button. */
 export function setCardExorcised(cards: HTMLElement, exorcised: ReadonlySet<string>): void {
   const card = cards.querySelector<HTMLElement>(".card");
-  if (card) card.querySelector(".act")!.textContent = exorcised.has(card.dataset.company!) ? "Let it back" : "Exorcise";
+  const act = card?.querySelector<HTMLElement>(".act");
+  if (card && act) act.textContent = exorcised.has(card.dataset.company!) ? "Let it back" : act.dataset.label!;
 }
+
+/** A host or script URL as text that may break only after a "/". */
+const breakAtSlash = (doc: Document, url: string) => {
+  const li = doc.createElement("li");
+  url.split(/(?<=\/)/).forEach((part, i) => li.append(...(i ? [doc.createElement("wbr")] : []), part));
+  return li;
+};
+
+const VAMPIRE_BODY =
+  `<p class="who"></p><p>Script from:</p><ul class="domains"></ul><p class="did"></p>` +
+  `<p class="what">Fingerprinting reads tiny quirks of your browser to recognise you again without cookies.</p>`;
 
 export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElement, opts: CardOptions): HTMLElement {
   cards.querySelector(".card")?.remove();
   const doc = cards.ownerDocument;
+  const vampire = hit.vampire;
+  const exorcisable = !vampire || opts.listed !== false;
   const card = doc.createElement("section");
-  card.className = "card";
+  card.className = vampire ? "card vampire-card" : "card";
   card.dataset.company = hit.company;
   card.setAttribute("role", "dialog");
   card.setAttribute("aria-labelledby", "card-title");
   card.innerHTML =
     `<div class="bar"><h2 id="card-title"></h2><button class="close win95" type="button" aria-label="Close">x</button></div>` +
-    `<div class="card-body"><p class="cat"></p><p>Haunts these domains:</p><ul class="domains"></ul><p class="seen"></p>` +
-    `<button class="act win95 default" type="button"></button><p class="foot">Blocked until you close the browser.</p></div>`;
-  card.querySelector("h2")!.textContent = hit.company;
-  card.querySelector(".cat")!.textContent = categoryOf(hit);
-  card.querySelector(".domains")!.append(...hit.domains.map((d) => Object.assign(doc.createElement("li"), { textContent: d })));
-  card.querySelector(".seen")!.textContent = `Seen ${hit.count} ${hit.count === 1 ? "time" : "times"} on this page`;
-  const act = card.querySelector<HTMLButtonElement>(".act")!;
-  act.textContent = opts.exorcised ? "Let it back" : "Exorcise";
-  act.addEventListener("click", () =>
-    opts.send(act.textContent === "Exorcise" ? { type: "EXORCISE", company: hit.company, domains: hit.domains } : { type: "LET_BACK", company: hit.company }),
-  );
+    `<div class="card-body">${vampire ? VAMPIRE_BODY : `<p class="cat"></p><p>Haunts these domains:</p><ul class="domains"></ul><p class="seen"></p>`}` +
+    (exorcisable ? `<button class="act win95 default" type="button"></button><p class="foot">Blocked until you close the browser.</p>` : "") +
+    `</div>`;
+  const domains = card.querySelector(".domains")!;
+  if (vampire) {
+    card.querySelector("h2")!.textContent = "Vampire identified";
+    const who = card.querySelector(".who")!;
+    if (exorcisable) who.textContent = hit.company;
+    else who.remove(); // an unlisted host: the script host below is all there is to name
+    domains.append(...hit.domains.map((d) => breakAtSlash(doc, d)));
+    const did = card.querySelector(".did")!;
+    if (vampire.caught.length) {
+      did.append("Caught doing: ", Object.assign(doc.createElement("b"), { textContent: caughtLine(vampire.caught) }));
+      did.after(Object.assign(doc.createElement("p"), { className: "honest", textContent: "Caught since you haunted this page." }));
+    } else did.textContent = "Known to fingerprint (Tracker Radar)";
+  } else {
+    card.querySelector("h2")!.textContent = hit.company;
+    card.querySelector(".cat")!.textContent = categoryOf(hit);
+    domains.append(...hit.domains.map((d) => Object.assign(doc.createElement("li"), { textContent: d })));
+    card.querySelector(".seen")!.textContent = `Seen ${hit.count} ${hit.count === 1 ? "time" : "times"} on this page`;
+  }
+  const act = card.querySelector<HTMLButtonElement>(".act");
+  if (act) {
+    act.dataset.label = vampire ? `Exorcise ${hit.company}` : "Exorcise";
+    act.textContent = opts.exorcised ? "Let it back" : act.dataset.label;
+    act.addEventListener("click", () =>
+      opts.send(act.textContent === "Let it back" ? { type: "LET_BACK", company: hit.company } : { type: "EXORCISE", company: hit.company, domains: hit.domains }),
+    );
+  }
   card.querySelector(".close")!.addEventListener("click", () => closeCard(cards));
   card.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
@@ -67,6 +102,6 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
   card.style.top = `${Math.max(opts.bounds.top + 8, top)}px`;
   card.style.maxHeight = `${Math.max(120, Math.min(320, opts.bounds.bottom - opts.bounds.top - 16))}px`;
   if (!opts.reduced) card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
-  act.focus();
+  (act ?? card.querySelector<HTMLElement>(".close")!).focus();
   return card;
 }

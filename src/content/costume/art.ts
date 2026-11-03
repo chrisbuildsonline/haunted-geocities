@@ -63,6 +63,33 @@ export const GHOST = [
 ];
 export const ghostLegend = (hem: string): Legend => ({ o: P.crypt, W: P.ghostWhite, S: P.ghostShade, H: hem });
 
+/**
+ * The 16×18 vampire: slicked hair with a widow's peak, pale face, red eyes, two fangs under a dark
+ * mouth, a high collar lined in blood red, a red clasp on a shirt V, and a cape whose lining shows
+ * at the flared edges. The cape is crypt-dark: on the starfield the hot glow draws its silhouette.
+ */
+export const VAMPIRE = [
+  "....oooooooo....",
+  "...oooooooooo...",
+  "...ooWWooWWoo...",
+  "o..oWWWWWWWWo..o",
+  "oo.oWRRWWRRWo.oo",
+  "oLooWWWWWWWWooLo",
+  "oLLoWWWWWWWWoLLo",
+  "oLLoWWooooWWoLLo",
+  "oLLLooWooWooLLLo",
+  ".oLLLoWRRWoLLLo.",
+  ".ooLLLoWWoLLLoo.",
+  ".oLooLLooLLooLo.",
+  ".oLLooooooooLLo.",
+  ".oLLooooooooLLo.",
+  "oLLLooooooooLLLo",
+  "oLLLooooooooLLLo",
+  "oLLooooooooooLLo",
+  "oo..oo....oo..oo",
+];
+export const VAMPIRE_LEGEND: Legend = { o: P.crypt, W: P.ghostWhite, L: P.vampireLining, R: P.vampireGlow };
+
 /** The 24×12 under-construction barricade: striped board, two legs, a lamp on each post. */
 export function signFrame(lit: boolean): string[] {
   const board = Array.from({ length: 4 }, (_, r) =>

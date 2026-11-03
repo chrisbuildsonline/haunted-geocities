@@ -106,7 +106,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   };
   const onOpen = (company: string, opener: HTMLElement) => {
     const hit = scan.companies.find((c) => c.company === company);
-    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), send, bounds: bounds(), reduced: motion.matches });
+    const listed = Object.hasOwn((trackerJson as TrackerData).entities, company);
+    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), listed, send, bounds: bounds(), reduced: motion.matches });
   };
   const setExorcised = (companies: string[]) => {
     exorcised = new Set(companies);

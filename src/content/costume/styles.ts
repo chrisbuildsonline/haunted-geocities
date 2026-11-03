@@ -1,5 +1,6 @@
 // The costume stylesheet, adopted inside the shadow root. Colours only from tokens.
 import { checkerUrl, DIGITS, mapToPx, SIGN_LEGEND, signFrame, svgUrl, type Px } from "./art";
+import { VAMPIRE_GLOW, VAMPIRE_GLOW_HI } from "./ghosts";
 import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL } from "./tokens";
 
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;
@@ -79,7 +80,7 @@ button:focus-visible { ${ring} }
 .win95:focus-visible::after { content: ""; position: absolute; inset: 2px; border: 1px dotted ${P.ink}; pointer-events: none; }
 #show-tab:focus-visible { ${ring} }
 
-.ghost { position: absolute; display: flex; flex-direction: column; align-items: center; height: ${L.slotPitch}px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; }
+.ghost, .vampire { position: absolute; display: flex; flex-direction: column; align-items: center; height: ${L.slotPitch}px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; }
 .sway { display: block; animation: hg-sway ${M.ghostSway.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
 .bob { display: block; animation: hg-bob ${M.ghostBob.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
 .sprite { display: block; width: 48px; height: 48px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); transition: opacity ${M.base}ms linear; }
@@ -93,6 +94,15 @@ button:focus-visible { ${ring} }
 .stamp { position: absolute; top: 15px; left: 50%; padding: 0 2px; transform: translateX(-50%) rotate(-12deg); background: ${P.crypt}; color: ${P.curse}; border: 2px solid ${P.curse}; font: bold 11px/13px ${COMIC}; box-shadow: 2px 2px 0 ${P.ink}; }
 .ghost:focus-visible { ${ring} }
 
+.vampire .bob { animation: hg-drift 3000ms ease-in-out var(--phase, 0ms) infinite alternate; }
+.vampire .sprite { width: 48px; height: 54px; filter: ${VAMPIRE_GLOW}; }
+.vampire .tag { margin-top: 2px; }
+.vampire.known .sprite { filter: none; }
+.vampire.known:not(.exorcised) .sprite { opacity: .6; }
+.vampire.known .bob { animation: none; }
+@keyframes hg-drift { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
+.vampire:focus-visible { ${ring} }
+
 .card { position: absolute; display: flex; flex-direction: column; box-sizing: border-box; width: ${L.cardWidth}px; max-height: 320px; background: ${P.crypt}; border: 2px solid; border-color: ${P.bevelLight} ${P.bevelDark} ${P.bevelDark} ${P.bevelLight}; box-shadow: ${HARD_SHADOW}; pointer-events: auto; transform-origin: top left; }
 .card .bar { display: flex; flex: none; align-items: center; gap: 6px; height: 22px; padding: 0 3px 0 6px; background: ${P.cryptViolet}; color: ${P.bone}; font: bold 14px ${TIMES}; }
 .card h2 { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
@@ -103,6 +113,13 @@ button:focus-visible { ${ring} }
 .domains { margin: 4px 0 10px; padding: 6px 8px 6px 24px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; color: ${P.ectoplasm}; font: 13px/1.4 ${TIMES}; list-style: square; overflow-wrap: anywhere; }
 .seen { margin-bottom: 12px !important; }
 .card .act { display: block; box-shadow: 0 0 0 1px ${P.ink}; }
+.vampire-card .bar { background: ${P.vampireLining}; box-shadow: inset 0 -1px 0 ${P.vampireGlow}; }
+.vampire-card .who { margin-bottom: 8px; font-weight: bold; }
+.vampire-card .domains { overflow-wrap: normal; word-break: keep-all; }
+.did { margin-bottom: 4px !important; }
+.did b { color: ${VAMPIRE_GLOW_HI}; font-weight: normal; }
+.honest { margin-bottom: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
+.what { margin-bottom: 12px !important; }
 .foot { margin-top: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
 
 .vignette { position: absolute; inset: 0; opacity: .4; background: radial-gradient(ellipse at center, transparent 45%, ${P.crypt} 100%); }

@@ -69,13 +69,39 @@ const TINTED_GHOST = [
 
 /** The tinted ghost at 2x (24px), decorative. */
 export function tintedGhost(doc: Document, hem: string): SVGSVGElement {
+  return pixelSvg(doc, TINTED_GHOST, [["o", "#111318"], ["W", "#ffffff"], ["H", hem]]);
+}
+
+/** The list-row vampire bust: widow's peak, red eyes, fangs, the blood-lined collar and a red clasp. */
+export const VAMPIRE_BUST = [
+  "...oooooo...",
+  "..oooooooo..",
+  "o.ooWooWoo.o",
+  "oLoWWWWWWoLo",
+  "oLoWRWWRWoLo",
+  "oLoWWWWWWoLo",
+  "oLoWooooWoLo",
+  "oLLoWooWoLLo",
+  "ooLLoRRoLLoo",
+  "oooLLooLLooo",
+  "oLooooooooLo",
+  "oo.oo..oo.oo",
+];
+const VAMPIRE_FILLS = [["o", "#111318"], ["W", "#ffffff"], ["L", "#660000"], ["R", "#ff0033"]] as const;
+
+/** The vampire bust at 2x (24px), decorative. */
+export function vampireTile(doc: Document): SVGSVGElement {
+  return pixelSvg(doc, VAMPIRE_BUST, VAMPIRE_FILLS);
+}
+
+function pixelSvg(doc: Document, rows: readonly string[], fills: readonly (readonly [string, string])[]): SVGSVGElement {
   const svg = doc.createElementNS(SVG_NS, "svg");
   for (const [k, v] of Object.entries({ width: "24", height: "24", viewBox: "0 0 12 12", "shape-rendering": "crispEdges", "aria-hidden": "true", focusable: "false" })) {
     svg.setAttribute(k, v);
   }
-  for (const [ch, fill] of [["o", "#111318"], ["W", "#ffffff"], ["H", hem]] as const) {
+  for (const [ch, fill] of fills) {
     const path = doc.createElementNS(SVG_NS, "path");
-    path.setAttribute("d", TINTED_GHOST.flatMap((row, y) => [...row].map((c, x) => (c === ch ? `M${x} ${y}h1v1h-1z` : ""))).join(""));
+    path.setAttribute("d", rows.flatMap((row, y) => [...row].map((c, x) => (c === ch ? `M${x} ${y}h1v1h-1z` : ""))).join(""));
     path.setAttribute("fill", fill);
     svg.appendChild(path);
   }

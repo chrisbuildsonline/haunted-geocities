@@ -14,7 +14,7 @@ const probe = (page: Page, host: string) =>
 /** Ghost companies, their boxes, and every page text rect they could cover. */
 const lanesLook = (inShadow: InShadow) =>
   inShadow(function () {
-    const ghosts = [...this.querySelectorAll<HTMLElement>("#lanes .ghost")];
+    const ghosts = [...this.querySelectorAll<HTMLElement>("#lanes .ghost, #lanes .vampire")]; // Hotjar and Taboola are known vampires
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     const text: DOMRect[] = [];
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -67,10 +67,12 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await expect.poll(() => popupRows(popup)).toEqual([
     ["Criteo", expect.stringMatching(/^1 domain · /), "Exorcise", false],
-    ["Hotjar", expect.stringMatching(/^1 domain · /), "Exorcise", false],
-    ["Taboola", expect.stringMatching(/^1 domain · /), "Exorcise", false],
+    ["Hotjar", "Known", "Exorcise", false], // fingerprinting score 2: listed as known vampires, after the ghosts
+    ["Taboola", "Known", "Exorcise", false],
   ]);
-  await expect(popup.locator('[data-count="ghosts"] .num')).toHaveText("3");
+  // Only Criteo is a ghost now; Hotjar and Taboola count as vampires (as in the HUD).
+  await expect(popup.locator('[data-count="ghosts"] .num')).toHaveText("1");
+  await expect(popup.locator('[data-count="vampires"] .num')).toHaveText("2");
   await shot(popup, "popup-haunted");
 
   await page.bringToFront();
@@ -159,11 +161,12 @@ test("reduced motion: ghosts sit still at their slot centres, fully visible", as
   await page.waitForTimeout(400);
   const inShadow = await shadowOf(page);
   const still = await inShadow(function () {
-    const ghosts = [...this.querySelectorAll<HTMLElement>("#lanes .ghost")];
+    const ghosts = [...this.querySelectorAll<HTMLElement>("#lanes .ghost, #lanes .vampire")];
+    const sway = (g: HTMLElement) => g.querySelector(".sway"); // vampires only drift (bob)
     return {
       n: ghosts.length,
       running: this.getAnimations().filter((a) => ghosts.some((g) => g.contains((a.effect as KeyframeEffect).target as Node))).length,
-      transforms: ghosts.map((g) => getComputedStyle(g.querySelector(".bob")!).transform + getComputedStyle(g.querySelector(".sway")!).transform),
+      transforms: ghosts.map((g) => getComputedStyle(g.querySelector(".bob")!).transform + (sway(g) ? getComputedStyle(sway(g)!).transform : "none")),
     };
   });
   expect(still.n).toBe(3);

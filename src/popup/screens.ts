@@ -1,7 +1,8 @@
 import { byCountThenName, categoryOf, hemTint } from "../content/costume/ghosts";
 import type { CompanyHit, TabState } from "../data/types";
 import { h } from "./dom";
-import { sprite, tintedGhost, type SpriteName } from "./sprites";
+import { caughtLine } from "../content/vampire";
+import { sprite, tintedGhost, vampireTile, type SpriteName } from "./sprites";
 
 export type Screen = "idle" | "haunted" | "restricted";
 
@@ -65,6 +66,41 @@ function ghostRow(doc: Document, g: CompanyHit, exorcised: boolean, onExorcise: 
   );
 }
 
+/** A vampire whose name is its own host: an unlisted script, no company to block. */
+const unlisted = (v: CompanyHit) => v.count === 0 && v.domains.length === 1 && v.domains[0] === v.company;
+
+function vampireRow(doc: Document, v: CompanyHit, exorcised: boolean, onExorcise: ScreenProps["onExorcise"]): HTMLElement {
+  const isCaught = !!v.vampire?.caught.length;
+  const did = caughtLine(v.vampire?.caught ?? []);
+  let button: HTMLElement | null = null;
+  if (!unlisted(v)) {
+    button = h(doc, "button", { type: "button", class: exorcised ? "quiet" : "secondary", "data-company": v.company }, exorcised ? "Let it back" : "Exorcise");
+    button.setAttribute("aria-label", `${exorcised ? "Let it back" : "Exorcise"}: ${v.company}`);
+    button.addEventListener("click", () => onExorcise(v.company, exorcised));
+  }
+  return h(
+    doc,
+    "li",
+    { class: exorcised ? "ghost-row vampire-row exorcised" : "ghost-row vampire-row" },
+    h(doc, "span", { class: "icon-tile" }, vampireTile(doc)),
+    h(
+      doc,
+      "span",
+      { class: "row-text" },
+      h(doc, "span", { class: "row-title" }, v.company),
+      // The name gets its own line; the pill leads what it did, which may wrap under the button.
+      h(
+        doc,
+        "span",
+        { class: "row-line" },
+        h(doc, "span", { class: isCaught ? "tag-pill caught" : "tag-pill known" }, exorcised ? "Exorcised" : isCaught ? "Caught" : "Known"),
+        h(doc, "span", { class: "row-sub" }, isCaught ? did[0]!.toUpperCase() + did.slice(1) : "Known to fingerprint"),
+      ),
+    ),
+    button,
+  );
+}
+
 /** Everything that goes inside #app for one screen. */
 export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
@@ -115,17 +151,29 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
         ),
       ),
     );
-    tiles.querySelector('[data-count="ghosts"] .num')!.textContent = String(state.ghosts.length);
-    const ghosts = [...state.ghosts].sort(byCountThenName);
-    const list = ghosts.length
+    // Ghosts by request count, then vampires by name (a vampire is not also counted as a ghost).
+    const ghosts = state.ghosts.filter((g) => !g.vampire).sort(byCountThenName);
+    const vampires = state.ghosts.filter((g) => g.vampire).sort((a, b) => (a.company < b.company ? -1 : a.company > b.company ? 1 : 0));
+    tiles.querySelector('[data-count="ghosts"] .num')!.textContent = String(ghosts.length);
+    tiles.querySelector('[data-count="vampires"] .num')!.textContent = String(vampires.length);
+    const ghostList = ghosts.length
       ? [
           h(doc, "h2", { class: "list-head" }, "Ghosts ", h(doc, "span", { class: "list-count" }, String(ghosts.length))),
           h(doc, "ul", { class: "rows" }, ...ghosts.map((g) => ghostRow(doc, g, state.exorcised.includes(g.company), onExorcise))),
         ]
-      : [
-          h(doc, "p", { class: "lead" }, "No ghosts here. Suspiciously clean."),
-          h(doc, "p", { class: "muted" }, "Trackers that load later will appear here."),
-        ];
+      : vampires.length
+        ? []
+        : [
+            h(doc, "p", { class: "lead" }, "No ghosts here. Suspiciously clean."),
+            h(doc, "p", { class: "muted" }, "Trackers that load later will appear here."),
+          ];
+    const vampireList = vampires.length
+      ? [
+          h(doc, "h2", { class: "list-head vampires-head" }, "Vampires ", h(doc, "span", { class: "list-count" }, String(vampires.length))),
+          h(doc, "ul", { class: "rows" }, ...vampires.map((v) => vampireRow(doc, v, state.exorcised.includes(v.company), onExorcise))),
+        ]
+      : [h(doc, "p", { class: "muted no-vampires" }, "No vampires. Your blood is safe.")];
+    const list = [...ghostList, ...vampireList];
     surfaces = [
       h(doc, "section", { class: "surface", "aria-label": "Haunting" }, tiles, pill("Un-haunt"), alert),
       h(doc, "section", { class: "surface list", "aria-label": "Ghosts and vampires" }, ...list),
