@@ -366,10 +366,10 @@ describe("renderCostume", () => {
     expect(root.adoptedStyleSheets).toHaveLength(2);
   });
 
-  test("only the HUD, the Show tab, ghost sprites and cards take pointer events", () => {
+  test("only the HUD, the Show tab, ghost sprites, tombstone markers and cards take pointer events", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const autos = [...css.matchAll(/([^{}]+)\{[^}]*pointer-events:\s*auto/g)].map((m) => m[1]!.trim());
-    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".ghost, .vampire"]);
+    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".ghost, .vampire", ".tomb-marker"]);
     expect(css).toMatch(/#crypt-root\s*\{[^}]*pointer-events:\s*none/);
   });
 

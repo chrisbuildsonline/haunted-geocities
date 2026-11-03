@@ -333,6 +333,44 @@ p {
 .no-vampires {
   margin-top: 12px;
 }
+
+/* Tombstone rows: the path on line 1, wrapping only after a "/" (a filename too long for the line
+   keeps its end and loses its start); the status pill (and the host, cross-site) on line 2. */
+.tombstones-head,
+.no-tombstones {
+  margin-top: 12px;
+}
+.tombstone-row {
+  align-items: flex-start;
+  padding-block: 10px;
+}
+.tombstone-row .row-title {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  line-height: 20px;
+}
+.tomb-path .seg {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  direction: rtl;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.tombstone-row .row-line {
+  margin-top: 4px;
+}
+.tag-pill.dead-404 {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.tag-pill.dead-410 {
+  background: #e3e6ec;
+  color: var(--muted);
+}
 .secondary,
 .quiet {
   flex: none;

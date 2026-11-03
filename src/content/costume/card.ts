@@ -1,7 +1,9 @@
 // The ghost (or vampire) card: a Win95 window in #cards, one at a time, beside its sprite toward the page centre.
-import type { CompanyHit, ContentRequest } from "../../data/types";
+// The tombstone card is the stone itself, in the same slot and placement.
+import type { CompanyHit, ContentRequest, DeadLink } from "../../data/types";
 import { caughtLine } from "../vampire";
 import { categoryOf } from "./ghosts";
+import { appendPath, statusText } from "./tombstones";
 import { LAYOUT as L, MOTION as M } from "./tokens";
 
 export interface CardOptions {
@@ -83,6 +85,17 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
       opts.send(act.textContent === "Let it back" ? { type: "LET_BACK", company: hit.company } : { type: "EXORCISE", company: hit.company, domains: hit.domains }),
     );
   }
+  card.style.maxHeight = `${Math.max(120, Math.min(320, opts.bounds.bottom - opts.bounds.top - 16))}px`;
+  show(cards, card, opener, L.cardWidth, opts);
+  (act ?? card.querySelector<HTMLElement>(".close")!).focus();
+  return card;
+}
+
+/**
+ * Wire [x] and Esc, remember the opener for focus, then put the card beside the opener toward the page
+ * centre, clamped to the viewport between the bands and the HUD.
+ */
+function show(cards: HTMLElement, card: HTMLElement, opener: HTMLElement, width: number, opts: Pick<CardOptions, "bounds" | "reduced">): void {
   card.querySelector(".close")!.addEventListener("click", () => closeCard(cards));
   card.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
@@ -92,16 +105,35 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
   openers.set(card, opener);
   cards.append(card);
 
-  // Beside the ghost toward the page centre, clamped to the viewport between the bands and the HUD.
-  const win = doc.defaultView!;
+  const win = card.ownerDocument.defaultView!;
   const g = opener.getBoundingClientRect();
   const toRight = g.left + g.width / 2 < win.innerWidth / 2;
-  const left = toRight ? g.right + 8 : g.left - 8 - L.cardWidth;
+  const left = toRight ? g.right + 8 : g.left - 8 - width;
   const top = Math.min(g.top, opts.bounds.bottom - 8 - card.offsetHeight);
-  card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - L.cardWidth))}px`;
+  card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - width))}px`;
   card.style.top = `${Math.max(opts.bounds.top + 8, top)}px`;
-  card.style.maxHeight = `${Math.max(120, Math.min(320, opts.bounds.bottom - opts.bounds.top - 16))}px`;
   if (!opts.reduced) card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
-  (act ?? card.querySelector<HTMLElement>(".close")!).focus();
+}
+
+/** The tombstone card: the stone itself, inscribed HERE LIES, the path, the status (and the host when cross-site). */
+export function openTombstoneCard(cards: HTMLElement, dead: DeadLink, opener: HTMLElement, opts: Pick<CardOptions, "bounds" | "reduced">): HTMLElement {
+  cards.querySelector(".card")?.remove();
+  const doc = cards.ownerDocument;
+  const card = doc.createElement("section");
+  card.className = "card tombstone-card";
+  card.dataset.url = dead.url;
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-labelledby", "stone-inscription");
+  card.innerHTML =
+    `<button class="close win95" type="button" aria-label="Close">x</button>` +
+    `<div class="inscription" id="stone-inscription"><p class="here-lies">HERE LIES</p><p class="path"></p><p class="status"></p></div>` +
+    `<div class="moss" aria-hidden="true"></div>`;
+  appendPath(card.querySelector<HTMLElement>(".path")!, dead.path);
+  const status = card.querySelector(".status")!;
+  status.textContent = statusText(dead.status);
+  const url = new URL(dead.url);
+  if (url.origin !== doc.defaultView!.location.origin) status.after(Object.assign(doc.createElement("p"), { className: "host", textContent: url.hostname }));
+  show(cards, card, opener, L.tombstoneWidth, opts);
+  card.querySelector<HTMLElement>(".close")!.focus();
   return card;
 }

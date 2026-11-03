@@ -94,6 +94,27 @@ export function vampireTile(doc: Document): SVGSVGElement {
   return pixelSvg(doc, VAMPIRE_BUST, VAMPIRE_FILLS);
 }
 
+/** The list-row headstone: ink outline and carved cross, white stone shaded on its right, moss at the foot. */
+export const TOMB_TILE = [
+  "....oooo....",
+  "..ooWWWWoo..",
+  ".oWWWWWWWSo.",
+  ".oWWWooWWSo.",
+  ".oWWooooWSo.",
+  ".oWWWooWWSo.",
+  ".oWWWooWWSo.",
+  ".oWWWWWWWSo.",
+  ".oWWWWWWWSo.",
+  ".oMWWMWMWMo.",
+  "MMMMMMMMMMMM",
+  "MMMMMMMMMMMM",
+];
+
+/** The headstone at 2x (24px), decorative. */
+export function tombTile(doc: Document): SVGSVGElement {
+  return pixelSvg(doc, TOMB_TILE, [["o", "#111318"], ["W", "#ffffff"], ["S", "#cccccc"], ["M", "#336633"]]);
+}
+
 function pixelSvg(doc: Document, rows: readonly string[], fills: readonly (readonly [string, string])[]): SVGSVGElement {
   const svg = doc.createElementNS(SVG_NS, "svg");
   for (const [k, v] of Object.entries({ width: "24", height: "24", viewBox: "0 0 12 12", "shape-rendering": "crispEdges", "aria-hidden": "true", focusable: "false" })) {

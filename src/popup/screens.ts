@@ -1,8 +1,9 @@
 import { byCountThenName, categoryOf, hemTint } from "../content/costume/ghosts";
-import type { CompanyHit, TabState } from "../data/types";
+import { appendPath } from "../content/costume/tombstones";
+import type { CompanyHit, DeadLink, TabState } from "../data/types";
 import { h } from "./dom";
 import { caughtLine } from "../content/vampire";
-import { sprite, tintedGhost, vampireTile, type SpriteName } from "./sprites";
+import { sprite, tintedGhost, tombTile, vampireTile, type SpriteName } from "./sprites";
 
 export type Screen = "idle" | "haunted" | "restricted";
 
@@ -101,6 +102,41 @@ function vampireRow(doc: Document, v: CompanyHit, exorcised: boolean, onExorcise
   );
 }
 
+/** A dead link: its path (breaking only after a "/") over a status pill, and the host when it is on another site. */
+function tombstoneRow(doc: Document, t: DeadLink, pageOrigin: string | null): HTMLElement {
+  const what = t.status === 410 ? "Gone" : "Not found";
+  let host = "";
+  try {
+    const u = new URL(t.url);
+    if (pageOrigin && u.origin !== pageOrigin) host = u.hostname;
+  } catch {
+    // not a URL: no host to show
+  }
+  const path = h(doc, "span", { class: "row-title tomb-path" });
+  appendPath(path, t.path);
+  return h(
+    doc,
+    "li",
+    { class: "ghost-row tombstone-row", tabindex: "0", "aria-label": `Dead link: ${t.path}, ${t.status} ${what}${host ? `, on ${host}` : ""}` },
+    h(doc, "span", { class: "icon-tile" }, tombTile(doc)),
+    h(
+      doc,
+      "span",
+      { class: "row-text" },
+      path,
+      h(doc, "span", { class: "row-line" }, h(doc, "span", { class: `tag-pill dead-${t.status}` }, String(t.status)), h(doc, "span", { class: "row-sub" }, host ? `${what} · ${host}` : what)),
+    ),
+  );
+}
+
+const originOf = (url: string | null) => {
+  try {
+    return url ? new URL(url).origin : null;
+  } catch {
+    return null;
+  }
+};
+
 /** Everything that goes inside #app for one screen. */
 export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
@@ -173,10 +209,19 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
           h(doc, "ul", { class: "rows" }, ...vampires.map((v) => vampireRow(doc, v, state.exorcised.includes(v.company), onExorcise))),
         ]
       : [h(doc, "p", { class: "muted no-vampires" }, "No vampires. Your blood is safe.")];
-    const list = [...ghostList, ...vampireList];
+    const tombs = state.tombstones ?? [];
+    tiles.querySelector('[data-count="tombstones"] .num')!.textContent = String(tombs.length);
+    const pageOrigin = originOf(state.url);
+    const tombList = tombs.length
+      ? [
+          h(doc, "h2", { class: "list-head tombstones-head" }, "Tombstones ", h(doc, "span", { class: "list-count" }, String(tombs.length))),
+          h(doc, "ul", { class: "rows" }, ...tombs.map((t) => tombstoneRow(doc, t, pageOrigin))),
+        ]
+      : [h(doc, "p", { class: "muted no-tombstones" }, "No tombstones. Every link is alive.")];
+    const list = [...ghostList, ...vampireList, ...tombList];
     surfaces = [
       h(doc, "section", { class: "surface", "aria-label": "Haunting" }, tiles, pill("Un-haunt"), alert),
-      h(doc, "section", { class: "surface list", "aria-label": "Ghosts and vampires" }, ...list),
+      h(doc, "section", { class: "surface list", "aria-label": "Ghosts, vampires and tombstones" }, ...list),
     ];
   } else {
     surfaces = [

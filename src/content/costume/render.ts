@@ -15,8 +15,9 @@ import { LINK_CHECK_ORIGINS, type ContentRequest, type DeadLink, type TrackerDat
 import { startScanner, type ScanResult } from "../scanner";
 import { createVampireBridge, type Api } from "../hooks-bridge";
 import { markKnownVampires, mergeVampire } from "../vampire";
-import { closeCard, openCard, setCardExorcised } from "./card";
-import { planSlots, updateGhosts } from "./ghosts";
+import { closeCard, openCard, openTombstoneCard, setCardExorcised } from "./card";
+import { planSlots, updateGhosts, type Slot } from "./ghosts";
+import { mountTombstones } from "./tombstones";
 
 type Costume = {
   root: ShadowRoot;
@@ -73,7 +74,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   tab.innerHTML = `${icon("ghost")}<span aria-hidden="true">Show</span>`;
   const lanes = el(doc, "lanes");
   const cards = el(doc, "cards");
-  croot.append(starfield, lanes, el(doc, "markers"), bands, hud, cards, tab);
+  const markers = el(doc, "markers");
+  croot.append(starfield, lanes, markers, bands, hud, cards, tab);
 
   // Measure the page before the padding sheet moves anything.
   let gutters: Column | null = null;
@@ -106,11 +108,18 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   let exorcised = new Set<string>();
   let settled = false;
   const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: hud.offsetTop || win.innerHeight });
+  let slots: Slot[] = [];
   const placeGhosts = () => {
     const b = bounds();
-    const slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));
+    slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));
     updateGhosts(lanes, scan.companies, slots, { exorcised, onOpen, rise: settled && !motion.matches });
   };
+  // Tombstone markers: beside their links, or in those same gutter lanes at the link's y.
+  const tombs = mountTombstones(markers, {
+    slots: () => slots,
+    fade: () => settled && !motion.matches,
+    onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: bounds(), reduced: motion.matches }),
+  });
   const onOpen = (company: string, opener: HTMLElement) => {
     const hit = scan.companies.find((c) => c.company === company);
     const listed = Object.hasOwn((trackerJson as TrackerData).entities, company);
@@ -176,6 +185,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
       lift = measure();
       pad();
       placeGhosts();
+      tombs.place();
     });
   };
   win.addEventListener("resize", relayout);
@@ -237,6 +247,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     },
     startVampires,
     addDead,
+    onTombstones: tombs.update,
     dead: () => dead,
   };
   costumes.set(doc, costume);
@@ -244,6 +255,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     costume.stopScan();
     bridge.stop();
     closeCard(cards);
+    tombs.stop();
     page.remove();
     motion.stop();
     mo.disconnect();

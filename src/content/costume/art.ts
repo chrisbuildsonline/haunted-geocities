@@ -90,6 +90,24 @@ export const VAMPIRE = [
 ];
 export const VAMPIRE_LEGEND: Legend = { o: P.crypt, W: P.ghostWhite, L: P.vampireLining, R: P.vampireGlow };
 
+/**
+ * The 8×10 tombstone marker (16×20 at 2px): an arched stone with a carved cross, shaded on its right,
+ * moss creeping up from the ground. The crypt outline keeps the pale stone visible on white pages.
+ */
+export const TOMB = [
+  "..oooo..",
+  ".oGGGGo.",
+  "oGGDGGDo",
+  "oGDDDGDo",
+  "oGGDGGDo",
+  "oGGDGGDo",
+  "oGGGGGDo",
+  "oGGGGGDo",
+  "oMGMGMMo",
+  "MMMMMMMM",
+];
+export const TOMB_LEGEND: Legend = { o: P.crypt, G: P.stone, D: P.stoneShadow, M: P.moss };
+
 /** The 24×12 under-construction barricade: striped board, two legs, a lamp on each post. */
 export function signFrame(lit: boolean): string[] {
   const board = Array.from({ length: 4 }, (_, r) =>

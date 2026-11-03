@@ -6,6 +6,9 @@ import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL } from "./to
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;
 const TIMES = `"Times New Roman", Times, serif`;
 
+/** An 8×8 strip of moss pixels (2px each): tufts over a solid bed, repeated along the stone's base. */
+const mossUrl = () => svgUrl(mapToPx([".M..", "MM.M", "MMMM", "MMMM"], { M: P.moss }, 2), 8, 8);
+
 const signsUrl = () =>
   svgUrl([...mapToPx(signFrame(false), SIGN_LEGEND, PIXEL.iconScale), ...mapToPx(signFrame(true), SIGN_LEGEND, PIXEL.iconScale, 48)], 96, 24);
 
@@ -121,6 +124,22 @@ button:focus-visible { ${ring} }
 .honest { margin-bottom: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
 .what { margin-bottom: 12px !important; }
 .foot { margin-top: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
+
+.tomb-marker { position: absolute; display: block; width: 16px; height: 20px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; }
+.tomb-marker svg { display: block; image-rendering: pixelated; }
+.tomb-marker:hover svg { filter: drop-shadow(0 0 3px ${P.spectral}); }
+.tomb-marker:focus-visible { ${ring} }
+
+.card.tombstone-card { display: block; width: ${L.tombstoneWidth}px; height: 208px; max-height: none; overflow: hidden; background: ${P.stone}; border: 2px solid; border-color: ${P.ghostWhite} ${P.stoneShadow} ${P.stoneShadow} ${P.ghostWhite}; border-radius: 88px 88px 0 0; box-shadow: ${HARD_SHADOW}; }
+.tombstone-card .close { position: absolute; top: 24px; right: 30px; z-index: 1; }
+.tombstone-card .inscription { position: absolute; inset: 16px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
+.tombstone-card p { margin: 0; }
+.tombstone-card .here-lies { font-size: 11px; line-height: 14px; letter-spacing: 2px; padding-left: 2px; }
+.tombstone-card .path { margin: 6px 0; font-size: 13px; line-height: 17px; overflow-wrap: normal; word-break: keep-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.tombstone-card .seg { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; vertical-align: top; }
+.tombstone-card .status { font-size: 11px; line-height: 14px; }
+.tombstone-card .host { font-size: 11px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tombstone-card .moss { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; }
 
 .vignette { position: absolute; inset: 0; opacity: .4; background: radial-gradient(ellipse at center, transparent 45%, ${P.crypt} 100%); }
 .sweep { position: absolute; top: 0; bottom: 0; left: 0; width: 96px; }
