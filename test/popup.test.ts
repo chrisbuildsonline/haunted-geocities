@@ -21,7 +21,7 @@ async function mount(opts: Opts = {}) {
   const m = createChromeMock({ tabs: [{ id: 5, url: "https://example.org/a", active: true }], grant: opts.grant });
   if (opts.granted) for (const o of LINK_CHECK_ORIGINS) m.granted.add(o);
   if (opts.audio !== undefined) m.chrome.storage.local.data[AUDIO_KEY] = opts.audio;
-  let state: TabState = { haunted: false, restricted: false, url: "https://example.org/a", ...opts.state };
+  let state: TabState = { haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], ...opts.state };
   m.backgroundReply = async (msg: { type: string }) => {
     if (msg.type === "HAUNT") state = { ...state, haunted: true };
     if (msg.type === "UNHAUNT") state = { ...state, haunted: false };

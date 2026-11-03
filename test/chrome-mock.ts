@@ -47,8 +47,11 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
     remove: [] as unknown[],
     runtimeMessages: [] as unknown[],
   };
+  // declarativeNetRequest session rules, with the real API's rule: ids must be unique.
+  const dnr = { rules: [] as any[], fail: false };
   const mock = {
     calls,
+    dnr,
     tabsById: tabs,
     granted,
     grant: opts.grant ?? false,
@@ -66,6 +69,21 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
         },
       },
       storage: { session: area(), local: area() },
+      declarativeNetRequest: {
+        async updateSessionRules(o: { removeRuleIds?: number[]; addRules?: { id: number }[] }) {
+          if (dnr.fail) throw new Error("declarativeNetRequest failed");
+          const next = dnr.rules.filter((r) => !o.removeRuleIds?.includes(r.id));
+          for (const r of o.addRules ?? []) {
+            if (next.some((x) => x.id === r.id)) throw new Error(`Rule with id ${r.id} does not have a unique ID.`);
+            next.push(structuredClone(r));
+          }
+          dnr.rules = next;
+        },
+        async getSessionRules() {
+          if (dnr.fail) throw new Error("declarativeNetRequest failed");
+          return structuredClone(dnr.rules);
+        },
+      },
       tabs: {
         onRemoved: event(),
         onUpdated: event(),

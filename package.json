@@ -9,6 +9,7 @@
     "build": "vite build",
     "test": "bun test ./test/",
     "test:e2e": "vite build --mode e2e && playwright test",
+    "ingest:trackers": "bun scripts/ingest-trackers.ts",
     "docker:test": "docker build --progress=plain -t haunted-geocities:test ."
   },
   "devDependencies": {

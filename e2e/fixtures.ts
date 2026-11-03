@@ -11,6 +11,15 @@ const EXTENSION = resolve(import.meta.dirname, "..", "dist-e2e");
 
 export const fixture = (path: string) => `http://127.0.0.1:${FIXTURE_PORT}/${path}`;
 
+/**
+ * Real tracker domains from src/data/trackers.json, three different companies. Chromium resolves
+ * them to the local fixture server, so fixtures/trackers.html can load "third-party" resources
+ * from them and the shipped tracker data matches them with no test-only patch.
+ */
+export const TRACKER_HOSTS = { Criteo: "criteo.com", Hotjar: "hotjar.com", Taboola: "taboola.com" } as const;
+export const trackerUrl = (host: string, n: number | string) => `http://${host}:${FIXTURE_PORT}/t/p.svg?n=${n}`;
+const HOST_RULES = Object.values(TRACKER_HOSTS).map((h) => `MAP ${h} 127.0.0.1`).join(",");
+
 type Fixtures = { context: BrowserContext; sw: Worker; extensionId: string; consoleErrors: string[] };
 
 export const test = base.extend<Fixtures>({
@@ -19,7 +28,7 @@ export const test = base.extend<Fixtures>({
     const context = await chromium.launchPersistentContext("", {
       channel: "chromium", // bundled Chromium in new headless mode: runs extensions without a display
       headless: true,
-      args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
+      args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`, `--host-resolver-rules=${HOST_RULES}`],
     });
     await use(context);
     await context.close();
@@ -36,6 +45,8 @@ export const test = base.extend<Fixtures>({
     async ({ context }, use) => {
       const errors: string[] = [];
       context.on("console", (m) => {
+        // Chromium logs this for every request an Exorcise rule refuses, which exorcise.spec.ts does on purpose.
+        if (m.text() === "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT") return;
         if (m.type() === "error") errors.push(`${m.location().url}: ${m.text()}`);
       });
       context.on("weberror", (e) => errors.push(String(e.error())));

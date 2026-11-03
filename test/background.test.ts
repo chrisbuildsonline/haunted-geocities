@@ -27,6 +27,8 @@ describe("GET_STATE", () => {
       haunted: false,
       restricted: false,
       url: "https://example.org/page",
+      ghosts: [],
+      exorcised: [],
     });
   });
   test("a chrome:// tab is restricted", async () => {
@@ -35,6 +37,8 @@ describe("GET_STATE", () => {
       haunted: false,
       restricted: true,
       url: "chrome://settings",
+      ghosts: [],
+      exorcised: [],
     });
   });
   test("reads haunted from storage.session", async () => {
@@ -49,7 +53,7 @@ describe("GET_STATE", () => {
   });
   test("a tab whose URL we cannot read is restricted", async () => {
     const { bg } = setup({ tabs: [{ id: 3 }] });
-    expect(await bg.handle({ type: "GET_STATE", tabId: 3 }, self)).toEqual({ haunted: false, restricted: true, url: null });
+    expect(await bg.handle({ type: "GET_STATE", tabId: 3 }, self)).toEqual({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [] });
   });
 });
 
@@ -59,7 +63,7 @@ describe("HAUNT", () => {
     const res = await bg.handle({ type: "HAUNT", tabId: 7 }, self);
     expect(m.calls.executeScript).toEqual([{ target: { tabId: 7 }, files: ["content.js"] }]);
     expect(m.chrome.storage.session.data[hauntKey(7)]).toBe(true);
-    expect(res).toEqual({ haunted: true, restricted: false, url: "https://example.org/page" });
+    expect(res).toEqual({ haunted: true, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [] });
   });
   test("refuses a restricted tab without injecting", async () => {
     const { m, bg } = setup();
@@ -118,7 +122,7 @@ describe("router", () => {
       const keepOpen = listener({ type: "GET_STATE", tabId: 7 }, self, resolve);
       expect(keepOpen).toBe(true);
     });
-    expect(reply).toEqual({ haunted: false, restricted: false, url: "https://example.org/page" });
+    expect(reply).toEqual({ haunted: false, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [] });
   });
   test("ignores messages from other extensions and unknown types", () => {
     const { m, bg } = setup();

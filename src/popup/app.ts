@@ -2,7 +2,7 @@ import type { PopupRequest, TabState } from "../data/types";
 import { HAUNT_ERROR, renderScreen, screenFor } from "./screens";
 import { createSettings } from "./settings";
 
-const NO_TAB: TabState = { haunted: false, restricted: true, url: null };
+const NO_TAB: TabState = { haunted: false, restricted: true, url: null, ghosts: [], exorcised: [] };
 
 /** The tab the popup acts on: `?tab=<id>` if given (e2e opens popup.html in a normal tab), else the active tab. */
 async function resolveTab(api: typeof chrome, search: string): Promise<number | undefined> {
@@ -15,7 +15,7 @@ async function resolveTab(api: typeof chrome, search: string): Promise<number | 
 export async function mountPopup(root: HTMLElement, api: typeof chrome, search: string): Promise<void> {
   const doc = root.ownerDocument;
   const tabId = await resolveTab(api, search);
-  const ask = async (type: PopupRequest["type"]): Promise<TabState> => {
+  const ask = async (type: "HAUNT" | "UNHAUNT" | "GET_STATE"): Promise<TabState> => {
     if (tabId === undefined) return NO_TAB;
     const res = (await api.runtime.sendMessage({ type, tabId } satisfies PopupRequest).catch(() => undefined)) as
       | TabState
