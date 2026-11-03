@@ -59,9 +59,14 @@ export function createBackground(api: typeof chrome) {
       return true; // keep the channel open for the async answer
     });
     api.tabs.onRemoved.addListener((tabId) => session.remove(hauntKey(tabId)));
-    // A navigation or reload throws the overlay away with the old document.
-    api.tabs.onUpdated.addListener((tabId, info) => {
-      if (info.status === "loading") return session.remove(hauntKey(tabId));
+    // A navigation or reload throws the overlay away with the old document. Chrome also fires
+    // status "loading" (with a url) for pushState and hash changes, where the document and its
+    // overlay survive, so only clear when our content script no longer answers.
+    api.tabs.onUpdated.addListener(async (tabId, info) => {
+      if (info.status !== "loading") return;
+      const r = await api.tabs.sendMessage(tabId, { type: "ping" } satisfies ContentMessage).catch(() => null);
+      if (r?.ok) return; // answered: same document
+      await session.remove(hauntKey(tabId));
     });
   }
 

@@ -145,6 +145,25 @@ describe("tab lifecycle", () => {
     const { m, bg } = setup();
     bg.register();
     m.chrome.storage.session.data[hauntKey(7)] = true;
+    m.contentReply = () => {
+      throw new Error("Could not establish connection. Receiving end does not exist.");
+    };
+    await m.chrome.tabs.onUpdated.listeners[0]!(7, { status: "loading" }, WEB);
+    expect(m.calls.sendMessage).toEqual([{ tabId: 7, msg: { type: "ping" } }]);
+    expect(m.chrome.storage.session.data[hauntKey(7)]).toBeUndefined();
+  });
+  test("a same-document navigation (loading, content script still there) keeps the state", async () => {
+    const { m, bg } = setup();
+    bg.register();
+    m.chrome.storage.session.data[hauntKey(7)] = true;
+    await m.chrome.tabs.onUpdated.listeners[0]!(7, { status: "loading", url: "https://example.org/pushed" }, WEB);
+    expect(m.chrome.storage.session.data[hauntKey(7)]).toBe(true);
+  });
+  test("a listener that answers nothing does not count as alive", async () => {
+    const { m, bg } = setup();
+    bg.register();
+    m.chrome.storage.session.data[hauntKey(7)] = true;
+    m.contentReply = () => undefined;
     await m.chrome.tabs.onUpdated.listeners[0]!(7, { status: "loading" }, WEB);
     expect(m.chrome.storage.session.data[hauntKey(7)]).toBeUndefined();
   });
