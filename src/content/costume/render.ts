@@ -11,6 +11,8 @@ import { costumeCss } from "./styles";
 import trackerJson from "../../data/trackers.json";
 import type { ContentRequest, TrackerData } from "../../data/types";
 import { startScanner, type ScanResult } from "../scanner";
+import { createVampireBridge, type Api } from "../hooks-bridge";
+import { markKnownVampires, mergeVampire } from "../vampire";
 import { closeCard, openCard, setCardExorcised } from "./card";
 import { planSlots, updateGhosts } from "./ghosts";
 
@@ -20,6 +22,7 @@ type Costume = {
   reduced: () => boolean;
   setExorcised: (companies: string[]) => void;
   stopScan: () => void;
+  startVampires: (nonce: string) => void;
   moment?: Moment;
   leaving?: Promise<void>;
   rehaunt?: boolean;
@@ -82,7 +85,17 @@ export function renderCostume(doc: Document = document): ShadowRoot {
 
   // Ghosts: one per tracker company, in the lanes between the bands and the HUD (offsets, not
   // rects, so the haunt moment's transforms do not move the slots).
-  let scan: ScanResult = { companies: [], total: 0 };
+  let scanned: ScanResult = { companies: [], total: 0 };
+  let scan: ScanResult = scanned;
+  const catches: [string, Api][] = [];
+  const refresh = () => {
+    scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
+    const vampires = scan.companies.filter((c) => c.vampire).length;
+    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: 0, curses: 0 });
+    setOdometer(hud, scan.total);
+    placeGhosts();
+    send({ type: "TRACKER_UPDATE", companies: scan.companies, total: scan.total });
+  };
   let exorcised = new Set<string>();
   let settled = false;
   const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: hud.offsetTop || win.innerHeight });
@@ -170,18 +183,24 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     performance: win.performance,
     PerformanceObserver: (win as unknown as { PerformanceObserver?: typeof PerformanceObserver }).PerformanceObserver,
     onUpdate: (result) => {
-      scan = result;
-      setCounts(hud, { ghosts: result.companies.length, vampires: 0, tombstones: 0, curses: 0 });
-      setOdometer(hud, result.total);
-      placeGhosts();
-      send({ type: "TRACKER_UPDATE", companies: result.companies, total: result.total });
+      scanned = result;
+      refresh();
     },
   });
 
-  const costume: Costume = { root, croot, reduced: () => motion.matches, setExorcised, stopScan: () => scanner.stop() };
+  // Runtime vampires: catches reported by the MAIN-world hooks are merged over every scan result.
+  const bridge = createVampireBridge();
+  const startVampires = (nonce: string) =>
+    bridge.start(nonce, win.location.hostname, (company, api) => {
+      catches.push([company, api]);
+      refresh();
+    }, win);
+
+  const costume: Costume = { root, croot, reduced: () => motion.matches, setExorcised, stopScan: () => scanner.stop(), startVampires };
   costumes.set(doc, costume);
   onUnhaunt(doc, () => {
     scanner.stop();
+    bridge.stop();
     closeCard(cards);
     page.remove();
     motion.stop();
@@ -204,6 +223,11 @@ export function renderCostume(doc: Document = document): ShadowRoot {
 /** The background says which companies are exorcised in this tab (from the card or the popup). */
 export function applyExorcised(companies: string[], doc: Document = document): void {
   costumes.get(doc)?.setExorcised(companies);
+}
+
+/** The background says the MAIN-world hooks are in: listen for their reports under `nonce`. */
+export function startVampires(nonce: string, doc: Document = document): void {
+  costumes.get(doc)?.startVampires(nonce);
 }
 
 /** Play the un-haunt, then remove the host and the page sheet together. */

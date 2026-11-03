@@ -1,5 +1,12 @@
 // Messages and state shared by the popup, background and content script.
 
+/** Runtime fingerprinting evidence for a company: the APIs a script of theirs was caught using since the haunt. */
+export interface VampireInfo {
+  caught: ("canvas" | "audio" | "fonts")[];
+  /** True when only the Tracker Radar score (>= 2) says so: nothing was caught. */
+  knownOnly: boolean;
+}
+
 /** One tracker company seen on the page (from the Resource Timing entries). */
 export interface CompanyHit {
   /** Company display name, e.g. "ICF". */
@@ -11,6 +18,8 @@ export interface CompanyHit {
   categories: string[];
   /** Highest fingerprinting score (0-3) over the company's tracker domains. */
   fingerprinting: number;
+  /** Set when the company (or an unlisted host) is a vampire. */
+  vampire?: VampireInfo;
 }
 
 /** src/data/trackers.json, written by scripts/ingest-trackers.ts. */
@@ -41,7 +50,12 @@ export type ContentRequest =
   | { type: "CLEAR_EXORCISE" };
 
 /** Background → content script, via chrome.tabs.sendMessage. */
-export type ContentMessage = { type: "unhaunt" } | { type: "ping" } | { type: "exorcised"; companies: string[] };
+export type ContentMessage =
+  | { type: "unhaunt" }
+  | { type: "ping" }
+  /** The nonce the MAIN-world hooks report catches under. */
+  | { type: "vampires"; nonce: string }
+  | { type: "exorcised"; companies: string[] };
 
 /** What the background answers to every PopupRequest. */
 export interface TabState {
@@ -62,6 +76,9 @@ export const hauntKey = (tabId: number) => `haunt:${tabId}`;
 
 /** chrome.storage.session key holding `{ companies: CompanyHit[], total: number }` last reported by the tab. */
 export const ghostsKey = (tabId: number) => `ghosts:${tabId}`;
+
+/** chrome.storage.session key holding the random nonce the tab's MAIN-world hooks were installed with. */
+export const nonceKey = (tabId: number) => `nonce:${tabId}`;
 
 /** chrome.storage.session key holding `{ [company]: dnrRuleId }` for the tab's exorcised companies. */
 export const exorcisedKey = (tabId: number) => `exorcised:${tabId}`;

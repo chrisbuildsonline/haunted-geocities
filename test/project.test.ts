@@ -62,8 +62,8 @@ describe("fixtures", () => {
   test("every page is standalone: no external URLs", () => {
     expect(pages().length).toBeGreaterThanOrEqual(2);
     for (const p of pages()) {
-      // trackers.html names real tracker domains, which e2e/fixtures.ts maps to the local fixture server.
-      const html = read(`fixtures/${p}`).replaceAll(/http:\/\/(?:criteo|hotjar|taboola)\.com:4321\//g, "/");
+      // trackers.html and vampires.html name tracker (and one made-up) hosts, which e2e/fixtures.ts maps to the local fixture server.
+      const html = read(`fixtures/${p}`).replaceAll(/http:\/\/(?:(?:criteo|hotjar|taboola|adentifi)\.com|nightowl-metrics\.test):4321\//g, "/");
       expect({ [p]: html.match(/(?:src|href|action)\s*=\s*["']?(?:https?:)?\/\//)?.[0] ?? null }).toEqual({ [p]: null });
       expect({ [p]: /url\(\s*["']?(?:https?:)?\/\//.test(html) }).toEqual({ [p]: false });
     }

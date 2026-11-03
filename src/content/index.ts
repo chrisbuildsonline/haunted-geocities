@@ -1,7 +1,7 @@
 // Injected on demand by the background via chrome.scripting.executeScript (never declared
 // as a static content script). Built as a self-contained IIFE: injected files cannot import.
 import type { ContentMessage } from "../data/types";
-import { applyExorcised, leaveCostume, renderCostume } from "./costume/render";
+import { applyExorcised, leaveCostume, renderCostume, startVampires } from "./costume/render";
 
 const LISTENING = "__hauntedGeoCitiesListening";
 const g = globalThis as Record<string, unknown>;
@@ -14,6 +14,10 @@ if (!g[LISTENING]) {
     if (sender.id !== chrome.runtime.id) return false;
     if (msg?.type === "ping") {
       sendResponse({ ok: true });
+      return false;
+    }
+    if (msg?.type === "vampires") {
+      if (typeof msg.nonce === "string" && msg.nonce) startVampires(msg.nonce);
       return false;
     }
     if (msg?.type === "exorcised") {

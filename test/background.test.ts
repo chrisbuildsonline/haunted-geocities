@@ -61,7 +61,7 @@ describe("HAUNT", () => {
   test("injects content.js into the tab and marks it haunted", async () => {
     const { m, bg } = setup();
     const res = await bg.handle({ type: "HAUNT", tabId: 7 }, self);
-    expect(m.calls.executeScript).toEqual([{ target: { tabId: 7 }, files: ["content.js"] }]);
+    expect(m.calls.executeScript[0]).toEqual({ target: { tabId: 7 }, files: ["content.js"] }); // then the MAIN-world hooks (test/vampire/background.test.ts)
     expect(m.chrome.storage.session.data[hauntKey(7)]).toBe(true);
     expect(res).toEqual({ haunted: true, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [] });
   });

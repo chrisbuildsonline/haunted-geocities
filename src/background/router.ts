@@ -1,14 +1,17 @@
+import { installHooks, restoreHooks } from "../content/hooks";
 import { lookup } from "../content/matcher";
 import trackerJson from "../data/trackers.json";
 import {
   ghostsKey,
   hauntKey,
+  nonceKey,
   type CompanyHit,
   type ContentMessage,
   type ContentRequest,
   type PopupRequest,
   type TabState,
   type TrackerData,
+  type VampireInfo,
 } from "../data/types";
 import { Exorcist } from "./exorcise";
 import { isRestrictedUrl } from "./restricted";
@@ -23,6 +26,17 @@ const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const isHit = (c: unknown): c is CompanyHit =>
   typeof c === "object" && c !== null && typeof (c as CompanyHit).company === "string" && Array.isArray((c as CompanyHit).domains) && typeof (c as CompanyHit).count === "number";
+
+const CATCHES = ["canvas", "audio", "fonts"];
+
+/** A reported hit with its vampire field cut down to the three known catches and a boolean. */
+function clean(c: CompanyHit): CompanyHit {
+  const v = c.vampire as Partial<VampireInfo> | null | undefined;
+  const { vampire: _, ...rest } = c;
+  if (typeof v !== "object" || v === null) return rest;
+  const reported = Array.isArray(v.caught) ? (v.caught as unknown[]) : [];
+  return { ...rest, vampire: { caught: CATCHES.filter((a) => reported.includes(a)) as VampireInfo["caught"], knownOnly: v.knownOnly === true } };
+}
 
 const byCountThenName = (a: CompanyHit, b: CompanyHit) => b.count - a.count || (a.company < b.company ? -1 : a.company > b.company ? 1 : 0);
 
@@ -68,7 +82,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   /** Drop everything the tab's haunt left behind: its block rules and what it reported. */
   async function clearTab(tabId: number) {
     await exorcist.clearTab(tabId);
-    await session.remove(ghostsKey(tabId));
+    await session.remove([ghostsKey(tabId), nonceKey(tabId)]);
   }
 
   async function haunt(tabId: number): Promise<TabState> {
@@ -81,10 +95,41 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       return { ...state, error: message(e) };
     }
     await session.set({ [hauntKey(tabId)]: true });
-    return { ...state, haunted: true };
+    await installVampireHooks(tabId);
+    // Fresh, not the state from before the injection: the costume has reported ghosts by now, and a
+    // stale answer arriving after the popup's storage-change refresh would wipe them from the list.
+    return getState(tabId);
+  }
+
+  /** One nonce per haunted tab, reused on a re-haunt so the MAIN-world hooks know they are already in. */
+  async function nonceOf(tabId: number): Promise<string> {
+    const key = nonceKey(tabId);
+    const stored = (await session.get(key))[key];
+    if (typeof stored === "string") return stored;
+    const nonce = crypto.randomUUID();
+    await session.set({ [key]: nonce });
+    return nonce;
+  }
+
+  /** Tell the content script the nonce, then hook the page's MAIN world. Best effort: the costume works without it. */
+  async function installVampireHooks(tabId: number) {
+    try {
+      const nonce = await nonceOf(tabId);
+      await api.tabs.sendMessage(tabId, { type: "vampires", nonce } satisfies ContentMessage);
+      await api.scripting.executeScript({ target: { tabId }, world: "MAIN", func: installHooks, args: [nonce] });
+    } catch {
+      // no hooks: known vampires (the Tracker Radar score) still show
+    }
   }
 
   async function unhaunt(tabId: number): Promise<TabState> {
+    try {
+      const key = nonceKey(tabId);
+      const nonce = (await session.get(key))[key];
+      if (typeof nonce === "string") await api.scripting.executeScript({ target: { tabId }, world: "MAIN", func: restoreHooks, args: [nonce] });
+    } catch {
+      // the page is gone, and the hooks with it
+    }
     try {
       await api.tabs.sendMessage(tabId, { type: "unhaunt" } satisfies ContentMessage);
     } catch {
@@ -136,7 +181,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         break;
       case "TRACKER_UPDATE":
         if (Array.isArray(msg.companies) && msg.companies.every(isHit) && Number.isFinite(msg.total)) {
-          await session.set({ [ghostsKey(tabId)]: { companies: msg.companies, total: msg.total } });
+          await session.set({ [ghostsKey(tabId)]: { companies: msg.companies.map(clean), total: msg.total } });
         }
         break;
     }

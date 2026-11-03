@@ -144,7 +144,7 @@ describe("EXORCISE / LET_BACK / CLEAR_EXORCISE / TRACKER_UPDATE routing", () => 
     bg.register();
     const listener = m.chrome.runtime.onMessage.listeners[0]!;
     await new Promise((resolve) => listener({ type: "HAUNT", tabId: 8 }, content(7), resolve));
-    expect(m.calls.executeScript).toEqual([{ target: { tabId: 7 }, files: ["content.js"] }]);
+    expect(m.calls.executeScript.map((c: any) => c.target.tabId)).toEqual([7, 7]); // content.js and the MAIN-world hooks, both into tab 7
   });
   test("only domains that belong to the named company are blocked; the rest are dropped silently", async () => {
     const { m, bg } = setup();
