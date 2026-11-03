@@ -32,15 +32,14 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   const exorcist = new Exorcist(api);
 
   /**
-   * The tab a request is about. Popup requests name it in the body; for content-script requests
-   * it is sender.tab.id and a tabId in the body is ignored. An extension page opened as a tab
-   * (the e2e popup) is not the target, so it counts as the popup.
+   * The tab a request is about. Only extension pages (the popup) name it in the body; for any
+   * other sender with a tab it is sender.tab.id and a tabId in the body is ignored. An extension
+   * page opened as a tab (the e2e popup) is not the target.
    */
   function tabOf(msg: Request, sender: chrome.runtime.MessageSender): number | undefined {
     const fromPage = sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) ?? false;
     let id: unknown;
-    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE") id = sender.tab?.id;
-    else if ((msg.type === "EXORCISE" || msg.type === "LET_BACK") && sender.tab && !fromPage) id = sender.tab.id;
+    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || (sender.tab && !fromPage)) id = sender.tab?.id;
     else id = (msg as PopupRequest).tabId;
     return Number.isInteger(id) ? (id as number) : undefined;
   }

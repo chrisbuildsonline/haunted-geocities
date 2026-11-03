@@ -135,6 +135,17 @@ describe("EXORCISE / LET_BACK / CLEAR_EXORCISE / TRACKER_UPDATE routing", () => 
     await bg.handle({ type: "EXORCISE", tabId: 8, company: "Pixco", domains: ["pixel.example"] } as never, content(7));
     expect(m.dnr.rules.map((r) => r.condition.tabIds)).toEqual([[7]]);
   });
+  test("a content script cannot name another tab for UNHAUNT or GET_STATE: sender.tab.id wins", async () => {
+    const { m, bg } = setup();
+    const state = await bg.handle({ type: "GET_STATE", tabId: 999 }, content(7));
+    expect(state.url).toBe("https://example.org/page");
+    await bg.handle({ type: "UNHAUNT", tabId: 8 }, content(7));
+    expect(m.calls.sendMessage).toEqual([{ tabId: 7, msg: { type: "unhaunt" } }]);
+    bg.register();
+    const listener = m.chrome.runtime.onMessage.listeners[0]!;
+    await new Promise((resolve) => listener({ type: "HAUNT", tabId: 8 }, content(7), resolve));
+    expect(m.calls.executeScript).toEqual([{ target: { tabId: 7 }, files: ["content.js"] }]);
+  });
   test("only domains that belong to the named company are blocked; the rest are dropped silently", async () => {
     const { m, bg } = setup();
     await bg.handle(
