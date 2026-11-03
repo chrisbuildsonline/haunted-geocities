@@ -1,24 +1,43 @@
 import { installHooks, restoreHooks } from "../content/hooks";
+import { checkLinks } from "../content/link-check";
 import { lookup } from "../content/matcher";
 import trackerJson from "../data/trackers.json";
 import {
   ghostsKey,
   hauntKey,
+  LINK_CHECK_ORIGINS,
   nonceKey,
+  tombstonesKey,
   type CompanyHit,
   type ContentMessage,
   type ContentRequest,
+  type DeadLink,
   type PopupRequest,
   type TabState,
   type TrackerData,
   type VampireInfo,
 } from "../data/types";
 import { Exorcist } from "./exorcise";
+import { refusedHost } from "./link-guard";
 import { isRestrictedUrl } from "./restricted";
 
 type Request = PopupRequest | ContentRequest;
 
-const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE"]);
+const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE", "CHECK_LINKS", "TOMBSTONE_UPDATE"]);
+
+const isDead = (d: unknown): d is DeadLink =>
+  typeof d === "object" && d !== null && typeof (d as DeadLink).url === "string" && typeof (d as DeadLink).path === "string" && [404, 410].includes((d as DeadLink).status);
+
+/** A URL the cross-site checker may fetch: http(s), and not this machine or the local network. */
+function checkable(u: unknown): u is string {
+  if (typeof u !== "string") return false;
+  try {
+    const url = new URL(u);
+    return (url.protocol === "http:" || url.protocol === "https:") && !refusedHost(url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 const isRequest = (m: unknown): m is Request => typeof m === "object" && m !== null && TYPES.has((m as Request).type);
 
@@ -41,7 +60,7 @@ function clean(c: CompanyHit): CompanyHit {
 const byCountThenName = (a: CompanyHit, b: CompanyHit) => b.count - a.count || (a.company < b.company ? -1 : a.company > b.company ? 1 : 0);
 
 /** The service worker's logic, with chrome (and the tracker data) passed in so tests can hand it mocks. */
-export function createBackground(api: typeof chrome, data: TrackerData = trackerJson as TrackerData) {
+export function createBackground(api: typeof chrome, data: TrackerData = trackerJson as TrackerData, fetchFn: typeof fetch = fetch) {
   const session = api.storage.session;
   const exorcist = new Exorcist(api);
 
@@ -53,7 +72,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   function tabOf(msg: Request, sender: chrome.runtime.MessageSender): number | undefined {
     const fromPage = sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) ?? false;
     let id: unknown;
-    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || (sender.tab && !fromPage)) id = sender.tab?.id;
+    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || msg.type === "TOMBSTONE_UPDATE" || msg.type === "CHECK_LINKS" || (sender.tab && !fromPage)) id = sender.tab?.id;
     else id = (msg as PopupRequest).tabId;
     return Number.isInteger(id) ? (id as number) : undefined;
   }
@@ -76,13 +95,14 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       url,
       ghosts: await reportedGhosts(tabId),
       exorcised: await exorcist.exorcised(tabId),
+      tombstones: ((await session.get(tombstonesKey(tabId)))[tombstonesKey(tabId)] as DeadLink[] | undefined) ?? [],
     };
   }
 
   /** Drop everything the tab's haunt left behind: its block rules and what it reported. */
   async function clearTab(tabId: number) {
     await exorcist.clearTab(tabId);
-    await session.remove([ghostsKey(tabId), nonceKey(tabId)]);
+    await session.remove([ghostsKey(tabId), nonceKey(tabId), tombstonesKey(tabId)]);
   }
 
   async function haunt(tabId: number): Promise<TabState> {
@@ -159,6 +179,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     if (domains.length) await exorcist.exorcise(tabId, company, domains);
   }
 
+  /** Check a haunted content script's cross-site links, if the user granted the origins, and send back the dead ones. */
+  async function checkCrossSite(tabId: number, urls: unknown, sender: chrome.runtime.MessageSender) {
+    if (sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) || !Array.isArray(urls)) return;
+    if ((await session.get(hauntKey(tabId)))[hauntKey(tabId)] !== true) return;
+    if (!(await api.permissions.contains({ origins: LINK_CHECK_ORIGINS }))) return;
+    const dead = await checkLinks(urls.filter(checkable).slice(0, 30), fetchFn);
+    if (dead.length) await api.tabs.sendMessage(tabId, { type: "tombstones", dead } satisfies ContentMessage).catch(() => undefined);
+  }
+
   async function handle(msg: Request, sender: chrome.runtime.MessageSender): Promise<TabState> {
     const tabId = tabOf(msg, sender);
     if (tabId === undefined) throw new Error("No tab for this request.");
@@ -184,6 +213,12 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
           await session.set({ [ghostsKey(tabId)]: { companies: msg.companies.map(clean), total: msg.total } });
         }
         break;
+      case "TOMBSTONE_UPDATE":
+        if (Array.isArray(msg.dead)) await session.set({ [tombstonesKey(tabId)]: msg.dead.filter(isDead).map(({ url, path, status }) => ({ url, path, status })) });
+        break;
+      case "CHECK_LINKS":
+        await checkCrossSite(tabId, msg.urls, sender);
+        break;
     }
     return getState(tabId);
   }
@@ -192,7 +227,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     api.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
       if (sender.id !== api.runtime.id || !isRequest(msg) || tabOf(msg, sender) === undefined) return false;
       handle(msg, sender).then(sendResponse, (e) =>
-        sendResponse({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], error: message(e) } satisfies TabState),
+        sendResponse({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [], error: message(e) } satisfies TabState),
       );
       return true; // keep the channel open for the async answer
     });

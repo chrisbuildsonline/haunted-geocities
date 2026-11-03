@@ -21,7 +21,7 @@ async function mount(opts: Opts = {}) {
   const m = createChromeMock({ tabs: [{ id: 5, url: "https://example.org/a", active: true }], grant: opts.grant });
   if (opts.granted) for (const o of LINK_CHECK_ORIGINS) m.granted.add(o);
   if (opts.audio !== undefined) m.chrome.storage.local.data[AUDIO_KEY] = opts.audio;
-  let state: TabState = { haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], ...opts.state };
+  let state: TabState = { haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], ...opts.state };
   m.backgroundReply = async (msg: { type: string }) => {
     if (msg.type === "HAUNT") state = { ...state, haunted: true };
     if (msg.type === "UNHAUNT") state = { ...state, haunted: false };
@@ -257,7 +257,7 @@ describe("ghost list", () => {
   test("a session storage change refreshes the list, so trackers that load later appear", async () => {
     const { root, m } = await mount({ state: { haunted: true } });
     expect(text(root)).toContain("No ghosts here. Suspiciously clean.");
-    m.backgroundReply = async () => ({ haunted: true, restricted: false, url: "https://example.org/a", ghosts: GHOSTS, exorcised: [] });
+    m.backgroundReply = async () => ({ haunted: true, restricted: false, url: "https://example.org/a", ghosts: GHOSTS, exorcised: [], tombstones: [] });
     for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
     await flush();
     expect(rows(root)).toHaveLength(4);

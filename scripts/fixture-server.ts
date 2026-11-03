@@ -14,6 +14,7 @@ const server = Bun.serve({
     } catch {
       return new Response("Bad request", { status: 400 });
     }
+    if (path === "/gone" || path === "/gone/") return new Response("Gone", { status: 410 });
     if (path.endsWith("/")) path += "index.html";
     const file = normalize(join(dir, path));
     if (!file.startsWith(dir + sep)) return new Response("Not found", { status: 404 });

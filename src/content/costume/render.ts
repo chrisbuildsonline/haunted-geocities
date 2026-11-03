@@ -1,6 +1,8 @@
 // Renders the 1998 crypt costume into the overlay's closed shadow root, plays the haunt moment,
 // and on leave plays the reverse before the host and the page sheet go in one step.
-import { haunt, onUnhaunt, unhaunt } from "../overlay";
+import { HOST_TAG, haunt, onUnhaunt, unhaunt } from "../overlay";
+import { checkLinks } from "../link-check";
+import { collectLinks } from "../links";
 import { buildBands, MARQUEE_LINES, marqueeSeconds, neighborhoodFor, topOffset } from "./bands";
 import { addPageSheet } from "./body-padding";
 import { playHaunt, playUnhaunt, type Moment } from "./haunt-moment";
@@ -9,7 +11,7 @@ import { watchReducedMotion } from "./reduced-motion";
 import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
 import trackerJson from "../../data/trackers.json";
-import type { ContentRequest, TrackerData } from "../../data/types";
+import { LINK_CHECK_ORIGINS, type ContentRequest, type DeadLink, type TrackerData } from "../../data/types";
 import { startScanner, type ScanResult } from "../scanner";
 import { createVampireBridge, type Api } from "../hooks-bridge";
 import { markKnownVampires, mergeVampire } from "../vampire";
@@ -23,6 +25,10 @@ type Costume = {
   setExorcised: (companies: string[]) => void;
   stopScan: () => void;
   startVampires: (nonce: string) => void;
+  addDead: (found: DeadLink[]) => void;
+  /** The slot for the tombstone visuals: called with the full dead list whenever it changes. */
+  onTombstones?: (dead: DeadLink[]) => void;
+  dead: () => DeadLink[];
   moment?: Moment;
   leaving?: Promise<void>;
   rehaunt?: boolean;
@@ -88,10 +94,11 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   let scanned: ScanResult = { companies: [], total: 0 };
   let scan: ScanResult = scanned;
   const catches: [string, Api][] = [];
+  let dead: DeadLink[] = [];
   const refresh = () => {
     scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
     const vampires = scan.companies.filter((c) => c.vampire).length;
-    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: 0, curses: 0 });
+    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: dead.length, curses: 0 });
     setOdometer(hud, scan.total);
     placeGhosts();
     send({ type: "TRACKER_UPDATE", companies: scan.companies, total: scan.total });
@@ -197,10 +204,44 @@ export function renderCostume(doc: Document = document): ShadowRoot {
       refresh();
     }, win);
 
-  const costume: Costume = { root, croot, reduced: () => motion.matches, setExorcised, stopScan: () => scanner.stop(), startVampires };
+  // Tombstones: dead links from the page-origin check here and the background's cross-site check.
+  // Results that arrive once the costume is leaving are ignored.
+  let stopped = false;
+  const addDead = (found: DeadLink[]) => {
+    const known = new Set(dead.map((d) => d.url));
+    const fresh = found.filter((d, i) => !known.has(d.url) && found.findIndex((f) => f.url === d.url) === i);
+    if (stopped || !fresh.length) return;
+    dead = [...dead, ...fresh];
+    refresh();
+    send({ type: "TOMBSTONE_UPDATE", dead });
+    costume.onTombstones?.(dead);
+  };
+  const findDead = async () => {
+    const { sameOrigin, crossSite } = collectLinks(doc, win.location.origin, HOST_TAG);
+    // Content scripts have no chrome.permissions: then the background, which checks the grant itself, decides.
+    const perms = (globalThis as { chrome?: typeof chrome }).chrome?.permissions;
+    if (crossSite.length && (!perms?.contains || (await perms.contains({ origins: LINK_CHECK_ORIGINS }).catch(() => false)))) {
+      send({ type: "CHECK_LINKS", urls: crossSite });
+    }
+    addDead(await checkLinks(sameOrigin));
+  };
+
+  const costume: Costume = {
+    root,
+    croot,
+    reduced: () => motion.matches,
+    setExorcised,
+    stopScan: () => {
+      stopped = true;
+      scanner.stop();
+    },
+    startVampires,
+    addDead,
+    dead: () => dead,
+  };
   costumes.set(doc, costume);
   onUnhaunt(doc, () => {
-    scanner.stop();
+    costume.stopScan();
     bridge.stop();
     closeCard(cards);
     page.remove();
@@ -218,7 +259,25 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   if (animate) costume.moment = playHaunt(croot, motion.matches);
   if (costume.moment) costume.moment.done.then(() => (settled = true));
   else settled = true;
+  // Only inside the extension: unit tests (no chrome global) never touch the network.
+  if ((globalThis as { chrome?: typeof chrome }).chrome?.runtime) void findDead();
   return root;
+}
+
+/** Dead links found so far (same-origin and cross-site), for the tombstone visuals. [] when not haunted. */
+export function deadLinks(doc: Document = document): DeadLink[] {
+  return costumes.get(doc)?.dead() ?? [];
+}
+
+/** The hook for the tombstone visuals: `cb` is called with the full, deduped dead list each time it changes. */
+export function onTombstones(cb: (dead: DeadLink[]) => void, doc: Document = document): void {
+  const c = costumes.get(doc);
+  if (c) c.onTombstones = cb;
+}
+
+/** The background found dead cross-site links: merge them into the costume's list. */
+export function addTombstones(found: DeadLink[], doc: Document = document): void {
+  costumes.get(doc)?.addDead(found);
 }
 
 /** The background says which companies are exorcised in this tab (from the card or the popup). */

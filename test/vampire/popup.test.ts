@@ -20,7 +20,7 @@ function render(ghosts: CompanyHit[], exorcised: string[] = []) {
   const win = new Window({ url: "chrome-extension://x/popup.html" });
   windows.push(win);
   const doc = win.document as unknown as Document;
-  const state: TabState = { haunted: true, restricted: false, url: "https://example.org/", ghosts, exorcised };
+  const state: TabState = { haunted: true, restricted: false, url: "https://example.org/", ghosts, exorcised, tombstones: [] };
   const calls: [string, boolean][] = [];
   doc.body.append(...renderScreen(doc, { state, settings: doc.createElement("div"), onPrimary: () => undefined, onExorcise: (c, e) => calls.push([c, e]) }));
   const text = (el: Element | null) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();

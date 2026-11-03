@@ -2,7 +2,7 @@ import type { PopupRequest, TabState } from "../data/types";
 import { HAUNT_ERROR, renderScreen, screenFor } from "./screens";
 import { createSettings } from "./settings";
 
-const NO_TAB: TabState = { haunted: false, restricted: true, url: null, ghosts: [], exorcised: [] };
+const NO_TAB: TabState = { haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [] };
 
 /** The tab the popup acts on: `?tab=<id>` if given (e2e opens popup.html in a normal tab), else the active tab. */
 async function resolveTab(api: typeof chrome, search: string): Promise<number | undefined> {

@@ -33,6 +33,14 @@ export interface TrackerData {
   entities: Record<string, string[]>;
 }
 
+/** A link that answered 404 or 410: a tombstone. */
+export interface DeadLink {
+  url: string;
+  /** The URL's pathname. */
+  path: string;
+  status: 404 | 410;
+}
+
 /** Popup → background, via chrome.runtime.sendMessage. */
 export type PopupRequest =
   | { type: "HAUNT"; tabId: number }
@@ -45,6 +53,9 @@ export type PopupRequest =
 /** Content script → background; the tab id comes from sender.tab.id, never from the message. */
 export type ContentRequest =
   | { type: "TRACKER_UPDATE"; companies: CompanyHit[]; total: number }
+  /** Cross-site links for the background to check; honoured only for a haunted tab with the optional origins granted. */
+  | { type: "CHECK_LINKS"; urls: string[] }
+  | { type: "TOMBSTONE_UPDATE"; dead: DeadLink[] }
   | { type: "EXORCISE"; company: string; domains?: string[] }
   | { type: "LET_BACK"; company: string }
   | { type: "CLEAR_EXORCISE" };
@@ -55,7 +66,9 @@ export type ContentMessage =
   | { type: "ping" }
   /** The nonce the MAIN-world hooks report catches under. */
   | { type: "vampires"; nonce: string }
-  | { type: "exorcised"; companies: string[] };
+  | { type: "exorcised"; companies: string[] }
+  /** Dead cross-site links the background found. */
+  | { type: "tombstones"; dead: DeadLink[] };
 
 /** What the background answers to every PopupRequest. */
 export interface TabState {
@@ -67,6 +80,8 @@ export interface TabState {
   ghosts: CompanyHit[];
   /** Companies the user has exorcised in this tab (their domains are blocked). */
   exorcised: string[];
+  /** Dead links (404/410) the costume reported; [] when none. */
+  tombstones: DeadLink[];
   /** Set when a HAUNT or UNHAUNT could not be carried out. */
   error?: string;
 }
@@ -76,6 +91,9 @@ export const hauntKey = (tabId: number) => `haunt:${tabId}`;
 
 /** chrome.storage.session key holding `{ companies: CompanyHit[], total: number }` last reported by the tab. */
 export const ghostsKey = (tabId: number) => `ghosts:${tabId}`;
+
+/** chrome.storage.session key holding the `DeadLink[]` last reported by the tab. */
+export const tombstonesKey = (tabId: number) => `tombstones:${tabId}`;
 
 /** chrome.storage.session key holding the random nonce the tab's MAIN-world hooks were installed with. */
 export const nonceKey = (tabId: number) => `nonce:${tabId}`;

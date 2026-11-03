@@ -52,6 +52,8 @@ export const test = base.extend<Fixtures>({
       context.on("console", (m) => {
         // Chromium logs this for every request an Exorcise rule refuses, which exorcise.spec.ts does on purpose.
         if (m.text() === "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT") return;
+        // Chromium logs every 404/410 answer, which the tombstone link check asks for on purpose.
+        if (/^Failed to load resource: the server responded with a status of (404|410)\b/.test(m.text())) return;
         if (m.type() === "error") errors.push(`${m.location().url}: ${m.text()}`);
       });
       context.on("weberror", (e) => errors.push(String(e.error())));

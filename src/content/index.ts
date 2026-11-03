@@ -1,7 +1,7 @@
 // Injected on demand by the background via chrome.scripting.executeScript (never declared
 // as a static content script). Built as a self-contained IIFE: injected files cannot import.
 import type { ContentMessage } from "../data/types";
-import { applyExorcised, leaveCostume, renderCostume, startVampires } from "./costume/render";
+import { addTombstones, applyExorcised, leaveCostume, renderCostume, startVampires } from "./costume/render";
 
 const LISTENING = "__hauntedGeoCitiesListening";
 const g = globalThis as Record<string, unknown>;
@@ -22,6 +22,10 @@ if (!g[LISTENING]) {
     }
     if (msg?.type === "exorcised") {
       if (Array.isArray(msg.companies)) applyExorcised(msg.companies.filter((c) => typeof c === "string"));
+      return false;
+    }
+    if (msg?.type === "tombstones") {
+      if (Array.isArray(msg.dead)) addTombstones(msg.dead.filter((d) => d && typeof d.url === "string" && typeof d.path === "string" && (d.status === 404 || d.status === 410)));
       return false;
     }
     if (msg?.type !== "unhaunt") return false;

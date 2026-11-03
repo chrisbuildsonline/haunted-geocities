@@ -29,6 +29,7 @@ describe("GET_STATE", () => {
       url: "https://example.org/page",
       ghosts: [],
       exorcised: [],
+      tombstones: [],
     });
   });
   test("a chrome:// tab is restricted", async () => {
@@ -39,6 +40,7 @@ describe("GET_STATE", () => {
       url: "chrome://settings",
       ghosts: [],
       exorcised: [],
+      tombstones: [],
     });
   });
   test("reads haunted from storage.session", async () => {
@@ -53,7 +55,7 @@ describe("GET_STATE", () => {
   });
   test("a tab whose URL we cannot read is restricted", async () => {
     const { bg } = setup({ tabs: [{ id: 3 }] });
-    expect(await bg.handle({ type: "GET_STATE", tabId: 3 }, self)).toEqual({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [] });
+    expect(await bg.handle({ type: "GET_STATE", tabId: 3 }, self)).toEqual({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [] });
   });
 });
 
@@ -63,7 +65,7 @@ describe("HAUNT", () => {
     const res = await bg.handle({ type: "HAUNT", tabId: 7 }, self);
     expect(m.calls.executeScript[0]).toEqual({ target: { tabId: 7 }, files: ["content.js"] }); // then the MAIN-world hooks (test/vampire/background.test.ts)
     expect(m.chrome.storage.session.data[hauntKey(7)]).toBe(true);
-    expect(res).toEqual({ haunted: true, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [] });
+    expect(res).toEqual({ haunted: true, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [], tombstones: [] });
   });
   test("refuses a restricted tab without injecting", async () => {
     const { m, bg } = setup();
@@ -122,7 +124,7 @@ describe("router", () => {
       const keepOpen = listener({ type: "GET_STATE", tabId: 7 }, self, resolve);
       expect(keepOpen).toBe(true);
     });
-    expect(reply).toEqual({ haunted: false, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [] });
+    expect(reply).toEqual({ haunted: false, restricted: false, url: "https://example.org/page", ghosts: [], exorcised: [], tombstones: [] });
   });
   test("ignores messages from other extensions and unknown types", () => {
     const { m, bg } = setup();
