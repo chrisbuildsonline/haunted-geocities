@@ -1,8 +1,10 @@
 prototype/
 node_modules/
 dist/
+dist-e2e/
 .git/
 test-results/
+playwright-report/
 .claude/
 .omc/
 design/refs/

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Lantern Hill Gazette</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 680px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #222; }
+      nav a { margin-right: 1rem; }
+      form { display: grid; gap: 0.5rem; max-width: 320px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Lantern Hill Gazette</h1>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="clean.html">Quiet page</a>
+        <a href="#events">Events</a>
+      </nav>
+    </header>
+    <main>
+      <article>
+        <h2>Pumpkin patch reopens on Saturday</h2>
+        <p>The patch behind the old mill opens again this weekend, with hay rides from ten until dusk.</p>
+        <p>Bring a lantern: the path along the creek is unlit after six.</p>
+      </article>
+      <section id="events">
+        <h2>Events</h2>
+        <ul>
+          <li>Friday: storytelling at the library</li>
+          <li>Saturday: pumpkin carving on the green</li>
+        </ul>
+        <p>Read the <a href="clean.html">full calendar</a> for more.</p>
+      </section>
+      <section>
+        <h2>Join the newsletter</h2>
+        <form action="thanks.html" method="get">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required />
+          <label><input name="weekly" type="checkbox" /> Weekly digest</label>
+          <button type="submit">Sign up</button>
+        </form>
+      </section>
+    </main>
+    <footer>
+      <p>Written and printed on Lantern Hill.</p>
+    </footer>
+  </body>
+</html>
