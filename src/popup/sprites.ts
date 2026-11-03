@@ -51,6 +51,37 @@ export type SpriteName = keyof typeof SPRITES;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/** The list-row ghost: ink outline and eyes, white body, the company's hem tint (as in the costume). */
+const TINTED_GHOST = [
+  "...oooooo...",
+  "..oWWWWWWo..",
+  ".oWWWWWWWWo.",
+  "oWWWWWWWWWWo",
+  "oWWooWWooWWo",
+  "oWWooWWooWWo",
+  "oWWWWWWWWWWo",
+  "oWWWWWWWWWWo",
+  "oHHHHHHHHHHo",
+  "oHHHHHHHHHHo",
+  "oHoHHooHHoHo",
+  ".o.oo..oo.o.",
+];
+
+/** The tinted ghost at 2x (24px), decorative. */
+export function tintedGhost(doc: Document, hem: string): SVGSVGElement {
+  const svg = doc.createElementNS(SVG_NS, "svg");
+  for (const [k, v] of Object.entries({ width: "24", height: "24", viewBox: "0 0 12 12", "shape-rendering": "crispEdges", "aria-hidden": "true", focusable: "false" })) {
+    svg.setAttribute(k, v);
+  }
+  for (const [ch, fill] of [["o", "#111318"], ["W", "#ffffff"], ["H", hem]] as const) {
+    const path = doc.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", TINTED_GHOST.flatMap((row, y) => [...row].map((c, x) => (c === ch ? `M${x} ${y}h1v1h-1z` : ""))).join(""));
+    path.setAttribute("fill", fill);
+    svg.appendChild(path);
+  }
+  return svg;
+}
+
 /** An inline, decorative SVG of the named sprite at `size` CSS pixels. */
 export function sprite(doc: Document, name: SpriteName, size: number, className: string): SVGSVGElement {
   const rows = SPRITES[name];

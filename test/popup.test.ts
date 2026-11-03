@@ -200,3 +200,78 @@ describe("Sound effects", () => {
     expect(switchNamed(root, "Sound effects").checked).toBe(true);
   });
 });
+
+describe("ghost list", () => {
+  const g = (company: string, count: number, domains: string[], categories = ["Advertising"]) => ({ company, count, domains, categories, fingerprinting: 0 });
+  const GHOSTS = [
+    g("Taboola", 1, ["taboola.com"]),
+    g("Hotjar", 2, ["hotjar.com", "script.hotjar.com"], ["Analytics"]),
+    g("Criteo", 3, ["criteo.com"]),
+    g("Adzerk", 1, ["adzerk.net"], []),
+  ];
+  const rows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".ghost-row")];
+
+  test("rows sorted by count, then name; name, N domains · category, Exorcise; the ghost tile counts them", async () => {
+    const { root } = await mount({ state: { haunted: true, ghosts: GHOSTS } });
+    expect(rows(root).map((r) => text(r.querySelector(".row-title")))).toEqual(["Criteo", "Hotjar", "Adzerk", "Taboola"]);
+    expect(rows(root).map((r) => text(r.querySelector(".row-sub")))).toEqual([
+      "1 domain · Advertising",
+      "2 domains · Analytics",
+      "1 domain · Tracker",
+      "1 domain · Advertising",
+    ]);
+    expect(rows(root).map((r) => text(r.querySelector("button")))).toEqual(["Exorcise", "Exorcise", "Exorcise", "Exorcise"]);
+    expect(rows(root)[0]!.querySelector(".icon-tile svg")).not.toBeNull();
+    expect(text(root.querySelector('[data-count="ghosts"] .num'))).toBe("4");
+    expect(text(root.querySelector(".list-head"))).toBe("Ghosts 4");
+    expect(text(root)).not.toContain("Suspiciously clean");
+  });
+
+  test("an exorcised row shows the Exorcised pill, dims its text and offers Let it back", async () => {
+    const { root } = await mount({ state: { haunted: true, ghosts: GHOSTS, exorcised: ["Hotjar"] } });
+    const row = rows(root)[1]!;
+    expect(row.classList.contains("exorcised")).toBe(true);
+    expect(text(row.querySelector(".tag-pill"))).toBe("Exorcised");
+    expect(row.querySelector(".row-sub")).toBeNull();
+    expect(text(row.querySelector("button"))).toBe("Let it back");
+  });
+
+  test("Exorcise and Let it back send the tab id and re-render from the answer", async () => {
+    const { root, m } = await mount({ state: { haunted: true, ghosts: GHOSTS } });
+    let exorcised: string[] = [];
+    m.backgroundReply = async (msg: { type: string; company?: string }) => {
+      if (msg.type === "EXORCISE") exorcised = [msg.company!];
+      if (msg.type === "LET_BACK") exorcised = [];
+      return { haunted: true, restricted: false, url: "https://example.org/a", ghosts: GHOSTS, exorcised };
+    };
+    rows(root)[0]!.querySelector("button")!.click();
+    await flush();
+    expect(m.calls.runtimeMessages).toContainEqual({ type: "EXORCISE", tabId: 5, company: "Criteo" });
+    expect(text(rows(root)[0]!.querySelector("button"))).toBe("Let it back");
+    rows(root)[0]!.querySelector("button")!.click();
+    await flush();
+    expect(m.calls.runtimeMessages).toContainEqual({ type: "LET_BACK", tabId: 5, company: "Criteo" });
+    expect(text(rows(root)[0]!.querySelector("button"))).toBe("Exorcise");
+  });
+
+  test("a session storage change refreshes the list, so trackers that load later appear", async () => {
+    const { root, m } = await mount({ state: { haunted: true } });
+    expect(text(root)).toContain("No ghosts here. Suspiciously clean.");
+    m.backgroundReply = async () => ({ haunted: true, restricted: false, url: "https://example.org/a", ghosts: GHOSTS, exorcised: [] });
+    for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
+    await flush();
+    expect(rows(root)).toHaveLength(4);
+    // keyboard focus survives a refresh
+    (root.querySelector(".pill") as HTMLElement).focus();
+    for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
+    await flush();
+    expect(text(root.ownerDocument.activeElement)).toBe("Un-haunt");
+    rows(root)[1]!.querySelector("button")!.focus();
+    for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
+    await flush();
+    expect((root.ownerDocument.activeElement as HTMLElement).dataset.company).toBe("Hotjar");
+    for (const l of m.chrome.storage.onChanged.listeners) l({ audioEnabled: { newValue: true } }, "local");
+    await flush();
+    expect(m.calls.runtimeMessages.filter((x) => (x as { type: string }).type === "GET_STATE")).toHaveLength(4);
+  });
+});

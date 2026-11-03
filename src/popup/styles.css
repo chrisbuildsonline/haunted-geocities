@@ -197,8 +197,111 @@ p {
 }
 
 .list {
-  max-height: 240px;
+  max-height: 280px;
   overflow-y: auto;
+}
+
+/* Ghost list (ref 03): 32px tile + name + muted line, action on the right, no dividers */
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.list-count {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.rows {
+  margin: 0 -8px;
+  padding: 0;
+  list-style: none;
+}
+.ghost-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 8px;
+  border-radius: 12px;
+  transition: background-color var(--fast) var(--ease-out);
+}
+.ghost-row:hover {
+  background: var(--hover);
+}
+.icon-tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--canvas);
+}
+.icon-tile svg {
+  display: block;
+}
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.ghost-row .row-title,
+.ghost-row .row-sub {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+.ghost-row.exorcised .icon-tile,
+.ghost-row.exorcised .row-title,
+.ghost-row.exorcised .row-sub {
+  opacity: 0.6;
+}
+.tag-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+.secondary,
+.quiet {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease-out);
+}
+.secondary {
+  background: #f1ecfb;
+  color: var(--accent);
+}
+.secondary:hover {
+  background: #e6dcf8;
+}
+.quiet {
+  background: var(--canvas);
+  color: var(--ink);
+}
+.quiet:hover {
+  background: #e3e6ec;
 }
 
 /* Settings rows: 56px, title 15 ink, sub-line 13 muted, switch on the right */

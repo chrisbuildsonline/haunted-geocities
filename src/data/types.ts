@@ -41,7 +41,7 @@ export type ContentRequest =
   | { type: "CLEAR_EXORCISE" };
 
 /** Background → content script, via chrome.tabs.sendMessage. */
-export type ContentMessage = { type: "unhaunt" } | { type: "ping" };
+export type ContentMessage = { type: "unhaunt" } | { type: "ping" } | { type: "exorcised"; companies: string[] };
 
 /** What the background answers to every PopupRequest. */
 export interface TabState {

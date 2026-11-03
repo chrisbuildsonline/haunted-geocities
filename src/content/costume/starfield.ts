@@ -89,6 +89,12 @@ export function computeContentColumn(doc: Document, m: Measure = realMeasure(doc
   return { left: Math.max(0, Math.floor(left)), right: Math.min(m.viewportWidth, Math.ceil(right)) };
 }
 
+/** Client rects of the page's text (the ghost lanes skip any slot that crosses one). */
+export const pageTextRects = (doc: Document): DOMRect[] => {
+  const m = realMeasure(doc);
+  return textNodes(doc).flatMap((t) => m.textRects(t));
+};
+
 /** Gutter widths, or null on narrow pages where neither gutter reaches a lane (64px). */
 export function gutterWidths(col: Column, viewportWidth: number): Column | null {
   const left = Math.max(0, col.left);

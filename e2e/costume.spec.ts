@@ -1,42 +1,5 @@
 import type { Page, Worker } from "@playwright/test";
-import { expect, fixture, openPopup, tabIdOf, test } from "./fixtures";
-
-// The costume lives in a closed shadow root, so page scripts cannot reach it. The DevTools
-// protocol can: DOM.getDocument({ pierce: true }) lists closed shadow roots, and resolveNode
-// hands one to the page's main world, where `fn` runs with `this` bound to it.
-type InShadow = <R, A = undefined>(fn: (this: ShadowRoot, arg: A) => R | Promise<R>, arg?: A) => Promise<R>;
-
-async function shadowOf(page: Page): Promise<InShadow> {
-  const cdp = await page.context().newCDPSession(page);
-  type Node = { localName?: string; children?: Node[]; shadowRoots?: { backendNodeId: number }[] };
-  const { root } = (await cdp.send("DOM.getDocument", { depth: -1, pierce: true })) as { root: Node };
-  const find = (n: Node): Node | undefined =>
-    n.localName === "hg-crypt" ? n : (n.children ?? []).map(find).find(Boolean);
-  const host = find(root);
-  if (!host?.shadowRoots?.[0]) throw new Error("no <hg-crypt> shadow root");
-  const { object } = await cdp.send("DOM.resolveNode", { backendNodeId: host.shadowRoots[0].backendNodeId });
-  return async (fn, arg) => {
-    const r = await cdp.send("Runtime.callFunctionOn", {
-      objectId: object.objectId!,
-      functionDeclaration: fn.toString(),
-      arguments: [{ value: arg }],
-      returnByValue: true,
-      awaitPromise: true,
-    });
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description ?? r.exceptionDetails.text);
-    return r.result.value;
-  };
-}
-
-/** Haunt the way the background does (inject content.js), keeping the page in front. */
-async function haunt(sw: Worker, page: Page): Promise<number> {
-  const tabId = await tabIdOf(sw, page);
-  await sw.evaluate(async (id) => {
-    await chrome.scripting.executeScript({ target: { tabId: id }, files: ["content.js"] });
-  }, tabId);
-  await expect(page.locator("hg-crypt")).toHaveCount(1);
-  return tabId;
-}
+import { expect, fixture, haunt, openPopup, shadowOf, tabIdOf, test, type InShadow } from "./fixtures";
 
 /** Un-haunt the way the background does; resolves when the content script answers. */
 async function unhaunt(sw: Worker, tabId: number) {

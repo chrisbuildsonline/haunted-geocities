@@ -1,6 +1,7 @@
-import type { TabState } from "../data/types";
+import { byCountThenName, categoryOf, hemTint } from "../content/costume/ghosts";
+import type { CompanyHit, TabState } from "../data/types";
 import { h } from "./dom";
-import { sprite, type SpriteName } from "./sprites";
+import { sprite, tintedGhost, type SpriteName } from "./sprites";
 
 export type Screen = "idle" | "haunted" | "restricted";
 
@@ -30,11 +31,42 @@ export interface ScreenProps {
   state: TabState;
   settings: HTMLElement;
   onPrimary: () => void;
+  /** Exorcise (or, when `exorcised`, let back) a company. */
+  onExorcise: (company: string, exorcised: boolean) => void;
   error?: string;
 }
 
+function ghostRow(doc: Document, g: CompanyHit, exorcised: boolean, onExorcise: ScreenProps["onExorcise"]): HTMLElement {
+  const n = g.domains.length;
+  const button = h(doc, "button", { type: "button", class: exorcised ? "quiet" : "secondary", "data-company": g.company }, exorcised ? "Let it back" : "Exorcise");
+  button.setAttribute("aria-label", `${exorcised ? "Let it back" : "Exorcise"}: ${g.company}`);
+  button.addEventListener("click", () => onExorcise(g.company, exorcised));
+  return h(
+    doc,
+    "li",
+    { class: exorcised ? "ghost-row exorcised" : "ghost-row" },
+    h(doc, "span", { class: "icon-tile" }, tintedGhost(doc, hemTint(g.company))),
+    h(
+      doc,
+      "span",
+      { class: "row-text" },
+      h(doc, "span", { class: "row-title" }, g.company),
+      h(
+        doc,
+        "span",
+        { class: "row-line" },
+        // Beside "Let it back" the pill fills the line; once exorcised, the state is what matters.
+        exorcised
+          ? h(doc, "span", { class: "tag-pill" }, "Exorcised")
+          : h(doc, "span", { class: "row-sub" }, `${n} ${n === 1 ? "domain" : "domains"} · ${categoryOf(g)}`),
+      ),
+    ),
+    button,
+  );
+}
+
 /** Everything that goes inside #app for one screen. */
-export function renderScreen(doc: Document, { state, settings, onPrimary, error }: ScreenProps): Node[] {
+export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
   const header = h(
     doc,
@@ -83,15 +115,20 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, error 
         ),
       ),
     );
+    tiles.querySelector('[data-count="ghosts"] .num')!.textContent = String(state.ghosts.length);
+    const ghosts = [...state.ghosts].sort(byCountThenName);
+    const list = ghosts.length
+      ? [
+          h(doc, "h2", { class: "list-head" }, "Ghosts ", h(doc, "span", { class: "list-count" }, String(ghosts.length))),
+          h(doc, "ul", { class: "rows" }, ...ghosts.map((g) => ghostRow(doc, g, state.exorcised.includes(g.company), onExorcise))),
+        ]
+      : [
+          h(doc, "p", { class: "lead" }, "No ghosts here. Suspiciously clean."),
+          h(doc, "p", { class: "muted" }, "Trackers that load later will appear here."),
+        ];
     surfaces = [
       h(doc, "section", { class: "surface", "aria-label": "Haunting" }, tiles, pill("Un-haunt"), alert),
-      h(
-        doc,
-        "section",
-        { class: "surface list", "aria-label": "Ghosts and vampires" },
-        h(doc, "p", { class: "lead" }, "No ghosts here. Suspiciously clean."),
-        h(doc, "p", { class: "muted" }, "Trackers that load later will appear here."),
-      ),
+      h(doc, "section", { class: "surface list", "aria-label": "Ghosts and vampires" }, ...list),
     ];
   } else {
     surfaces = [

@@ -79,6 +79,32 @@ button:focus-visible { ${ring} }
 .win95:focus-visible::after { content: ""; position: absolute; inset: 2px; border: 1px dotted ${P.ink}; pointer-events: none; }
 #show-tab:focus-visible { ${ring} }
 
+.ghost { position: absolute; display: flex; flex-direction: column; align-items: center; height: ${L.slotPitch}px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; }
+.sway { display: block; animation: hg-sway ${M.ghostSway.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
+.bob { display: block; animation: hg-bob ${M.ghostBob.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
+.sprite { display: block; width: 48px; height: 48px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); transition: opacity ${M.base}ms linear; }
+.sprite svg { display: block; image-rendering: pixelated; }
+@keyframes hg-bob { from { transform: translateY(-${M.ghostBob.px}px); } to { transform: translateY(${M.ghostBob.px}px); } }
+@keyframes hg-sway { from { transform: translateX(-${M.ghostSway.px}px); } to { transform: translateX(${M.ghostSway.px}px); } }
+.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 11px/14px ${COMIC}; }
+.stack { position: absolute; display: flex; align-items: center; justify-content: center; height: 48px; margin: 0; padding: 0; font: bold 13px ${COMIC}; box-shadow: ${HARD_SHADOW}; }
+.exorcised .sprite { opacity: .4; }
+.exorcised .tag { color: ${P.hudBevelLight}; }
+.stamp { position: absolute; top: 15px; left: 50%; padding: 0 2px; transform: translateX(-50%) rotate(-12deg); background: ${P.crypt}; color: ${P.curse}; border: 2px solid ${P.curse}; font: bold 11px/13px ${COMIC}; box-shadow: 2px 2px 0 ${P.ink}; }
+.ghost:focus-visible { ${ring} }
+
+.card { position: absolute; display: flex; flex-direction: column; box-sizing: border-box; width: ${L.cardWidth}px; max-height: 320px; background: ${P.crypt}; border: 2px solid; border-color: ${P.bevelLight} ${P.bevelDark} ${P.bevelDark} ${P.bevelLight}; box-shadow: ${HARD_SHADOW}; pointer-events: auto; transform-origin: top left; }
+.card .bar { display: flex; flex: none; align-items: center; gap: 6px; height: 22px; padding: 0 3px 0 6px; background: ${P.cryptViolet}; color: ${P.bone}; font: bold 14px ${TIMES}; }
+.card h2 { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
+.card .close { width: 16px; height: 16px; padding: 0; font: bold 11px/10px ${COMIC}; }
+.card-body { padding: 12px; overflow-y: auto; font: 13px/1.35 ${COMIC}; color: ${P.bone}; }
+.card-body p { margin: 0; }
+.card .cat { display: inline-block; margin-bottom: 10px; padding: 0 6px; background: ${P.cryptViolet}; color: ${P.ectoplasm}; border: 1px solid ${P.spectral}; font-size: 11px; line-height: 16px; letter-spacing: .5px; text-transform: uppercase; }
+.domains { margin: 4px 0 10px; padding: 6px 8px 6px 24px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; color: ${P.ectoplasm}; font: 13px/1.4 ${TIMES}; list-style: square; overflow-wrap: anywhere; }
+.seen { margin-bottom: 12px !important; }
+.card .act { display: block; box-shadow: 0 0 0 1px ${P.ink}; }
+.foot { margin-top: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
+
 .vignette { position: absolute; inset: 0; opacity: .4; background: radial-gradient(ellipse at center, transparent 45%, ${P.crypt} 100%); }
 .sweep { position: absolute; top: 0; bottom: 0; left: 0; width: 96px; }
 .webmaster { position: absolute; left: 0; top: calc(50% - 48px); width: 96px; height: 96px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }

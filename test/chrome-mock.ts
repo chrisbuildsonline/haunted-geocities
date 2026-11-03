@@ -68,7 +68,7 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
           return mock.backgroundReply(msg);
         },
       },
-      storage: { session: area(), local: area() },
+      storage: { session: area(), local: area(), onChanged: event() },
       declarativeNetRequest: {
         async updateSessionRules(o: { removeRuleIds?: number[]; addRules?: { id: number }[] }) {
           if (dnr.fail) throw new Error("declarativeNetRequest failed");

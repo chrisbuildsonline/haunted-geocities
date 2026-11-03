@@ -365,10 +365,10 @@ describe("renderCostume", () => {
     expect(root.adoptedStyleSheets).toHaveLength(2);
   });
 
-  test("only the HUD and the Show tab take pointer events", () => {
+  test("only the HUD, the Show tab, ghost sprites and cards take pointer events", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const autos = [...css.matchAll(/([^{}]+)\{[^}]*pointer-events:\s*auto/g)].map((m) => m[1]!.trim());
-    expect(autos.sort()).toEqual(["#hud", "#show-tab"]);
+    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".ghost"]);
     expect(css).toMatch(/#crypt-root\s*\{[^}]*pointer-events:\s*none/);
   });
 

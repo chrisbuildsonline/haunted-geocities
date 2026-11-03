@@ -42,6 +42,27 @@ export const WEBMASTER = [
 ];
 export const WEBMASTER_LEGEND: Legend = { o: P.crypt, W: P.ghostWhite, S: P.ghostShade, Y: P.star };
 
+/** The 16×16 tracker ghost: shaded on its right, round eyes, a small "oo" mouth, a 2-row hem in the company tint. */
+export const GHOST = [
+  ".....oooooo.....",
+  "...ooWWWWWWoo...",
+  "..oWWWWWWWWWSo..",
+  ".oWWWWWWWWWWWSo.",
+  ".oWWWWWWWWWWWSo.",
+  "oWWWooWWWWooWSSo",
+  "oWWWooWWWWooWSSo",
+  "oWWWooWWWWooWSSo",
+  "oWWWWWWWWWWWWSSo",
+  "oWWWWWWooWWWWSSo",
+  "oWWWWWWWWWWWWSSo",
+  "oWWWWWWWWWWWWSSo",
+  "oHHHHHHHHHHHHHHo",
+  "oHHHHHHHHHHHHHHo",
+  "oHHoooHHHHoooHHo",
+  ".oo...oooo...oo.",
+];
+export const ghostLegend = (hem: string): Legend => ({ o: P.crypt, W: P.ghostWhite, S: P.ghostShade, H: hem });
+
 /** The 24×12 under-construction barricade: striped board, two legs, a lamp on each post. */
 export function signFrame(lit: boolean): string[] {
   const board = Array.from({ length: 4 }, (_, r) =>

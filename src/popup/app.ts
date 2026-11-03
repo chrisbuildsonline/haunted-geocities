@@ -26,10 +26,26 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
   const [state, settings] = await Promise.all([ask("GET_STATE"), createSettings(doc, api)]);
 
   const render = (s: TabState, opts: { focus?: boolean; error?: string } = {}) => {
+    // A refresh must not lose a keyboard user's place (the pill or a ghost row's button).
+    const was = doc.activeElement as HTMLElement | null;
+    const company = was?.dataset?.company;
     root.dataset.screen = screenFor(s);
-    root.replaceChildren(...renderScreen(doc, { state: s, settings, onPrimary: () => act(s), error: opts.error }));
-    if (opts.focus) root.querySelector<HTMLButtonElement>(".pill")?.focus();
+    root.replaceChildren(...renderScreen(doc, { state: s, settings, onPrimary: () => act(s), onExorcise, error: opts.error }));
+    if (opts.focus || was?.classList.contains("pill")) root.querySelector<HTMLButtonElement>(".pill")?.focus();
+    else if (company) [...root.querySelectorAll<HTMLElement>("[data-company]")].find((b) => b.dataset.company === company)?.focus();
   };
+
+  const onExorcise = async (company: string, exorcised: boolean) => {
+    if (tabId === undefined) return;
+    const msg: PopupRequest = exorcised ? { type: "LET_BACK", tabId, company } : { type: "EXORCISE", tabId, company };
+    const next = (await api.runtime.sendMessage(msg).catch(() => undefined)) as TabState | undefined;
+    if (next) render(next);
+  };
+
+  // Trackers that load later, and changes made from the costume, arrive through storage.session.
+  api.storage.onChanged.addListener(async (_changes, area) => {
+    if (area === "session" && root.isConnected) render(await ask("GET_STATE"));
+  });
 
   const act = async (current: TabState) => {
     const button = root.querySelector<HTMLButtonElement>(".pill");

@@ -197,6 +197,17 @@ describe("EXORCISE / LET_BACK / CLEAR_EXORCISE / TRACKER_UPDATE routing", () => 
     await bg.handle({ type: "TRACKER_UPDATE", companies: "x", total: 1 } as never, content(7));
     expect(m.chrome.storage.session.data[ghostsKey(7)]).toBeUndefined();
   });
+  test("after EXORCISE and LET_BACK the tab is told which companies are exorcised, so the costume follows the popup", async () => {
+    const { m, bg } = setup();
+    await bg.handle({ type: "EXORCISE", tabId: 7, company: "Pixco", domains: ["pixel.example"] }, popup);
+    expect(m.calls.sendMessage.at(-1)).toEqual({ tabId: 7, msg: { type: "exorcised", companies: ["Pixco"] } });
+    await bg.handle({ type: "LET_BACK", company: "Pixco" }, content(7));
+    expect(m.calls.sendMessage.at(-1)).toEqual({ tabId: 7, msg: { type: "exorcised", companies: [] } });
+    m.contentReply = () => {
+      throw new Error("no receiving end");
+    };
+    expect((await bg.handle({ type: "EXORCISE", tabId: 7, company: "Pixco", domains: ["pixel.example"] }, popup)).exorcised).toEqual(["Pixco"]);
+  });
   test("GET_STATE lists the exorcised companies", async () => {
     const { bg } = setup();
     await bg.handle({ type: "EXORCISE", company: "Pixco", domains: ["pixel.example"] }, content(7));

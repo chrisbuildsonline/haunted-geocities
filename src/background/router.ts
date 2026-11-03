@@ -123,10 +123,13 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       case "UNHAUNT":
         return unhaunt(tabId);
       case "EXORCISE":
-        await exorcise(tabId, msg.company, msg.domains);
-        break;
       case "LET_BACK":
-        if (typeof msg.company === "string") await exorcist.letBack(tabId, msg.company);
+        if (msg.type === "EXORCISE") await exorcise(tabId, msg.company, msg.domains);
+        else if (typeof msg.company === "string") await exorcist.letBack(tabId, msg.company);
+        // The costume follows whichever side (card or popup) made the change.
+        await api.tabs
+          .sendMessage(tabId, { type: "exorcised", companies: await exorcist.exorcised(tabId) } satisfies ContentMessage)
+          .catch(() => undefined);
         break;
       case "CLEAR_EXORCISE":
         await clearTab(tabId);

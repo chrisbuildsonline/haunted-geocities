@@ -1,6 +1,7 @@
 // "The Webmaster's Ghost wipe" (2500ms) and its reverse (1100ms): Web Animations on transform,
 // opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
 import { mapToPx, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
+import { riseIn } from "./ghosts";
 import { MOTION as M, PIXEL } from "./tokens";
 
 export type Moment = { done: Promise<void>; finish(): void };
@@ -52,6 +53,8 @@ export function playHaunt(croot: HTMLElement, reduced: boolean): Moment {
   for (const id of ["starfield", "top-bands"]) {
     run(layer(croot, id), [{ clipPath: clipAt("-80px") }, { clipPath: clipAt("100vw - 16px") }], wipe);
   }
+  // Tracker ghosts rise 16px into their slots, 60ms apart; the 9th onward arrive with the 8th.
+  croot.querySelectorAll("#lanes > *").forEach((g, i) => anims.push(riseIn(g, 1400 + Math.min(i, 7) * 60)));
   run(hud, [{ transform: `translateY(${hudDrop(hud)}px)` }, { transform: "translateY(0px)" }], { delay: 1400, duration: M.slow, easing: M.easeOut });
   // Odometer: each strip rolls from 0 to its digit, the right-hand digit first, all landing at 2300ms.
   const strips = [...hud.querySelectorAll<HTMLElement>(".strip")];
