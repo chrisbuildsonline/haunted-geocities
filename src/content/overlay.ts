@@ -15,7 +15,7 @@ const HOST_CSS = `:host {
   z-index: 2147483647 !important;
 }`;
 
-type Overlay = { host: Element; root: ShadowRoot };
+type Overlay = { host: Element; root: ShadowRoot; cleanups: (() => void)[] };
 
 // Kept on the isolated world's global so re-injecting content.js (a fresh bundle run each
 // time) still finds the overlay it made before. The page's own scripts cannot see it.
@@ -35,12 +35,20 @@ export function haunt(doc: Document = document): ShadowRoot {
   sheet.replaceSync(HOST_CSS);
   root.adoptedStyleSheets = [sheet];
   doc.documentElement.appendChild(host);
-  overlays.set(doc, { host, root });
+  overlays.set(doc, { host, root, cleanups: [] });
   return root;
+}
+
+/** Run `fn` when the current overlay is removed (in the same task as the host removal). */
+export function onUnhaunt(doc: Document, fn: () => void): void {
+  overlays.get(doc)?.cleanups.push(fn);
 }
 
 /** Remove the overlay and everything it added. A no-op when not haunted. */
 export function unhaunt(doc: Document = document): void {
-  overlays.get(doc)?.host.remove();
+  const o = overlays.get(doc);
   overlays.delete(doc);
+  if (!o) return;
+  o.host.remove();
+  for (const fn of o.cleanups) fn();
 }

@@ -7,7 +7,7 @@ export type PopupRequest =
   | { type: "GET_STATE"; tabId: number };
 
 /** Background → content script, via chrome.tabs.sendMessage. */
-export type ContentMessage = { type: "unhaunt" };
+export type ContentMessage = { type: "unhaunt" } | { type: "ping" };
 
 /** What the background answers to every PopupRequest. */
 export interface TabState {
