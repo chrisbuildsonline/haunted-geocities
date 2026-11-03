@@ -8,3 +8,4 @@ playwright-report/
 .claude/
 .omc/
 design/refs/
+data/raw/
