@@ -14,10 +14,13 @@ Steering references: `product.md` (vampire scripts, costume overlay, scope bound
 
 ### MAIN-World Hook Injection
 
-1. On HAUNT, the background shall inject one MAIN-world script via `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", files: [...] })` under the `activeTab` grant, in addition to the existing content-script injection.
-2. The MAIN-world injection shall be idempotent per document: if the hooks are already installed on that document's globals, the script shall not re-install them.
-3. The MAIN-world script shall receive a random per-haunt nonce string as an `executeScript` argument (`args`), and shall use that nonce as the CustomEvent name for reporting to the content script.
+1. On HAUNT, the background shall inject the content script (existing), send the tab `{ type: "vampires", nonce }` via `chrome.tabs.sendMessage` (a new `ContentMessage` variant), and then inject the MAIN-world hook via `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", func: installHooks, args: [nonce] })` under the `activeTab` grant. The hook is a self-contained function exported by `src/content/hooks.ts`; no separate `hooks.js` or `hooks-restore.js` bundle is built.
+2. The background shall keep one nonce per haunted tab in `chrome.storage.session` under `nonce:<tabId>` and reuse the same nonce for re-injection into that tab; a new nonce is generated only on the first haunt of that tab.
+3. The MAIN-world hook shall receive the nonce as the first argument of `installHooks(nonce)` and shall use that nonce as the CustomEvent name for reporting to the content script.
 4. The extension shall not request any new permissions beyond `activeTab`, `scripting`, `declarativeNetRequest`, and `storage` for this feature.
+4a. The hook shall keep all state (original descriptors, idempotency flag, font/text tracking sets, event listeners) in a closure. It shall not set any property on `window` or any other global — no `__hgNonce`, `__hgHooksInstalled`, `__hgRestore`, or any similar property. Nothing the hook creates shall be visible to the page's own scripts.
+4b. Before installing wrappers, the hook shall dispatch a synchronous `CustomEvent` on `window` with type `<nonce>:ping` and `detail: { installed: false }`. If an already-installed closure is present, its listener sets `detail.installed = true` and the new invocation returns without installing. This is the idempotency check.
+4c. The content script shall receive the nonce from the `{ type: "vampires", nonce }` message and use it to listen for CustomEvents. The content script cannot read `chrome.storage.session` directly, so the background delivers the nonce via `chrome.tabs.sendMessage` after injecting the content script and before injecting the hook.
 
 ### Observe-Only Wrappers
 
@@ -84,9 +87,9 @@ Steering references: `product.md` (vampire scripts, costume overlay, scope bound
 
 ### Un-Haunt Restore
 
-41. On un-haunt, the content script shall signal the MAIN-world hooks to restore the original property descriptors on all wrapped prototypes. The hooks shall remove every wrapper and put back the exact original `PropertyDescriptor` (value, get, set, configurable, enumerable, writable) that was present before the hooks were installed.
+41. On un-haunt, the background shall dispatch a `CustomEvent` on the target tab's `window` with type `<nonce>:restore` via `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", func, args })`, passing the nonce. The installed closure listens for `<nonce>:restore` and, on receipt, restores the original property descriptors on all wrapped prototypes, removes its `<nonce>:ping` listener, and nulls its internal state so no references remain.
 42. After un-haunt, `HTMLCanvasElement.prototype.toDataURL`, `HTMLCanvasElement.prototype.toBlob`, `CanvasRenderingContext2D.prototype.getImageData`, `CanvasRenderingContext2D.prototype.measureText`, and `OfflineAudioContext.prototype.startRendering` shall be the same function objects they were before haunting (identity-equal to the originals).
-43. After un-haunt, `document.documentElement.outerHTML` shall be byte-identical to its pre-haunt value. No wrapper, listener, or data structure installed by the hooks shall remain.
+43. After un-haunt, `document.documentElement.outerHTML` shall be byte-identical to its pre-haunt value. No wrapper, listener, or data structure installed by the hooks shall remain. No property shall remain on `window` from the hooks (because the hooks never set any).
 
 ### Non-Destructive DOM
 
@@ -110,7 +113,7 @@ Steering references: `product.md` (vampire scripts, costume overlay, scope bound
 
 ### Tests
 
-55. Unit tests shall verify that each wrapper calls the original with the same arguments, returns the same result, rethrows the same exceptions, preserves `name`/`length`/`toString`, and that the originals are restored after un-haunt (identity-equal). The test shall also verify that the nonce CustomEvent name is a random string per haunt.
+55. Unit tests shall verify that each wrapper calls the original with the same arguments, returns the same result, rethrows the same exceptions, preserves `name`/`length`/`toString`, and that the originals are restored after un-haunt (identity-equal). The test shall verify that the nonce CustomEvent name is a random string per haunt, that the `<nonce>:ping` idempotency check prevents double-installation, that the `<nonce>:restore` event restores the originals and removes the ping listener, and that no property is set on `window` by the hook.
 56. Unit tests shall verify attribution: a known tracker host resolves to its company; an unlisted third-party host becomes a vampire named by that host; a first-party caller is ignored.
 57. Unit tests shall verify the merge: a caught report for a company already in the scanner results extends its `vampire.caught` array (deduplicated); a report for an unlisted host creates a new `CompanyHit` with `vampire.caught` set and `count: 0`.
 58. A fixture page `fixtures/vampires.html` shall contain a sign-up form whose scripts, served from hosts mapped by `--host-resolver-rules` (one tracker host from `trackers.json` with `fingerprinting: 0`, one unlisted host), fingerprint canvas, audio, and fonts when the email field gets focus.

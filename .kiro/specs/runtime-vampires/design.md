@@ -16,14 +16,15 @@ Steering references: `non-destructive-dom.md` (observe-only wrappers on `toDataU
 │                                                                               │
 │    router.ts  haunt()                                                         │
 │      ├── chrome.scripting.executeScript({ target, files: ["content.js"] })   │
-│      └── chrome.scripting.executeScript({ target, world: "MAIN",             │
-│             files: ["hooks.js"], args: [nonce] })                             │
+│      ├── chrome.tabs.sendMessage(tabId, { type: "vampires", nonce })          │
+│      └── chrome.scripting.executeScript({ target, world: "MAIN",              │
+│             func: installHooks, args: [nonce] })                               │
 │                                                                               │
-│    nonce = crypto.randomUUID()  (stored in session for idempotency check)      │
+│    nonce = crypto.randomUUID()  (stored in session nonce:<tabId>, reused)      │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  MAIN WORLD  (hooks.js — same JS context as the page's scripts)              │
+│  MAIN WORLD  (installHooks(nonce) — same JS context as the page's scripts)   │
 │                                                                               │
 │    installs wrappers on window's prototypes:                                  │
 │      HTMLCanvasElement.prototype.toDataURL / toBlob                            │
@@ -31,18 +32,24 @@ Steering references: `non-destructive-dom.md` (observe-only wrappers on `toDataU
 │      OfflineAudioContext.prototype.startRendering                             │
 │      CanvasRenderingContext2D.prototype.measureText                            │
 │                                                                               │
+│    all state in a closure — nothing on window:                                │
+│      • original descriptors, font/text tracking sets                           │
+│      • <nonce>:ping listener (idempotency check)                              │
+│      • <nonce>:restore listener (cleanup)                                    │
+│                                                                               │
 │    each wrapper:                                                              │
 │      1. calls original with same this + args                                   │
 │      2. on success: dispatches CustomEvent(nonce, { api, scriptUrl })         │
 │      3. returns result / rethrows exception unchanged                         │
 │      4. name, length, toString preserved                                      │
 │                                                                               │
-│    restores originals on signal (cleanup symbol on window)                    │
+│    restores originals on <nonce>:restore event                                │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  ISOLATED WORLD  (content.js — content script)                                │
 │                                                                               │
+│    receives { type: "vampires", nonce } via chrome.tabs.sendMessage           │
 │    window.addEventListener(nonce, handler)                                    │
 │      validates { api, scriptUrl }                                             │
 │      deduplicates (scriptUrl, api)                                            │
@@ -60,9 +67,13 @@ Steering references: `non-destructive-dom.md` (observe-only wrappers on `toDataU
 ```
 src/
   background/
-    router.ts            # (modified) injects hooks.js in MAIN world on HAUNT
+    router.ts            # (modified) injects installHooks in MAIN world on HAUNT,
+                         #   sends { type: "vampires", nonce } to tab, dispatches
+                         #   <nonce>:restore on UNHAUNT
   content/
-    hooks.ts             # NEW: MAIN-world wrapper script (built as hooks.js)
+    hooks.ts             # NEW: exports installHooks(nonce) — self-contained MAIN-world
+                         #   wrapper installer. Injected via func/args, not a bundle.
+                         #   All state in a closure; nothing on window.
     hooks-bridge.ts      # NEW: isolated-world listener, attribution, merge
     costume/
       render.ts          # (modified) wires vampire bridge + sprites + HUD
@@ -83,7 +94,8 @@ src/
 
 test/
   vampire/
-    hooks.test.ts        # wrapper identity, same results, restore, toString, nonce
+    hooks.test.ts        # wrapper identity, same results, restore, toString, nonce,
+                         #   ping idempotency, restore event, no window pollution
     attribution.test.ts  # known tracker → company, unlisted → host, first-party → ignored
     merge.test.ts        # caught extends existing, unlisted creates new, dedup
 
@@ -96,36 +108,88 @@ e2e/
 
 ## MAIN-World Hook Script (`src/content/hooks.ts`)
 
-The hook script is built as a standalone IIFE (`hooks.js`), injected via `chrome.scripting.executeScript({ world: "MAIN" })`. Like `content.js`, it cannot use ES module imports at runtime — Vite bundles it as a self-contained file.
+The hook is a self-contained function `installHooks(nonce: string)` exported from `src/content/hooks.ts`. The background injects it via `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", func: installHooks, args: [nonce] })`. Because `executeScript` with `func` passes `args` as the function's parameters, the nonce arrives as the first argument. No separate `hooks.js` or `hooks-restore.js` bundle is built — `func` injection runs the function directly in the MAIN world.
+
+All state — original descriptors, idempotency flag, font/text tracking sets, event listeners — lives in the closure created by `installHooks`. Nothing is set on `window` or any other global.
 
 ### Installation
 
 ```ts
-// hooks.ts (bundled as hooks.js)
-// The nonce is passed as executeScript args[0].
-const nonce = (globalThis as { __hgNonce?: string }).__hgNonce;
+// hooks.ts — exported function, injected via executeScript({ func, args })
+export function installHooks(nonce: string): void {
+  // ── Idempotency check: dispatch <nonce>:ping synchronously ──────────────
+  // If an already-installed closure is listening, it sets detail.installed = true.
+  const pingEvent = new CustomEvent(`${nonce}:ping`, {
+    detail: { installed: false },
+    cancelable: true,
+  });
+  window.dispatchEvent(pingEvent);
+  if ((pingEvent.detail as { installed: boolean }).installed) return; // already installed
 
-// Idempotent: if already installed on this window, do nothing.
-const MARK = "__hgHooksInstalled";
-if ((globalThis as Record<string, unknown>)[MARK]) return;
-(globalThis as Record<string, unknown>)[MARK] = true;
+  // ── Save original descriptors ──────────────────────────────────────────
+  const descriptors = {
+    toDataURL: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "toDataURL")!,
+    toBlob: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "toBlob")!,
+    getImageData: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "getImageData")!,
+    startRendering: Object.getOwnPropertyDescriptor(OfflineAudioContext.prototype, "startRendering")!,
+    measureText: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "measureText")!,
+    fillText: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "fillText")!,
+    strokeText: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "strokeText")!,
+    font: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "font")!,
+  };
+  const originals = {
+    toDataURL: HTMLCanvasElement.prototype.toDataURL,
+    toBlob: HTMLCanvasElement.prototype.toBlob,
+    getImageData: CanvasRenderingContext2D.prototype.getImageData,
+    startRendering: OfflineAudioContext.prototype.startRendering,
+    measureText: CanvasRenderingContext2D.prototype.measureText,
+    fillText: CanvasRenderingContext2D.prototype.fillText,
+    strokeText: CanvasRenderingContext2D.prototype.strokeText,
+  };
 
-// Save original descriptors.
-const descriptors = {
-  toDataURL: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "toDataURL")!,
-  toBlob: Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, "toBlob")!,
-  getImageData: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "getImageData")!,
-  startRendering: Object.getOwnPropertyDescriptor(OfflineAudioContext.prototype, "startRendering")!,
-  measureText: Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, "measureText")!,
-};
-const originals = {
-  toDataURL: HTMLCanvasElement.prototype.toDataURL,
-  toBlob: HTMLCanvasElement.prototype.toBlob,
-  getImageData: CanvasRenderingContext2D.prototype.getImageData,
-  startRendering: OfflineAudioContext.prototype.startRendering,
-  measureText: CanvasRenderingContext2D.prototype.measureText,
-};
+  // ── Tracking sets (closure state, not window) ───────────────────────────
+  const textContexts = new WeakSet<CanvasRenderingContext2D>();
+  const fontFamiliesByContext = new WeakMap<CanvasRenderingContext2D, Set<string>>();
+  const allFontSets = new Set<string>(); // global dedup across contexts
+
+  // ── dispatch, extractScriptUrl, makeWrapper, wrappers ───────────────────
+  // (see below — all defined inside this closure, using `nonce` and the sets above)
+
+  // ── Install <nonce>:ping listener for idempotency ───────────────────────
+  // Future calls to installHooks with the same nonce will find this listener.
+  const pingListener = (e: Event) => {
+    const detail = (e as CustomEvent).detail as { installed: boolean };
+    if (detail) detail.installed = true;
+  };
+  window.addEventListener(`${nonce}:ping`, pingListener);
+
+  // ── Install <nonce>:restore listener for cleanup ────────────────────────
+  const restoreListener = () => {
+    Object.defineProperty(HTMLCanvasElement.prototype, "toDataURL", descriptors.toDataURL);
+    Object.defineProperty(HTMLCanvasElement.prototype, "toBlob", descriptors.toBlob);
+    Object.defineProperty(CanvasRenderingContext2D.prototype, "getImageData", descriptors.getImageData);
+    Object.defineProperty(CanvasRenderingContext2D.prototype, "measureText", descriptors.measureText);
+    Object.defineProperty(CanvasRenderingContext2D.prototype, "fillText", descriptors.fillText);
+    Object.defineProperty(CanvasRenderingContext2D.prototype, "strokeText", descriptors.strokeText);
+    Object.defineProperty(CanvasRenderingContext2D.prototype, "font", descriptors.font);
+    Object.defineProperty(OfflineAudioContext.prototype, "startRendering", descriptors.startRendering);
+    window.removeEventListener(`${nonce}:ping`, pingListener);
+    window.removeEventListener(`${nonce}:restore`, restoreListener);
+    // Closure state (descriptors, sets, listeners) becomes unreachable after this.
+  };
+  window.addEventListener(`${nonce}:restore`, restoreListener);
+
+  // ── Install wrappers ───────────────────────────────────────────────────
+  // (toDataURL, toBlob, getImageData, startRendering, measureText,
+  //  fillText, strokeText, font setter — see wrapper sections below)
+}
 ```
+
+The key differences from the old design:
+- **No `window.__hgNonce`**: the nonce is a parameter of `installHooks`, captured in the closure.
+- **No `window.__hgHooksInstalled`**: idempotency is via the `<nonce>:ping` CustomEvent. If the closure is already installed, its `pingListener` sets `detail.installed = true` on the synchronous ping event, and the new invocation returns.
+- **No `window.__hgRestore`**: restore is via the `<nonce>:restore` CustomEvent, dispatched by the background. The closure's `restoreListener` does the cleanup.
+- **All state in the closure**: `descriptors`, `originals`, `textContexts`, `fontFamiliesByContext`, `allFontSets`, `pingListener`, `restoreListener` are all local variables inside `installHooks`. After restore, the closure becomes unreachable.
 
 ### Wrapper pattern
 
@@ -157,12 +221,11 @@ function makeWrapper(origFn: Function, api: "canvas" | "audio" | "fonts", report
 }
 ```
 
-The `dispatch` function extracts the calling script URL from `new Error().stack` and dispatches the CustomEvent:
+The `dispatch` function extracts the calling script URL from `new Error().stack` and dispatches the CustomEvent. Because `installHooks` is injected via `func` (not a file), the hook's own stack frame does not contain a script URL — it appears as an anonymous function. `extractScriptUrl` skips frames that are not `http(s)` URLs:
 
 ```ts
 function dispatch(api: "canvas" | "audio" | "fonts") {
   const stack = new Error().stack ?? "";
-  // First http(s) URL that is not this hook script's own URL.
   const scriptUrl = extractScriptUrl(stack);
   if (!scriptUrl) return;
   window.dispatchEvent(new CustomEvent(nonce, { detail: { api, scriptUrl } }));
@@ -171,8 +234,8 @@ function dispatch(api: "canvas" | "audio" | "fonts") {
 function extractScriptUrl(stack: string): string | null {
   const lines = stack.split("\n");
   for (const line of lines) {
-    // Skip the hook frame (this file).
-    if (line.includes("hooks.js")) continue;
+    // The hook's own frame is an anonymous function injected via executeScript;
+    // it has no http(s) URL, so it is naturally skipped by the URL match.
     const match = line.match(/https?:\/\/[^\s)]+/);
     if (match) return match[0];
   }
@@ -290,51 +353,41 @@ const toBlobWrapper = function (this: HTMLCanvasElement, ...args: unknown[]) {
 
 ### Restore
 
-The hook script stores a cleanup function on `window` that the content script calls (via a CustomEvent) on un-haunt:
+The closure installs a `<nonce>:restore` event listener (shown in the Installation section above). When the background dispatches `<nonce>:restore` on the target tab's `window` (via `executeScript({ func, args })`), the `restoreListener` restores every original descriptor via `Object.defineProperty`, removes both the `<nonce>:ping` and `<nonce>:restore` listeners, and nulls its reference to the state. After restore, the closure is unreachable and all state is garbage-collected.
 
-```ts
-// Store cleanup on window for the content script to trigger.
-(globalThis as Record<string, unknown>)["__hgRestore"] = function () {
-  // Restore exact original descriptors.
-  Object.defineProperty(HTMLCanvasElement.prototype, "toDataURL", descriptors.toDataURL);
-  Object.defineProperty(HTMLCanvasElement.prototype, "toBlob", descriptors.toBlob);
-  Object.defineProperty(CanvasRenderingContext2D.prototype, "getImageData", descriptors.getImageData);
-  Object.defineProperty(CanvasRenderingContext2D.prototype, "measureText", descriptors.measureText);
-  Object.defineProperty(CanvasRenderingContext2D.prototype, "font", fontDesc);
-  Object.defineProperty(CanvasRenderingContext2D.prototype, "fillText", descriptors.fillText);
-  Object.defineProperty(CanvasRenderingContext2D.prototype, "strokeText", descriptors.strokeText);
-  Object.defineProperty(OfflineAudioContext.prototype, "startRendering", descriptors.startRendering);
-  delete (globalThis as Record<string, unknown>)[MARK];
-  delete (globalThis as Record<string, unknown>)["__hgRestore"];
-  delete (globalThis as Record<string, unknown>)["__hgNonce"];
-};
-```
-
-The content script triggers restore by dispatching a CustomEvent named `__hgRestore` (or calling `window.__hgRestore()` via `executeScript` again). The simplest approach: the background injects a second MAIN-world script on UNHAUNT that calls the cleanup function.
+Because the hooks never set any property on `window`, there is nothing to `delete` — the only traces (the two event listeners) are removed by `removeEventListener` inside `restoreListener`.
 
 ## Background Integration (`src/background/router.ts`)
 
 ### HAUNT
 
-The `haunt()` function is modified to inject the hook script alongside the content script:
+The `haunt()` function is modified to inject the content script, send the nonce to the tab via `chrome.tabs.sendMessage`, and then inject the hook function in the MAIN world:
 
 ```ts
+import { installHooks } from "../content/hooks";
+
 async function haunt(tabId: number): Promise<TabState> {
   const state = await getState(tabId);
   if (state.restricted) return state;
   try {
-    // Content script (isolated world) — existing.
+    // 1. Content script (isolated world) — existing.
     await api.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
-    // MAIN-world hooks — new. Generate a random nonce per haunt.
-    const nonce = crypto.randomUUID();
+
+    // 2. Generate or reuse nonce for this tab.
+    const existing = await session.get(`nonce:${tabId}`);
+    const nonce = existing ?? crypto.randomUUID();
+    await session.set({ [`nonce:${tabId}`]: nonce });
+
+    // 3. Send nonce to content script (it cannot read storage.session).
+    await api.tabs.sendMessage(tabId, { type: "vampires", nonce } satisfies ContentMessage);
+
+    // 4. Inject hooks in MAIN world via func + args.
     await api.scripting.executeScript({
       target: { tabId },
       world: "MAIN",
-      files: ["hooks.js"],
+      func: installHooks,
       args: [nonce],
     });
-    // Store the nonce in session so re-injection can check idempotency.
-    await session.set({ [`nonce:${tabId}`]: nonce });
   } catch (e) {
     return { ...state, error: message(e) };
   }
@@ -345,18 +398,23 @@ async function haunt(tabId: number): Promise<TabState> {
 
 ### UNHAUNT
 
-The `unhaunt()` function is modified to inject a restore script in the MAIN world before sending the `unhaunt` message to the content script:
+The `unhaunt()` function dispatches `<nonce>:restore` in the MAIN world before sending the `unhaunt` message to the content script. No separate restore bundle is needed — a small inline function is injected via `func`:
 
 ```ts
 async function unhaunt(tabId: number): Promise<TabState> {
   // Restore MAIN-world prototypes.
-  try {
-    await api.scripting.executeScript({
-      target: { tabId },
-      world: "MAIN",
-      files: ["hooks-restore.js"],
-    });
-  } catch { /* page already gone */ }
+  const existing = await session.get(`nonce:${tabId}`);
+  if (existing) {
+    const nonce = existing as string;
+    try {
+      await api.scripting.executeScript({
+        target: { tabId },
+        world: "MAIN",
+        func: (n: string) => window.dispatchEvent(new CustomEvent(`${n}:restore`)),
+        args: [nonce],
+      });
+    } catch { /* page already gone */ }
+  }
   // Existing: send unhaunt message to content script.
   try {
     await api.tabs.sendMessage(tabId, { type: "unhaunt" } satisfies ContentMessage);
@@ -368,23 +426,24 @@ async function unhaunt(tabId: number): Promise<TabState> {
 }
 ```
 
-`hooks-restore.js` is a trivial IIFE that calls `window.__hgRestore?.()`:
-
-```ts
-// hooks-restore.ts (bundled as hooks-restore.js)
-(globalThis as Record<string, unknown>)["__hgRestore"]?.();
-```
-
 ### Nonce delivery
 
-The `executeScript` `args` array passes the nonce to the MAIN-world script. Inside `hooks.js`, the args are available as the function's parameters. Vite bundles the script as an IIFE; the `args` arrive as the IIFE's call arguments:
+Content scripts run in an isolated world and cannot access `chrome.storage.session`. The background delivers the nonce to the content script via `chrome.tabs.sendMessage(tabId, { type: "vampires", nonce })`. This message is a new `ContentMessage` variant:
 
 ```ts
-// hooks.ts entry:
-export default function (nonce: string) { /* install wrappers using nonce */ }
+type ContentMessage =
+  | { type: "haunt" }
+  | { type: "unhaunt" }
+  | { type: "vampires"; nonce: string }   // NEW
+  | { type: "EXORCISE"; company: string; domains: string[] }
+  | ...;
 ```
 
-Vite's IIFE format wraps this so `chrome.scripting.executeScript({ args: [nonce] })` passes `nonce` as the first argument.
+The content script listens for `{ type: "vampires", nonce }`, uses the nonce to start the vampire bridge (listening for CustomEvents with that nonce as the type), and then the background injects the hook.
+
+### `executeScript` with `func` instead of `files`
+
+`chrome.scripting.executeScript` passes `args` to the injected function's parameters only when using `func`, not `files`. With `files`, the script is loaded as a file and `args` are ignored. Therefore `installHooks` is injected via `func: installHooks, args: [nonce]`, and the restore dispatch uses `func: (n) => window.dispatchEvent(...), args: [nonce]`. No `hooks.js` or `hooks-restore.js` bundles are built.
 
 ## Isolated-World Bridge (`src/content/hooks-bridge.ts`)
 
@@ -728,14 +787,17 @@ import { createVampireBridge } from "../hooks-bridge";
 // In renderCostume(), after scanner setup:
 const bridge = createVampireBridge();
 
-// The nonce comes from the background's session storage (or from a message).
-// The background sets it in session before injecting hooks.js.
-const nonce = await session.get(`nonce:${tabId}`);
-bridge.start(nonce, win.location.hostname, (company, api) => {
-  // Merge vampire info into the scanner results.
-  scan = { ...scan, companies: mergeVampire(scan.companies, company, api) };
-  // Update HUD, ghosts/vampires, and popup.
-  updateAll(scan);
+// The nonce arrives via the { type: "vampires", nonce } message from the background.
+// The content script cannot read chrome.storage.session directly.
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === "vampires" && typeof msg.nonce === "string") {
+    bridge.start(msg.nonce, win.location.hostname, (company, api) => {
+      // Merge vampire info into the scanner results.
+      scan = { ...scan, companies: mergeVampire(scan.companies, company, api) };
+      // Update HUD, ghosts/vampires, and popup.
+      updateAll(scan);
+    });
+  }
 });
 
 // On scanner update, also mark known vampires:
@@ -754,21 +816,22 @@ onUnhaunt(doc, () => {
 
 ### Nonce delivery
 
-The background stores the nonce in `chrome.storage.session` under `nonce:${tabId}`. The content script reads it on haunt. Alternatively, the background can send the nonce via a `chrome.tabs.sendMessage` after injection. The session-storage approach is simpler and consistent with the existing haunt-key pattern.
+The background sends `{ type: "vampires", nonce }` via `chrome.tabs.sendMessage` after injecting the content script and before injecting the hook. The content script receives this message in its `chrome.runtime.onMessage` handler, starts the vampire bridge, and is ready to receive CustomEvents before the first wrapper call can fire.
 
 ## Non-Destructive Guarantee
 
 - The hooks install wrappers on five prototype methods + two tracking wrappers (`fillText`, `strokeText`) + one property descriptor (`font`). All are restored on un-haunt via `Object.defineProperty` with the exact original descriptors saved at install time.
 - The wrappers call the original with the same `this` and arguments, return the same result, and rethrow the same exceptions. The page's behaviour is identical.
 - The only observable side effect is the `CustomEvent` dispatch, which uses a random nonce unknown to the page. The page's own scripts cannot listen for it (they don't know the event name).
-- The `WeakSet` (text contexts) and `WeakMap` (font families) are per-document and are discarded when the page navigates or un-haunts.
+- The `WeakSet` (text contexts) and `WeakMap` (font families) are per-document closure state and are discarded when the page navigates or un-haunts.
+- No property is ever set on `window` — the hooks use a closure for all state. After restore, the closure is unreachable and the two event listeners (`<nonce>:ping`, `<nonce>:restore`) are removed.
 - After un-haunt, all wrapped methods are the original function objects (identity-equal). `document.documentElement.outerHTML` is unchanged (the hooks don't touch the DOM).
 
 ## Test Strategy
 
 ### Unit tests (`test/vampire/`)
 
-- **`hooks.test.ts`**: installs wrappers on a mock `window`, calls each wrapped method, asserts: same result as original, same exception, `name`/`length`/`toString` preserved, restore puts back the exact original descriptors (identity-equal). Tests the canvas-text heuristic (getImageData reports only after fillText/strokeText), the font-probing threshold (measureText reports after 20 distinct font families), and the nonce (random per haunt, different from previous).
+- **`hooks.test.ts`**: calls `installHooks(nonce)` on a mock `window`, calls each wrapped method, asserts: same result as original, same exception, `name`/`length`/`toString` preserved, restore via dispatching `<nonce>:restore` puts back the exact original descriptors (identity-equal). Tests the canvas-text heuristic (getImageData reports only after fillText/strokeText), the font-probing threshold (measureText reports after 20 distinct font families), the nonce (random per haunt, different from previous), the `<nonce>:ping` idempotency check (second `installHooks` call with same nonce is a no-op), and that no property is set on `window` by the hook.
 - **`attribution.test.ts`**: feeds `{ api, scriptUrl }` reports with various script URLs (known tracker host, unlisted third-party host, first-party host), asserts the company/host resolution and first-party ignoring.
 - **`merge.test.ts`**: starts with scanner results, feeds caught reports, asserts the `vampire.caught` array is extended (deduplicated), a report for an unlisted host creates a new `CompanyHit` with `count: 0`, and a known vampire (fingerprinting ≥ 2) gets `knownOnly: true`.
 
@@ -817,11 +880,11 @@ email.addEventListener("focus", () => {
 1. Launch Chromium with `--host-resolver-rules` mapping the tracker host and unlisted host to `127.0.0.1`.
 2. Navigate to `fixtures/vampires.html`.
 3. Capture `toDataURL()` result before haunting.
-4. Haunt (inject content.js + hooks.js).
+4. Haunt (inject content.js + send nonce + inject `installHooks` via `func`).
 5. Focus the email field → trigger fingerprinting.
 6. Assert caught vampires appear in `#lanes` inside the shadow root.
 7. Assert the vampire card opens with `Caught doing: canvas, audio, fonts` and the honest line.
 8. Assert `toDataURL()` returns the same data URL as before haunting.
-9. Un-haunt.
+9. Un-haunt (background dispatches `<nonce>:restore` + sends `unhaunt` message).
 10. Assert prototypes are restored: `HTMLCanvasElement.prototype.toDataURL === originalToDataURL` (identity check).
 11. Assert `document.documentElement.outerHTML` is byte-identical.

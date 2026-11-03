@@ -16,9 +16,9 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
 
 ## 2. MAIN-World Hook Script
 
-- [ ] 2.1 Create `src/content/hooks.ts` (bundled as `hooks.js` IIFE). Accept a nonce string as the first argument. Save original property descriptors for `toDataURL`, `toBlob`, `getImageData`, `startRendering`, `measureText`, plus `fillText`, `strokeText` (tracking wrappers), and the `font` property setter. Store the nonce on `window.__hgNonce`.
-  - Req: 1, 3, 5, 11
-  - Test: `test/vampire/hooks.test.ts` → `"hooks save original descriptors before installing wrappers"`.
+- [ ] 2.1 Create `src/content/hooks.ts` exporting `installHooks(nonce: string)`. The function is injected via `executeScript({ func, args })`, receiving the nonce as its first parameter. Save original property descriptors for `toDataURL`, `toBlob`, `getImageData`, `startRendering`, `measureText`, plus `fillText`, `strokeText` (tracking wrappers), and the `font` property setter. Keep all state (descriptors, tracking sets, listeners) in the closure — do not set any property on `window`.
+  - Req: 1, 3, 5, 11, 4a
+  - Test: `test/vampire/hooks.test.ts` → `"hooks save original descriptors before installing wrappers"`, `"hooks set nothing on window"`.
 
 - [ ] 2.2 Implement `makeWrapper(origFn, api, shouldReport)` that returns a function calling the original with `this` and `args`, returning its result, rethrowing its exceptions, dispatching a CustomEvent when `shouldReport()` is true, and preserving `name`, `length`, and `toString` (native-looking).
   - Req: 6, 7, 12, 16
@@ -44,29 +44,29 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 9
   - Test: `test/vampire/hooks.test.ts` → `"measureText reports fonts after 20 distinct font families"`, `"measureText does not report under 20 fonts"`.
 
-- [ ] 2.8 Implement idempotency: if `window.__hgHooksInstalled` is already set, the script returns without re-installing.
-  - Req: 2
-  - Test: `test/vampire/hooks.test.ts` → `"hooks are idempotent: second install is a no-op"`.
+- [ ] 2.8 Implement idempotency: before installing wrappers, dispatch a synchronous `CustomEvent` with type `<nonce>:ping` and `detail: { installed: false }`. If an already-installed closure is present, its `<nonce>:ping` listener sets `detail.installed = true` and the new invocation returns without installing. Install the `<nonce>:ping` listener inside the closure after the check passes.
+  - Req: 2, 4b
+  - Test: `test/vampire/hooks.test.ts` → `"hooks are idempotent: <nonce>:ping prevents double-install"`.
 
-- [ ] 2.9 Implement restore: store a cleanup function on `window.__hgRestore` that calls `Object.defineProperty` with the original descriptors for all wrapped methods and properties, then deletes `__hgHooksInstalled`, `__hgRestore`, and `__hgNonce`.
-  - Req: 41, 42
-  - Test: `test/vampire/hooks.test.ts` → `"restore puts back exact original descriptors (identity-equal)"`, `"restore removes install markers"`.
+- [ ] 2.9 Implement restore: install a `<nonce>:restore` event listener inside the closure. On receipt, restore all original descriptors via `Object.defineProperty`, remove both the `<nonce>:ping` and `<nonce>:restore` listeners, and null internal state. No property is set on or deleted from `window` (because the hooks never set any).
+  - Req: 41, 42, 4a
+  - Test: `test/vampire/hooks.test.ts` → `"restore via <nonce>:restore puts back exact original descriptors (identity-equal)"`, `"restore removes ping and restore listeners"`, `"no window properties set or deleted by hooks"`.
 
-## 3. Hook Restore Script
+## 3. Hook Restore (no separate bundle)
 
-- [ ] 3.1 Create `src/content/hooks-restore.ts` (bundled as `hooks-restore.js` IIFE) that calls `window.__hgRestore?.()`.
-  - Req: 41
-  - Test: `test/vampire/hooks.test.ts` → `"hooks-restore calls __hgRestore"`.
+- [ ] 3.1 No separate `hooks-restore.ts` or `hooks-restore.js` file is created. Restore is triggered by the background dispatching `<nonce>:restore` via `executeScript({ func, args })` (see task 4.2). The `<nonce>:restore` listener is installed inside `installHooks` (see task 2.9).
+  - Req: 41, 4a
+  - Test: `test/vampire/hooks.test.ts` → `"restore via <nonce>:restore restores originals and removes listeners"`.
 
 ## 4. Background Integration
 
-- [ ] 4.1 Modify `src/background/router.ts` `haunt()` to inject `hooks.js` in the MAIN world after injecting `content.js`: `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", files: ["hooks.js"], args: [nonce] })` where `nonce = crypto.randomUUID()`. Store the nonce in `chrome.storage.session` under `nonce:${tabId}`.
-  - Req: 1, 3
-  - Test: `test/vampire/background.test.ts` → `"haunt injects hooks.js in MAIN world with nonce"`.
+- [ ] 4.1 Modify `src/background/router.ts` `haunt()` to: (a) inject `content.js` (existing), (b) generate or reuse a nonce stored in `chrome.storage.session` under `nonce:${tabId}`, (c) send the nonce to the tab via `chrome.tabs.sendMessage(tabId, { type: "vampires", nonce })`, and (d) inject the hook via `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", func: installHooks, args: [nonce] })`. Import `installHooks` from `src/content/hooks`.
+  - Req: 1, 3, 4c
+  - Test: `test/vampire/background.test.ts` → `"haunt injects installHooks in MAIN world with nonce"`, `"haunt sends { type: vampires, nonce } to tab"`, `"haunt reuses existing nonce for same tab"`.
 
-- [ ] 4.2 Modify `src/background/router.ts` `unhaunt()` to inject `hooks-restore.js` in the MAIN world before sending the `unhaunt` message to the content script. Remove the nonce from session storage.
+- [ ] 4.2 Modify `src/background/router.ts` `unhaunt()` to dispatch `<nonce>:restore` in the MAIN world before sending the `unhaunt` message: `chrome.scripting.executeScript({ target: { tabId }, world: "MAIN", func: (n: string) => window.dispatchEvent(new CustomEvent(\`${n}:restore\`)), args: [nonce] })`. Read the nonce from `chrome.storage.session`. Remove the nonce from session storage after.
   - Req: 41
-  - Test: `test/vampire/background.test.ts` → `"unhaunt injects hooks-restore.js before sending unhaunt message"`.
+  - Test: `test/vampire/background.test.ts` → `"unhaunt dispatches <nonce>:restore before sending unhaunt message"`, `"unhaunt removes nonce from session"`.
 
 - [ ] 4.3 Verify no new permissions are required. The `activeTab` grant covers `executeScript` with `world: "MAIN"` on the active tab.
   - Req: 4
@@ -186,15 +186,15 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
 
 ## 11. Render Integration
 
-- [ ] 11.1 Modify `src/content/costume/render.ts` to create a `VampireBridge`, start it with the nonce (read from session storage), and wire `onVampire` to merge vampire info and update sprites + HUD + popup.
-  - Req: 17, 23, 36
-  - Test: `test/vampire/integration.test.ts` → `"renderCostume starts vampire bridge and wires updates"`.
+- [ ] 11.1 Modify `src/content/costume/render.ts` to create a `VampireBridge`, start it with the nonce received from the `{ type: "vampires", nonce }` message (not from session storage, which the content script cannot read), and wire `onVampire` to merge vampire info and update sprites + HUD + popup.
+  - Req: 17, 23, 36, 4c
+  - Test: `test/vampire/integration.test.ts` → `"renderCostume starts vampire bridge on receiving { type: vampires, nonce } message"`.
 
 - [ ] 11.2 After each scanner update, call `markKnownVampires` to flag companies with `fingerprinting >= 2` as known vampires.
   - Req: 21, 37
   - Test: `test/vampire/integration.test.ts` → `"scanner update marks known vampires"`.
 
-- [ ] 11.3 On un-haunt, stop the vampire bridge (removes the CustomEvent listener). The background injects `hooks-restore.js` to restore prototypes.
+- [ ] 11.3 On un-haunt, stop the vampire bridge (removes the CustomEvent listener). The background dispatches `<nonce>:restore` to restore prototypes (see task 4.2).
   - Req: 41, 43
   - Test: `test/vampire/integration.test.ts` → `"onUnhaunt stops vampire bridge"`.
 
