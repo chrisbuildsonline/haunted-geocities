@@ -1,0 +1,10 @@
+prototype/
+node_modules/
+dist/
+test-results/
+playwright-report/
+design/refs/
+.claude/
+.omc/
+PLAN.md
+CLAUDE.md

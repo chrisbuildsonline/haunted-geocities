@@ -1,0 +1,8 @@
+prototype/
+node_modules/
+dist/
+.git/
+test-results/
+.claude/
+.omc/
+design/refs/
