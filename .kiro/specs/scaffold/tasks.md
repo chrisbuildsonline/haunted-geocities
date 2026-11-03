@@ -122,7 +122,7 @@ Tests live under `test/` (Bun unit tests) and `e2e/` (Playwright end-to-end test
   - Req: 42
   - Test: `test/background.test.ts` → `"tab lifecycle" > "tabs.onRemoved deletes that tab's entry only"`.
 
-- [ ] 5.11 Implement `chrome.tabs.onUpdated` listener that clears haunted state on navigation (`status: "loading"`) but preserves it on title/complete updates.
+- [x] 5.11 Implement `chrome.tabs.onUpdated` listener that clears haunted state on navigation (`status: "loading"`) but preserves it on title/complete updates.
   - Req: 41
   - Test: `test/background.test.ts` → `"tab lifecycle" > "a navigation (status loading) clears the state"` and `"other tab updates (title, complete) keep the state"`.
 
