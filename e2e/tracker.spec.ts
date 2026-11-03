@@ -82,7 +82,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
   expect(look.focusable).toBe(true);
   expect(look.overlaps).toEqual([]);
   expect(look.lowest).toBeLessThanOrEqual(look.hudTop);
-  expect([look.ghostCount, look.emptyHidden, look.odometer]).toEqual(["3", true, "Souls counted: 000006"]);
+  expect([look.ghostCount, look.emptyHidden, look.odometer]).toEqual(["1", true, "Souls counted: 000006"]); // Hotjar and Taboola score 2 for fingerprinting: known vampires, not ghosts
   await shot(page, "desktop-1280");
 
   // Open Criteo's card and exorcise it from the costume.
@@ -146,7 +146,7 @@ test("a 375px page has no lane: ghosts live in the HUD count only, nothing over 
   await page.waitForTimeout(2600);
   const look = await lanesLook(await shadowOf(page));
   expect(look.companies).toEqual([]);
-  expect([look.ghostCount, look.odometer]).toEqual(["3", "Souls counted: 000006"]);
+  expect([look.ghostCount, look.odometer]).toEqual(["1", "Souls counted: 000006"]); // Criteo only: Hotjar and Taboola are known vampires now
   await shot(page, "narrow-375");
 });
 

@@ -18,7 +18,12 @@ export const fixture = (path: string) => `http://127.0.0.1:${FIXTURE_PORT}/${pat
  */
 export const TRACKER_HOSTS = { Criteo: "criteo.com", Hotjar: "hotjar.com", Taboola: "taboola.com" } as const;
 export const trackerUrl = (host: string, n: number | string) => `http://${host}:${FIXTURE_PORT}/t/p.svg?n=${n}`;
-const HOST_RULES = Object.values(TRACKER_HOSTS).map((h) => `MAP ${h} 127.0.0.1`).join(",");
+/**
+ * fixtures/vampires.html: AdTheorent's adentifi.com (a real tracker domain, fingerprinting score 0, so
+ * only a runtime catch can make it a vampire) and a host that is in no tracker list.
+ */
+export const VAMPIRE_HOSTS = { tracker: "adentifi.com", unlisted: "nightowl-metrics.test" } as const;
+const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
 
 type Fixtures = { context: BrowserContext; sw: Worker; extensionId: string; consoleErrors: string[] };
 
