@@ -116,6 +116,7 @@ describe("Exorcist", () => {
 describe("EXORCISE / LET_BACK / CLEAR_EXORCISE / TRACKER_UPDATE routing", () => {
   const setup = () => {
     const m = createChromeMock({ tabs: TABS });
+    m.chrome.storage.session.data[hauntKey(7)] = true; // ghost reports are only kept for a haunted tab
     return { m, bg: createBackground(asChrome(m), DATA) };
   };
 
@@ -227,6 +228,7 @@ describe("EXORCISE / LET_BACK / CLEAR_EXORCISE / TRACKER_UPDATE routing", () => 
 describe("exorcise cleanup", () => {
   const haunted = async () => {
     const m = createChromeMock({ tabs: TABS });
+    m.chrome.storage.session.data[hauntKey(7)] = true;
     const bg = createBackground(asChrome(m), DATA);
     bg.register();
     await bg.handle({ type: "EXORCISE", company: "Pixco", domains: ["pixel.example"] }, content(7));

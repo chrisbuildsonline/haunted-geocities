@@ -182,3 +182,31 @@ describe("tab lifecycle", () => {
     expect(m.chrome.storage.session.data[hauntKey(7)]).toBe(true);
   });
 });
+
+describe("updates after un-haunt", () => {
+  const content = { id: "test-extension-id", tab: { id: 7 }, url: "https://example.org/page" } as chrome.runtime.MessageSender;
+  const hit = { company: "Criteo", domains: ["criteo.com"], count: 2 } as any;
+  const dead = [{ url: "https://a.test/g", path: "/g", status: 404 as const }];
+  test("a TRACKER_UPDATE after UNHAUNT stores nothing", async () => {
+    const { m, bg } = setup();
+    m.chrome.storage.session.data[hauntKey(7)] = true;
+    await bg.handle({ type: "UNHAUNT", tabId: 7 }, self);
+    await bg.handle({ type: "TRACKER_UPDATE", companies: [hit], total: 2 }, content);
+    expect((await bg.handle({ type: "GET_STATE", tabId: 7 }, self)).ghosts).toEqual([]);
+    expect(Object.keys(m.chrome.storage.session.data)).toEqual([]);
+  });
+  test("a TOMBSTONE_UPDATE for a tab that is not haunted stores nothing", async () => {
+    const { m, bg } = setup();
+    await bg.handle({ type: "TOMBSTONE_UPDATE", dead }, content);
+    expect(Object.keys(m.chrome.storage.session.data)).toEqual([]);
+  });
+  test("a haunted tab still stores both", async () => {
+    const { m, bg } = setup();
+    m.chrome.storage.session.data[hauntKey(7)] = true;
+    await bg.handle({ type: "TRACKER_UPDATE", companies: [hit], total: 2 }, content);
+    await bg.handle({ type: "TOMBSTONE_UPDATE", dead }, content);
+    const state = await bg.handle({ type: "GET_STATE", tabId: 7 }, self);
+    expect(state.ghosts.map((g) => g.company)).toEqual(["Criteo"]);
+    expect(state.tombstones).toHaveLength(1);
+  });
+});

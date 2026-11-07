@@ -108,13 +108,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   async function haunt(tabId: number): Promise<TabState> {
     const state = await getState(tabId);
     if (state.restricted) return state;
+    // Marked before injecting: the costume's first reports are dropped for a tab that is not haunted.
+    await session.set({ [hauntKey(tabId)]: true });
     try {
       // content.js haunts on injection and is idempotent, so re-injecting is harmless.
       await api.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
     } catch (e) {
+      if (!state.haunted) await session.remove(hauntKey(tabId));
       return { ...state, error: message(e) };
     }
-    await session.set({ [hauntKey(tabId)]: true });
     await installVampireHooks(tabId);
     // Fresh, not the state from before the injection: the costume has reported ghosts by now, and a
     // stale answer arriving after the popup's storage-change refresh would wipe them from the list.
@@ -179,10 +181,14 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     if (domains.length) await exorcist.exorcise(tabId, company, domains);
   }
 
+  async function isHaunted(tabId: number): Promise<boolean> {
+    return (await session.get(hauntKey(tabId)))[hauntKey(tabId)] === true;
+  }
+
   /** Check a haunted content script's cross-site links, if the user granted the origins, and send back the dead ones. */
   async function checkCrossSite(tabId: number, urls: unknown, sender: chrome.runtime.MessageSender) {
     if (sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) || !Array.isArray(urls)) return;
-    if ((await session.get(hauntKey(tabId)))[hauntKey(tabId)] !== true) return;
+    if (!(await isHaunted(tabId))) return;
     if (!(await api.permissions.contains({ origins: LINK_CHECK_ORIGINS }))) return;
     const dead = await checkLinks(urls.filter(checkable).slice(0, 30), fetchFn, { getRetry: false });
     if (dead.length) await api.tabs.sendMessage(tabId, { type: "tombstones", dead } satisfies ContentMessage).catch(() => undefined);
@@ -209,11 +215,13 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         await clearTab(tabId);
         break;
       case "TRACKER_UPDATE":
+        if (!(await isHaunted(tabId))) break;
         if (Array.isArray(msg.companies) && msg.companies.every(isHit) && Number.isFinite(msg.total)) {
           await session.set({ [ghostsKey(tabId)]: { companies: msg.companies.map(clean), total: msg.total } });
         }
         break;
       case "TOMBSTONE_UPDATE":
+        if (!(await isHaunted(tabId))) break;
         if (Array.isArray(msg.dead)) await session.set({ [tombstonesKey(tabId)]: msg.dead.filter(isDead).map(({ url, path, status }) => ({ url, path, status })) });
         break;
       case "CHECK_LINKS":

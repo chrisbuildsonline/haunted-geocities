@@ -11,6 +11,7 @@ const fromTab = { id: "test-extension-id", tab: { id: 7 } as chrome.tabs.Tab, ur
 
 const setup = () => {
   const m = createChromeMock({ tabs: [WEB] });
+  m.chrome.storage.session.data[hauntKey(7)] = true; // ghost reports are only kept for a haunted tab
   const log: { kind: "script" | "message"; arg: any }[] = [];
   const { executeScript } = m.chrome.scripting;
   m.chrome.scripting.executeScript = async (i: unknown) => {
@@ -122,6 +123,5 @@ describe("Exorcise whitelist", () => {
     await bg.handle({ type: "EXORCISE", company: "evil.example", domains: ["evil.example"] }, fromTab);
     expect(m.dnr.rules).toEqual([]);
     expect(await bg.getState(7)).toMatchObject({ exorcised: [] });
-    expect(hauntKey(7) in m.chrome.storage.session.data).toBe(false);
   });
 });
