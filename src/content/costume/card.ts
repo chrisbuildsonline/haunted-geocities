@@ -16,6 +16,8 @@ export interface CardOptions {
   listed?: boolean;
 }
 
+const SHADOW = 4; // HARD_SHADOW's offset
+
 const openers = new WeakMap<Element, HTMLElement>();
 
 /** Close the open card, if any, and hand focus back to the ghost that opened it. */
@@ -31,6 +33,16 @@ export function setCardExorcised(cards: HTMLElement, exorcised: ReadonlySet<stri
   const card = cards.querySelector<HTMLElement>(".card");
   const act = card?.querySelector<HTMLElement>(".act");
   if (card && act) act.textContent = exorcised.has(card.dataset.company!) ? "Let it back" : act.dataset.label!;
+}
+
+const seenText = (count: number) => `Seen ${count} ${count === 1 ? "time" : "times"} on this page`;
+
+/** Keep the open ghost card's "Seen N times" in step with the latest scan. */
+export function setCardCount(cards: HTMLElement, companies: readonly CompanyHit[]): void {
+  const card = cards.querySelector<HTMLElement>(".card");
+  const seen = card?.querySelector<HTMLElement>(".seen");
+  const hit = companies.find((c) => c.company === card?.dataset.company);
+  if (seen && hit) seen.textContent = seenText(hit.count);
 }
 
 /** A host or script URL as text that may break only after a "/". */
@@ -75,7 +87,7 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
     card.querySelector("h2")!.textContent = hit.company;
     card.querySelector(".cat")!.textContent = categoryOf(hit);
     domains.append(...hit.domains.map((d) => Object.assign(doc.createElement("li"), { textContent: d })));
-    card.querySelector(".seen")!.textContent = `Seen ${hit.count} ${hit.count === 1 ? "time" : "times"} on this page`;
+    card.querySelector(".seen")!.textContent = seenText(hit.count);
   }
   const act = card.querySelector<HTMLButtonElement>(".act");
   if (act) {
@@ -110,7 +122,7 @@ function show(cards: HTMLElement, card: HTMLElement, opener: HTMLElement, width:
   const toRight = g.left + g.width / 2 < win.innerWidth / 2;
   const left = toRight ? g.right + 8 : g.left - 8 - width;
   const top = Math.min(g.top, opts.bounds.bottom - 8 - card.offsetHeight);
-  card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - width))}px`;
+  card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - SHADOW - width))}px`; // the 4px hard shadow keeps 8px off the edge too
   card.style.top = `${Math.max(opts.bounds.top + 8, top)}px`;
   if (!opts.reduced) card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
 }

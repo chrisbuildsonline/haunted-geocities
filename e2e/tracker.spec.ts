@@ -174,3 +174,25 @@ test("reduced motion: ghosts sit still at their slot centres, fully visible", as
   expect(new Set(still.transforms)).toEqual(new Set(["nonenone"]));
   await shot(page, "reduced-motion");
 });
+
+test("the open ghost card's seen count rises live when another request arrives, and focus stays put", async ({ context, sw }) => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(fixture("trackers.html"));
+  await haunt(sw, page);
+  await page.waitForTimeout(2600); // the haunt moment settles
+  const inShadow = await shadowOf(page);
+  const g = await center(inShadow, '#lanes .ghost[data-company="Criteo"]');
+  await page.mouse.click(g.x, g.y);
+  const card = () =>
+    inShadow(function () {
+      const c = this.querySelector<HTMLElement>("#cards .card");
+      return c && { seen: c.querySelector(".seen")!.textContent, focused: c.contains(this.activeElement), active: (this.activeElement as HTMLElement | null)?.className };
+    });
+  expect(await card()).toMatchObject({ seen: "Seen 3 times on this page", focused: true });
+  const before = (await card())!.active;
+
+  expect(await probe(page, TRACKER_HOSTS.Criteo)).toBe("loaded");
+  await expect.poll(async () => (await card())?.seen).toBe("Seen 4 times on this page");
+  expect(await card()).toMatchObject({ focused: true, active: before });
+});

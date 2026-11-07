@@ -15,7 +15,7 @@ import { LINK_CHECK_ORIGINS, type ContentRequest, type DeadLink, type TrackerDat
 import { startScanner, type ScanResult } from "../scanner";
 import { createVampireBridge, type Api } from "../hooks-bridge";
 import { markKnownVampires, mergeVampire } from "../vampire";
-import { closeCard, openCard, openTombstoneCard, setCardExorcised } from "./card";
+import { closeCard, openCard, openTombstoneCard, setCardCount, setCardExorcised } from "./card";
 import { planSlots, updateGhosts, type Slot } from "./ghosts";
 import { mountTombstones } from "./tombstones";
 
@@ -103,6 +103,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: dead.length, curses: 0 });
     setOdometer(hud, scan.total);
     placeGhosts();
+    setCardCount(cards, scan.companies);
     send({ type: "TRACKER_UPDATE", companies: scan.companies, total: scan.total });
   };
   let exorcised = new Set<string>();

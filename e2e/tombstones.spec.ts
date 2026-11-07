@@ -1,6 +1,6 @@
 // Tombstones, backend side, on fixtures/links.html: same-origin dead links are found by the content
 // script, reported to the background and counted in the HUD; the page is left byte for byte the same.
-import { expect, fixture, openPopup, shadowOf, tabIdOf, test } from "./fixtures";
+import { expect, fixture, haunt, openPopup, shadowOf, tabIdOf, test } from "./fixtures";
 import type { DeadLink } from "../src/data/types";
 
 test("req 49-50, 12, 23-27, 44, 55: only the 404/410 links become tombstones, counted in the HUD, page restored", async ({ context, sw, extensionId }) => {
@@ -258,4 +258,44 @@ test("req 35, 61-62: under reduced motion the markers appear with the cross-fade
     return [this.querySelector("#markers")!, ...this.querySelectorAll(".tomb-marker")].flatMap((e) => e.getAnimations()).length;
   });
   expect(anims).toBe(0);
+});
+
+test("every open stone card keeps at least 8px from both viewport edges at 1280 and 375", async ({ context, sw }) => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(fixture("links.html"));
+  await haunt(sw, page);
+  await page.bringToFront();
+  const inShadow = await shadowOf(page);
+  await expect.poll(() => inShadow(function () { return this.querySelectorAll(".tomb-marker").length; })).toBe(3);
+  await page.waitForTimeout(2600); // the haunt moment settles
+  await page.screenshot({ path: `${SHOTS}/edge-1280-haunted.png` });
+
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const i of [0, 1, 2]) {
+      const at = () =>
+        inShadow(function (n: number) {
+          const r = this.querySelectorAll<HTMLElement>(".tomb-marker")[n]!.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }, i);
+      await expect.poll(async () => (await at()).x).toBeLessThan(width); // the markers re-place on resize
+      const p = await at();
+      await page.mouse.click(p.x, p.y);
+      const rect = () =>
+        inShadow(function () {
+          const card = this.querySelector<HTMLElement>("#cards .tombstone-card");
+          if (!card || getComputedStyle(card).opacity !== "1") return null;
+          const r = card.getBoundingClientRect();
+          return { left: r.left, right: r.right };
+        });
+      await expect.poll(rect, { message: `stone ${i} at ${width}px, clicked ${JSON.stringify(p)}` }).not.toBeNull();
+      const r = (await rect())!;
+      expect(r.left, `stone ${i} at ${width}px`).toBeGreaterThanOrEqual(8);
+      expect(r.right, `stone ${i} at ${width}px`).toBeLessThanOrEqual(width - 8);
+      expect(r.right + 4, `stone ${i}'s 4px hard shadow at ${width}px`).toBeLessThanOrEqual(width - 8);
+      if (i === 2) await page.screenshot({ path: `${SHOTS}/edge-${width}-card.png` });
+      await page.keyboard.press("Escape");
+    }
+  }
 });
