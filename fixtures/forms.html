@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Millbrook Market Gazette: forms and scripts</title>
+    <style>
+      body { margin: 0; padding: 24px 0 0; font-family: Georgia, serif; line-height: 1.6; color: #1d1d1b; background: #fbfaf6; }
+      main { max-width: 520px; margin: 0 auto; padding: 0 16px 96px; }
+      label { display: block; margin: 1rem 0 0.25rem; }
+      input, button { font: inherit; padding: 6px 10px; }
+    </style>
+    <!-- Page scripts the haunt must leave alone: they run in this order, once, and one of them guards a form. -->
+    <script>window.order = ["head"];</script>
+  </head>
+  <body>
+    <main>
+      <h1>Forms and scripts</h1>
+      <p><a href="/missing.html">Stall list</a> (a dead link, so the tombstone check has work to do)</p>
+
+      <form id="plain" action="thanks.html" method="get">
+        <label for="q">Plain form (no script: the browser submits it)</label>
+        <input id="q" name="q" type="text" />
+        <button type="submit">Send</button>
+      </form>
+
+      <form id="guarded" action="thanks.html" method="get">
+        <label for="g">Guarded form (a page handler cancels the submit)</label>
+        <input id="g" name="g" type="text" />
+        <button type="submit">Check</button>
+      </form>
+    </main>
+    <script>
+      window.order.push("body");
+      window.submits = 0;
+      document.getElementById("guarded").addEventListener("submit", (e) => {
+        e.preventDefault();
+        window.submits++;
+      });
+    </script>
+    <script>window.order.push("end");</script>
+  </body>
+</html>
