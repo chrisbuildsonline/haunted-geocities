@@ -9,8 +9,11 @@
     "build": "vite build",
     "test": "bun test ./test/",
     "test:e2e": "vite build --mode e2e && playwright test",
+    "screenshots": "vite build --mode e2e && playwright test --config playwright.screenshots.config.ts",
     "ingest:trackers": "bun scripts/ingest-trackers.ts",
-    "docker:test": "docker build --progress=plain -t haunted-geocities:test ."
+    "docker:test": "docker build --progress=plain -t haunted-geocities:test .",
+    "package": "vite build && bun scripts/package.ts",
+    "fixtures": "bun scripts/fixture-server.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
