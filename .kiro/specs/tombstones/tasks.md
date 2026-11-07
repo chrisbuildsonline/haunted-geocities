@@ -286,11 +286,11 @@ Tests live under `test/tombstones/` (Bun unit tests) and `e2e/` (Playwright end-
   - Req: 52
   - Test: `test/tombstones/link-check.test.ts` → `"fetch uses credentials: omit"`.
 
-- [ ] 13.3 The page's scripts are never edited, blocked, or reordered.
+- [x] 13.3 The page's scripts are never edited, blocked, or reordered.
   - Req: 53
   - Test: `test/tombstones/non-destructive.test.ts` → `"page scripts never edited, blocked, or reordered"`.
 
-- [ ] 13.4 Never change form behaviour — no adding, removing, or modifying form elements, handlers, or submission logic.
+- [x] 13.4 Never change form behaviour — no adding, removing, or modifying form elements, handlers, or submission logic.
   - Req: 54
   - Test: `test/tombstones/non-destructive.test.ts` → `"form behaviour unchanged"`.
 
@@ -316,7 +316,7 @@ Tests live under `test/tombstones/` (Bun unit tests) and `e2e/` (Playwright end-
   - Req: 59
   - Test: `test/tombstones/accessibility.test.ts` → `"tombstone text meets 4.5:1 contrast"`.
 
-- [ ] 14.5 No flashing, blinking, or strobing faster than 3 Hz occurs in any tombstone visual element.
+- [x] 14.5 No flashing, blinking, or strobing faster than 3 Hz occurs in any tombstone visual element.
   - Req: 60
   - Test: `test/tombstones/accessibility.test.ts` → `"no tombstone animation period under 333ms"`.
 

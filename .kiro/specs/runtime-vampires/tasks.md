@@ -128,7 +128,7 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 26
   - Test: `test/vampire/sprite.test.ts` → `"vampire glow filter matches DESIGN.md"`.
 
-- [ ] 8.4 The vampire label follows the ghost label style (Comic Sans 11px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis), showing the company or host name.
+- [x] 8.4 The vampire label follows the ghost label style (Comic Sans 11px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis), showing the company or host name.
   - Req: 27
   - Test: `test/vampire/sprite.test.ts` → `"vampire label shows company/host name with correct style"`.
 
@@ -154,17 +154,17 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 31, 39
   - Test: `test/vampire/card.test.ts` → `"known tracker vampire card has Exorcise button"`, `"unlisted host vampire card has no Exorcise button"`.
 
-- [ ] 9.4 Esc closes the card and returns focus to the opener. Only one card open at a time.
+- [x] 9.4 Esc closes the card and returns focus to the opener. Only one card open at a time.
   - Req: 49
   - Test: `test/vampire/card.test.ts` → `"Esc closes vampire card and returns focus"`.
 
 ## 10. Haunt-Moment, HUD, and Popup
 
-- [ ] 10.1 Modify `src/content/costume/haunt-moment.ts` `playHaunt()` to add a vampire phase at 1800ms: `.vampire` elements fade in (`opacity: 0 → 1`, `translateY(8px) → 0`) over 300ms, then a single glow swell on `.vampire:not(.known) .sprite` (drop-shadow 0 → 6px). One swell, no pulsing.
+- [x] 10.1 Modify `src/content/costume/haunt-moment.ts` `playHaunt()` to add a vampire phase at 1800ms: `.vampire` elements fade in (`opacity: 0 → 1`, `translateY(8px) → 0`) over 300ms, then a single glow swell on `.vampire:not(.known) .sprite` (drop-shadow 0 → 6px). One swell, no pulsing.
   - Req: 34
   - Test: `test/vampire/haunt-moment.test.ts` → `"vampires fade in at 1800ms with single glow swell"`.
 
-- [ ] 10.2 Under reduced motion, vampires appear at full opacity at 300ms with the cross-fade, no glow swell, no drift.
+- [x] 10.2 Under reduced motion, vampires appear at full opacity at 300ms with the cross-fade, no glow swell, no drift.
   - Req: 53, 54
   - Test: `test/vampire/reduced-motion.test.ts` → `"reduced motion: vampires appear instantly, no swell or drift"`.
 
@@ -190,7 +190,7 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 17, 23, 36, 4c
   - Test: `test/vampire/integration.test.ts` → `"renderCostume starts vampire bridge on receiving { type: vampires, nonce } message"`.
 
-- [ ] 11.2 After each scanner update, call `markKnownVampires` to flag companies with `fingerprinting >= 2` as known vampires.
+- [x] 11.2 After each scanner update, call `markKnownVampires` to flag companies with `fingerprinting >= 2` as known vampires.
   - Req: 21, 37
   - Test: `test/vampire/integration.test.ts` → `"scanner update marks known vampires"`.
 
@@ -204,7 +204,7 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
 
 ## 12. Non-Destructive DOM and Accessibility
 
-- [ ] 12.1 Verify the hooks never modify, add, or remove any page DOM node, form element, or script tag.
+- [x] 12.1 Verify the hooks never modify, add, or remove any page DOM node, form element, or script tag.
   - Req: 44
   - Test: `test/vampire/non-destructive.test.ts` → `"no page DOM nodes modified outside shadow host"`.
 
@@ -228,7 +228,7 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 50
   - Test: `test/vampire/accessibility.test.ts` → `"popup vampire rows keyboard reachable with #6633cc focus ring"`.
 
-- [ ] 12.7 HUD and overlay text meets 4.5:1 contrast. No flashing/strobing faster than 3 Hz in vampire elements.
+- [x] 12.7 HUD and overlay text meets 4.5:1 contrast. No flashing/strobing faster than 3 Hz in vampire elements.
   - Req: 51, 52
   - Test: `test/vampire/accessibility.test.ts` → `"vampire text meets 4.5:1 contrast"`, `"no vampire animation period under 333ms"`.
 
