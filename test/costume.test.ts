@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { Window } from "happy-dom";
 import { HOST_TAG } from "../src/content/overlay";
 import * as T from "../src/content/costume/tokens";
-import { computeContentColumn, gutterWidths, STAR_TILE } from "../src/content/costume/starfield";
+import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, STAR_TILE } from "../src/content/costume/starfield";
+import { planSlots } from "../src/content/costume/ghosts";
 import { MARQUEE_LINES, marqueeSeconds, neighborhoodFor, topOffset } from "../src/content/costume/bands";
 import { sampleBottomLift, setCounts, setOdometer } from "../src/content/costume/hud";
 import { costumeCss } from "../src/content/costume/styles";
@@ -189,6 +190,32 @@ describe("starfield", () => {
     expect(gutterWidths({ left: 70, right: 1270 }, 1280)).toEqual({ left: 70, right: 10 });
     expect(gutterWidths({ left: 40, right: 1240 }, 1280)).toBeNull();
     expect(gutterWidths({ left: 0, right: 375 }, 375)).toBeNull();
+  });
+
+  test("the dither edge ends a few px short of the text column on both sides, lanes stay in the gutters", () => {
+    const win = new Window({ url: "https://haunt.example/" });
+    windows.push(win);
+    const doc = win.document as unknown as Document;
+    const field = buildStarfield(doc);
+    const col = { left: 300, right: 980 };
+    const gutters = gutterWidths(col, 1280)!;
+    layoutStarfield(field, gutters);
+    const left = field.querySelector<HTMLElement>(".gutter.left")!;
+    const right = field.querySelector<HTMLElement>(".gutter.right")!;
+    const leftEdgeEnd = parseFloat(left.style.width); // the left gutter is pinned to x=0, its edge is its inner 16px
+    const rightEdgeStart = 1280 - parseFloat(right.style.width);
+    expect(col.left - leftEdgeEnd).toBeGreaterThanOrEqual(3);
+    expect(col.left - leftEdgeEnd).toBeLessThanOrEqual(8);
+    expect(rightEdgeStart - col.right).toBeGreaterThanOrEqual(3);
+    expect(rightEdgeStart - col.right).toBeLessThanOrEqual(8);
+    // Lanes are planned from the gutters, so they never reach the column either.
+    for (const s of planSlots(gutters, 1280, 48, 700, [])) {
+      expect(s.side === "left" ? s.x + s.w <= col.left : s.x >= col.right).toBe(true);
+    }
+    // A gutter whose edge would no longer fit its 16px stays hidden.
+    layoutStarfield(field, { left: 18, right: 300 });
+    expect(left.hidden).toBe(true);
+    expect(right.hidden).toBe(false);
   });
 
   test("the gutter CSS: tile at .92 opacity, a 16px checker-dithered edge, no gradients", () => {

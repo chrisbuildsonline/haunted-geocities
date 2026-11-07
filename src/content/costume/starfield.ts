@@ -116,11 +116,14 @@ export function buildStarfield(doc: Document): HTMLElement {
   return field;
 }
 
-/** Size the gutters; a side narrower than its 16px dither edge stays hidden. */
+/** Clear px between the dither edge and the text column (the lanes are still planned from the full gutter). */
+const EDGE_GAP = 4;
+
+/** Size the gutters, EDGE_GAP short of the column; a side too narrow for its 16px dither edge stays hidden. */
 export function layoutStarfield(field: HTMLElement, widths: Column | null): void {
   for (const side of ["left", "right"] as const) {
     const g = field.querySelector(`.gutter.${side}`) as HTMLElement;
-    const w = widths?.[side] ?? 0;
+    const w = Math.max(0, (widths?.[side] ?? 0) - EDGE_GAP);
     g.hidden = w < 16;
     g.style.width = `${w}px`;
   }
