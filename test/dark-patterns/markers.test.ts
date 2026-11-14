@@ -198,6 +198,15 @@ describe("mountCurses (req 40, 43-47)", () => {
     expect(btns[0]!.style.left).toBe("304px");
     badges.stop();
   });
+  test("a badge that arrives late is placed in page order", () => {
+    const s = setup(HTML);
+    const [a, b] = two(s);
+    const badges = mountCurses(s.markers, opts);
+    badges.update([pat("countdown", b)]);
+    badges.update([pat("scarcity", a), pat("countdown", b)]);
+    expect([...s.markers.querySelectorAll<HTMLElement>("button")].map((x) => x.dataset.kind)).toEqual(["scarcity", "countdown"]);
+    badges.stop();
+  });
   test("badge is a focusable button that calls onOpen on click", () => {
     const s = setup(HTML);
     const [a] = two(s);

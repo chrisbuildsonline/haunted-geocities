@@ -116,7 +116,7 @@ export function mountCurses(markers: HTMLElement, opts: CurseOptions): CurseBadg
         io?.unobserve(e.pattern.element);
       }
       entries = entries.filter((e) => keep.has(e.pattern.element));
-      for (const p of patterns) {
+      for (const [i, p] of patterns.entries()) {
         if (entries.some((e) => e.pattern.element === p.element)) continue;
         const el = doc.createElement("button");
         el.type = "button";
@@ -125,7 +125,10 @@ export function mountCurses(markers: HTMLElement, opts: CurseOptions): CurseBadg
         el.setAttribute("aria-label", `${KIND_INFO[p.kind].title}: ${p.snippet}`);
         el.innerHTML = `${curseBadgeSvg()}<span>CURSED!</span>`;
         el.addEventListener("click", () => opts.onOpen({ kind: p.kind, snippet: p.snippet }, el));
-        markers.append(el);
+        // Page order, so Tab walks the badges top to bottom even when a late one (a timer) arrives last.
+        const next = patterns.slice(i + 1).map((q) => entries.find((e) => e.pattern.element === q.element)).find(Boolean);
+        if (next) next.el.before(el);
+        else markers.append(el);
         entries.push({ pattern: p, el, onScreen: true });
         io?.observe(p.element);
         if (opts.fade()) el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: M.base, easing: "linear" });
