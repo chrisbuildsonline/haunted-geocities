@@ -1,0 +1,41 @@
+{
+  "neighborhoods": [
+    { "name": "Area51", "tagline": "Strange lights, strange pages. Aliens welcome!", "suburbs": ["Hangar", "Roswell", "Dreamland", "GroomLake"] },
+    { "name": "SiliconValley", "tagline": "Where the webmasters code all night.", "suburbs": ["Heights", "Cupertino", "Sunnyvale", "PaloAlto"] },
+    { "name": "Hollywood", "tagline": "Lights, camera, homepage!", "suburbs": ["Boulevard", "Studios", "Burbank", "Vine"] },
+    { "name": "Athens", "tagline": "Home of the scholar and the term paper.", "suburbs": ["Acropolis", "Agora", "Lyceum", "Plaka"] },
+    { "name": "CapitolHill", "tagline": "Your government, now with a guestbook.", "suburbs": ["Monument", "Mall", "Rotunda", "Embassy"] },
+    { "name": "WallStreet", "tagline": "Bulls, bears and secure online shopping.", "suburbs": ["Exchange", "Ledger", "Bullpen", "Treasury"] },
+    { "name": "TimesSquare", "tagline": "Games, arcades and one big flashing sign.", "suburbs": ["Broadway", "Arcade", "Marquee", "Midway"] },
+    { "name": "SunsetStrip", "tagline": "Bands, beats and the loudest guestbook.", "suburbs": ["Encore", "Backstage", "Laurel", "Riff"] },
+    { "name": "Colosseum", "tagline": "Sports, scores and bragging rights.", "suburbs": ["Arena", "Gladiator", "Forum", "Bleachers"] },
+    { "name": "MotorCity", "tagline": "Start your engines, surf the highway.", "suburbs": ["Assembly", "Roadster", "Dragstrip", "Garage"] },
+    { "name": "Paris", "tagline": "Cafes, fashion and fine cuisine.", "suburbs": ["Montmartre", "Bastille", "LeMarais", "Latin"] },
+    { "name": "SoHo", "tagline": "Writers, artists and the daily news.", "suburbs": ["Greene", "Spring", "Prince", "Loft"] },
+    { "name": "Heartland", "tagline": "Home, family and small-town pages.", "suburbs": ["Homestead", "Prairie", "Mainstreet", "Orchard"] },
+    { "name": "Petsburgh", "tagline": "Cats, dogs and other good company.", "suburbs": ["Kennel", "Meadow", "Aviary", "Catwalk"] },
+    { "name": "RainForest", "tagline": "Nature, travel and the great outdoors.", "suburbs": ["Canopy", "Understory", "Riverbank", "Trailhead"] },
+    { "name": "Tokyo", "tagline": "Anime, manga and gadgets from the future.", "suburbs": ["Shibuya", "Akihabara", "Harajuku", "Ginza"] }
+  ],
+  "rules": [
+    { "kind": "tld", "match": ["gov", "mil"], "to": "CapitolHill" },
+    { "kind": "tld", "match": ["edu", "ac"], "to": "Athens" },
+    { "kind": "tld", "match": ["jp"], "to": "Tokyo" },
+    { "kind": "tld", "match": ["fr"], "to": "Paris" },
+    { "kind": "tld", "match": ["dev"], "to": "SiliconValley" },
+    { "kind": "word", "match": ["code", "dev", "github", "gitlab", "git", "software", "tech", "byte", "cloud"], "to": "SiliconValley" },
+    { "kind": "word", "match": ["shop", "store", "bank", "pay", "trade", "market"], "to": "WallStreet" },
+    { "kind": "word", "match": ["game", "play", "arcade"], "to": "TimesSquare" },
+    { "kind": "word", "match": ["news", "blog", "write", "art", "design"], "to": "SoHo" },
+    { "kind": "word", "match": ["music", "band", "radio", "song"], "to": "SunsetStrip" },
+    { "kind": "word", "match": ["pet", "dog", "cat", "puppy", "kitten"], "to": "Petsburgh" },
+    { "kind": "word", "match": ["film", "movie", "cinema", "tv", "video"], "to": "Hollywood" },
+    { "kind": "word", "match": ["sport", "team", "league", "arena", "gym"], "to": "Colosseum" },
+    { "kind": "word", "match": ["car", "auto", "motor", "bike", "drive"], "to": "MotorCity" },
+    { "kind": "word", "match": ["food", "cafe", "coffee", "recipe", "fashion"], "to": "Paris" },
+    { "kind": "word", "match": ["anime", "manga", "tokyo"], "to": "Tokyo" },
+    { "kind": "word", "match": ["eco", "green", "garden", "nature", "travel", "hike"], "to": "RainForest" },
+    { "kind": "word", "match": ["farm", "home", "family", "church", "local"], "to": "Heartland" },
+    { "kind": "word", "match": ["space", "ufo", "lab", "science", "alien"], "to": "Area51" }
+  ]
+}
