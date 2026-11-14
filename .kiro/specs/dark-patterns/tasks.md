@@ -170,23 +170,23 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 9. Popup
 
-- [ ] 9.1 Add `curseTile(doc)` to `src/popup/sprites.ts` (the existing `curse` sprite).
+- [x] 9.1 Add `curseTile(doc)` to `src/popup/sprites.ts` (the existing `curse` sprite).
   - Req: 54
   - Test: `test/dark-patterns/popup.test.ts` → `"curseTile is an svg tile"`.
 
-- [ ] 9.2 In `src/popup/screens.ts`, add `curseRow` and the Curses list after the tombstone list; set the Curses tile count; read `state.curses ?? []`; update the list surface `aria-label`.
+- [x] 9.2 In `src/popup/screens.ts`, add `curseRow` and the Curses list after the tombstone list; set the Curses tile count; read `state.curses ?? []`; update the list surface `aria-label`.
   - Req: 54, 56, 58
   - Test: `test/dark-patterns/popup.test.ts` → `"Curses tile shows the count"`, `"a row shows the kind name and the quoted snippet"`, `"the list follows the tombstone list"`, `"rows are in the order reported"`, `"a state without curses still renders"`, `"snippet text is set as text"`.
 
-- [ ] 9.3 Empty state `No curses. This page plays fair.`
+- [x] 9.3 Empty state `No curses. This page plays fair.`
   - Req: 55
   - Test: `test/dark-patterns/popup.test.ts` → `"empty list shows No curses. This page plays fair."`.
 
-- [ ] 9.4 In `src/popup/styles.css`, add `.curses-head`, `.no-curses`, `.curse-row` (copied from the tombstone rules) and `.curse-row .row-sub.quote` (wrapping).
+- [x] 9.4 In `src/popup/styles.css`, add `.curses-head`, `.no-curses`, `.curse-row` (copied from the tombstone rules) and `.curse-row .row-sub.quote` (wrapping).
   - Req: 54, 57
   - Test: `test/dark-patterns/popup.test.ts` → `"CSS: curse rows use the #6633cc focus ring"`, `"CSS: the quote wraps"`.
 
-- [ ] 9.5 Keyboard access.
+- [x] 9.5 Keyboard access.
   - Req: 57
   - Test: `test/dark-patterns/popup.test.ts` → `"curse rows have tabindex 0 and an aria-label of kind name and snippet"`.
 

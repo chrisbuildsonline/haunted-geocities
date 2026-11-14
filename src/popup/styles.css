@@ -371,6 +371,24 @@ p {
   background: #e3e6ec;
   color: var(--muted);
 }
+
+/* Curse rows: the kind name on line 1, the quoted snippet wrapping beneath it. */
+.curses-head,
+.no-curses {
+  margin-top: 12px;
+}
+.curse-row {
+  align-items: flex-start;
+  padding-block: 10px;
+}
+.curse-row .row-line {
+  margin-top: 4px;
+}
+.curse-row .row-sub.quote {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
 .secondary,
 .quiet {
   flex: none;

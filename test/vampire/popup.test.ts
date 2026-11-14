@@ -70,6 +70,7 @@ describe("popup vampires", () => {
       "Trackers that load later will appear here.",
       "No vampires. Your blood is safe.",
       "No tombstones. Every link is alive.",
+      "No curses. This page plays fair.",
     ]);
     const only = render([NIGHTOWL]);
     expect(only.text(only.doc.querySelector(".list"))).not.toContain("Suspiciously clean");

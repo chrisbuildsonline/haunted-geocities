@@ -1,9 +1,10 @@
 import { byCountThenName, categoryOf, hemTint } from "../content/costume/ghosts";
 import { appendPath } from "../content/costume/tombstones";
-import type { CompanyHit, DeadLink, TabState } from "../data/types";
+import type { CompanyHit, Curse, DeadLink, TabState } from "../data/types";
 import { h } from "./dom";
 import { caughtLine } from "../content/vampire";
-import { sprite, tintedGhost, tombTile, vampireTile, type SpriteName } from "./sprites";
+import { sprite, curseTile, tintedGhost, tombTile, vampireTile, type SpriteName } from "./sprites";
+import { KIND_INFO } from "../content/dark-patterns";
 
 export type Screen = "idle" | "haunted" | "restricted";
 
@@ -129,7 +130,25 @@ function tombstoneRow(doc: Document, t: DeadLink, pageOrigin: string | null): HT
   );
 }
 
-const originOf = (url: string | null) => {
+/** A dark pattern: its kind name over the quoted snippet, which wraps. */
+function curseRow(doc: Document, c: Curse): HTMLElement {
+  const info = KIND_INFO[c.kind];
+  return h(
+    doc,
+    "li",
+    { class: "ghost-row curse-row", tabindex: "0", "aria-label": `${info.name}: ${c.snippet}` },
+    h(doc, "span", { class: "icon-tile" }, curseTile(doc)),
+    h(
+      doc,
+      "span",
+      { class: "row-text" },
+      h(doc, "span", { class: "row-title" }, info.name),
+      h(doc, "span", { class: "row-line" }, h(doc, "span", { class: "row-sub quote" }, `“${c.snippet}”`)),
+    ),
+  );
+}
+
+const originOf =(url: string | null) => {
   try {
     return url ? new URL(url).origin : null;
   } catch {
@@ -218,10 +237,18 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
           h(doc, "ul", { class: "rows" }, ...tombs.map((t) => tombstoneRow(doc, t, pageOrigin))),
         ]
       : [h(doc, "p", { class: "muted no-tombstones" }, "No tombstones. Every link is alive.")];
-    const list = [...ghostList, ...vampireList, ...tombList];
+    const curses = state.curses ?? [];
+    tiles.querySelector('[data-count="curses"] .num')!.textContent = String(curses.length);
+    const curseList = curses.length
+      ? [
+          h(doc, "h2", { class: "list-head curses-head" }, "Curses ", h(doc, "span", { class: "list-count" }, String(curses.length))),
+          h(doc, "ul", { class: "rows" }, ...curses.map((c) => curseRow(doc, c))),
+        ]
+      : [h(doc, "p", { class: "muted no-curses" }, "No curses. This page plays fair.")];
+    const list = [...ghostList, ...vampireList, ...tombList, ...curseList];
     surfaces = [
       h(doc, "section", { class: "surface", "aria-label": "Haunting" }, tiles, pill("Un-haunt"), alert),
-      h(doc, "section", { class: "surface list", "aria-label": "Ghosts, vampires and tombstones" }, ...list),
+      h(doc, "section", { class: "surface list", "aria-label": "Ghosts, vampires, tombstones and curses" }, ...list),
     ];
   } else {
     surfaces = [
