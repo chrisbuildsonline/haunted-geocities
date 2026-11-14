@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "era-accuracy",
+  "description": "When a costume file is edited, ask the agent to review the edit against the era-accuracy steering file and report violations without changing code.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/content/costume/**"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file under src/content/costume/ was just edited. Review that edit against .kiro/steering/era-accuracy.md and report any violation. Check these rules: (1) colours are limited to the 216 web-safe colours, meaning each RGB channel is 00, 33, 66, 99, cc or ff, so flag any other hex, rgb(), hsl() or named colour, and any gradient, blur or alpha that creates a non-web-safe colour; (2) fonts are only Comic Sans MS and Times New Roman, with generic fallbacks allowed; (3) every icon, sprite and decoration is original pixel art; (4) nothing appears that did not exist on a typical 1998 GeoCities page; (5) no third-party trademarks, logos or copyrighted material. For each violation, give the file path, the line number, the offending text, the rule it breaks and the nearest compliant alternative (for example the closest web-safe colour). If there are no violations, say so in one line. This is a read-only review: do not edit, create or delete any file, and do not run commands that change files."
+  }
+}

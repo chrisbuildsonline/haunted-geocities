@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "visual-regression",
+  "description": "When the costume, the popup or the design reference is edited, compare screenshots of the costume and popup against the committed baselines.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/content/costume/**", "src/popup/**", "design/DESIGN.md"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run test:visual"
+  }
+}

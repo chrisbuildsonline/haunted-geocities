@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "manifest-lint",
+  "description": "When src/manifest.ts or vite.config.ts is edited, lint the built manifest against the MV3 rules in tech.md and product.md.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/manifest.ts", "vite.config.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run lint:manifest"
+  }
+}
