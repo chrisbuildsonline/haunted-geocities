@@ -1,3 +1,4 @@
+import type { SoundKind } from "../audio/sound";
 import type { PopupRequest, TabState } from "../data/types";
 import { HAUNT_ERROR, renderScreen, screenFor } from "./screens";
 import { createSettings } from "./settings";
@@ -12,7 +13,12 @@ async function resolveTab(api: typeof chrome, search: string): Promise<number | 
   return tab?.id;
 }
 
-export async function mountPopup(root: HTMLElement, api: typeof chrome, search: string): Promise<void> {
+export interface PopupOptions {
+  /** The popup's sound player (muted unless the user turned sound on). */
+  play?: (kind: SoundKind) => void;
+}
+
+export async function mountPopup(root: HTMLElement, api: typeof chrome, search: string, opts: PopupOptions = {}): Promise<void> {
   const doc = root.ownerDocument;
   const tabId = await resolveTab(api, search);
   const ask = async (type: "HAUNT" | "UNHAUNT" | "GET_STATE"): Promise<TabState> => {
@@ -53,6 +59,8 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
     }
+    // In the click's own task, so the popup's AudioContext starts with the gesture. Never awaited.
+    if (!current.haunted && !current.restricted) opts.play?.("whoosh");
     const next = await ask(current.haunted ? "UNHAUNT" : "HAUNT");
     render(next, { focus: true, error: next.error && !current.haunted ? HAUNT_ERROR : undefined });
   };
