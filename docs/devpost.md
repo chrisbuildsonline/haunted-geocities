@@ -20,6 +20,7 @@ The old GeoCities pages were loud, but you could see everything they did. A mode
 - **Curses.** Dark patterns get a CURSED! badge: fake scarcity, countdown text, ticking timers, confirmshaming and pre-checked opt-in boxes. The card quotes the page's own words and names the trick. A pre-checked box is only labelled, never unticked.
 - **Neighborhoods.** Every site gets a GeoCities address such as `SiliconValley/Heights/2049`, worked out from its host name, shown in a bar at the top with the neighborhood's tagline and in the popup.
 - The popup lists everything found on the page, and while a page is haunted the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
+- **Sound effects**, off by default. Switch them on in the popup and the Haunt click plays a short whoosh, and each card opens with a sound of its own: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and a low organ stab for a vampire. Nothing plays until you click.
 
 There are no host permissions at install. The tracker data is bundled and matched locally, and link checks are sent without cookies.
 
@@ -31,6 +32,7 @@ TypeScript, built with Vite into an MV3 extension: a service worker, a content s
 - Ghosts come from the page's resource timing entries, matched by host against the Tracker Radar data.
 - Vampire detection injects observe-only wrappers into the page's main world for the canvas, audio and font APIs. A wrapper reads the call stack to find which script called it, reports through a per-haunt nonce event, and is removed again on un-haunt.
 - Exorcise uses declarativeNetRequest session rules aimed at one tab.
+- The sounds are made in code with the Web Audio API, with no audio files. Card sounds come from the content script's isolated world, so the vampire wrappers in the page's main world never see them and the extension never catches itself.
 - The art is original pixel art, in web-safe colours, with Comic Sans MS and Times New Roman.
 
 ### How Kiro was used
@@ -38,13 +40,13 @@ TypeScript, built with Vite into an MV3 extension: a service worker, a content s
 The `.kiro/` folder holds what kiro-cli generated for the project.
 
 - **6 steering files**, all included on every request: product, structure, tech, era accuracy (216 web-safe colours, two fonts, original pixel art, nothing a 1998 page would not have had), accessibility and motion, and non-destructive DOM.
-- **8 specs**, each with requirements, a design and a task list: `scaffold`, `tracker-detector`, `costume-renderer`, `tombstones`, `runtime-vampires`, `dark-patterns`, `neighborhoods` and `kiro-hooks`.
+- **9 specs**, each with requirements, a design and a task list: `scaffold`, `tracker-detector`, `costume-renderer`, `tombstones`, `runtime-vampires`, `dark-patterns`, `neighborhoods`, `sound-effects` and `kiro-hooks`.
 - **3 Kiro hooks** that run when you save a matching file: `manifest-lint` runs `bun run lint:manifest` when the manifest or the Vite config changes, `visual-regression` runs `bun run test:visual` when the costume or the popup changes, and `era-accuracy` asks the agent to review a costume edit against the era steering file, without changing any file. A unit test checks that every hook's command is a real script and every pattern points at a real path.
 
 ### Tests
 
 - more than 950 unit tests (`bun run test`), with happy-dom for the DOM parts.
-- more than 100 end-to-end tests (`bun run test:e2e`) that load the unpacked extension in headless Chromium and drive it on local fixture pages, including checks that un-haunting leaves the page byte for byte as it was.
+- more than 110 end-to-end tests (`bun run test:e2e`) that load the unpacked extension in headless Chromium and drive it on local fixture pages, including checks that un-haunting leaves the page byte for byte as it was.
 - 14 visual screenshot tests (`bun run test:visual`): the costume on five fixture pages and the popup before and after haunting, each at 1280 and 375 pixels wide, compared with baselines made in the Playwright Docker image.
 - `bun run lint:manifest` checks the shipping manifest: MV3, the four permissions and nothing more, no remote code, no `'unsafe-eval'`.
 - `bun run docker:test` runs all of the above in a clean Playwright image.
@@ -71,7 +73,6 @@ The `.kiro/` folder holds what kiro-cli generated for the project.
 
 ## What's next
 
-- Sound effects. The popup already has a muted-by-default setting, but no sounds play yet.
 - More dark patterns, and more neighborhoods.
 - A Chrome Web Store listing.
 
