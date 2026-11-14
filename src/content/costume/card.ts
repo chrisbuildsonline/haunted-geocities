@@ -1,5 +1,6 @@
 // The ghost (or vampire) card: a Win95 window in #cards, one at a time, beside its sprite toward the page centre.
 // The tombstone card is the stone itself, in the same slot and placement.
+import type { SoundKind } from "../../audio/sound";
 import type { CompanyHit, ContentRequest, Curse, DeadLink } from "../../data/types";
 import { KIND_INFO } from "../dark-patterns";
 import { caughtLine } from "../vampire";
@@ -15,11 +16,21 @@ export interface CardOptions {
   reduced?: boolean;
   /** A tracker company in trackers.json (false for an unlisted host: nothing to block, no Exorcise). */
   listed?: boolean;
+  /** Plays the card's sound (silent unless the user turned sound on). Called only when a card opens. */
+  play?: (kind: SoundKind) => void;
 }
+
+type OpenOptions = Pick<CardOptions, "bounds" | "reduced" | "play">;
 
 const SHADOW = 4; // HARD_SHADOW's offset
 
 const openers = new WeakMap<Element, HTMLElement>();
+
+/** The open card came from `opener`: clicking it again redraws the card but makes no sound. */
+const openFrom = (cards: HTMLElement, opener: HTMLElement) => {
+  const card = cards.querySelector(".card");
+  return !!card && openers.get(card) === opener;
+};
 
 /** Close the open card, if any, and hand focus back to the ghost that opened it. */
 export function closeCard(cards: HTMLElement): void {
@@ -58,6 +69,7 @@ const VAMPIRE_BODY =
   `<p class="what">Fingerprinting reads tiny quirks of your browser to recognise you again without cookies.</p>`;
 
 export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElement, opts: CardOptions): HTMLElement {
+  const again = openFrom(cards, opener);
   cards.querySelector(".card")?.remove();
   const doc = cards.ownerDocument;
   const vampire = hit.vampire;
@@ -101,6 +113,7 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
   card.style.maxHeight = `${Math.max(120, Math.min(320, opts.bounds.bottom - opts.bounds.top - 16))}px`;
   show(cards, card, opener, L.cardWidth, opts);
   (act ?? card.querySelector<HTMLElement>(".close")!).focus();
+  if (!again) opts.play?.(vampire ? "organ" : "ghost");
   return card;
 }
 
@@ -129,7 +142,8 @@ function show(cards: HTMLElement, card: HTMLElement, opener: HTMLElement, width:
 }
 
 /** The curse card: the default frame, titled for the trick, quoting the page's own words. All strings are set as text. */
-export function openCurseCard(cards: HTMLElement, curse: Curse, opener: HTMLElement, opts: Pick<CardOptions, "bounds" | "reduced">): HTMLElement {
+export function openCurseCard(cards: HTMLElement, curse: Curse, opener: HTMLElement, opts: OpenOptions): HTMLElement {
+  const again = openFrom(cards, opener);
   cards.querySelector(".card")?.remove();
   const doc = cards.ownerDocument;
   const info = KIND_INFO[curse.kind];
@@ -146,11 +160,13 @@ export function openCurseCard(cards: HTMLElement, curse: Curse, opener: HTMLElem
   card.querySelector(".trick")!.textContent = info.trick;
   show(cards, card, opener, L.cardWidth, opts);
   card.querySelector<HTMLElement>(".close")!.focus();
+  if (!again) opts.play?.("sting");
   return card;
 }
 
 /** The tombstone card: the stone itself, inscribed HERE LIES, the path, the status (and the host when cross-site). */
-export function openTombstoneCard(cards: HTMLElement, dead: DeadLink, opener: HTMLElement, opts: Pick<CardOptions, "bounds" | "reduced">): HTMLElement {
+export function openTombstoneCard(cards: HTMLElement, dead: DeadLink, opener: HTMLElement, opts: OpenOptions): HTMLElement {
+  const again = openFrom(cards, opener);
   cards.querySelector(".card")?.remove();
   const doc = cards.ownerDocument;
   const card = doc.createElement("section");
@@ -169,5 +185,6 @@ export function openTombstoneCard(cards: HTMLElement, dead: DeadLink, opener: HT
   if (url.origin !== doc.defaultView!.location.origin) status.after(Object.assign(doc.createElement("p"), { className: "host", textContent: url.hostname }));
   show(cards, card, opener, L.tombstoneWidth, opts);
   card.querySelector<HTMLElement>(".close")!.focus();
+  if (!again) opts.play?.("thud");
   return card;
 }

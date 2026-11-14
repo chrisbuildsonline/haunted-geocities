@@ -22,6 +22,7 @@ import { mountTombstones } from "./tombstones";
 import { mountCurses } from "./curses";
 import { detectDarkPatterns, mergeCurses, type DarkPattern } from "../dark-patterns";
 import { watchTimers } from "../timers";
+import { createPlayer, type SoundKind } from "../../audio/sound";
 
 const RESCAN_DEBOUNCE = 500;
 const RESCAN_SPACING = 2000;
@@ -66,6 +67,12 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     return root;
   }
   const win = doc.defaultView!;
+
+  // Card sounds, from this isolated world's own AudioContext (never the page's). Made lazily on the
+  // first card opened with sound on; nothing when there is no extension storage (unit tests).
+  const storage = (globalThis as { chrome?: typeof chrome }).chrome?.storage;
+  const player = storage ? createPlayer({ storage, createContext: () => new AudioContext() }) : undefined;
+  const play = (kind: SoundKind) => player?.play(kind);
 
   const sheet = new win.CSSStyleSheet();
   sheet.replaceSync(costumeCss({ stars: paintTile(doc, "stars"), twinkle: paintTile(doc, "twinkle") }));
@@ -134,13 +141,13 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const tombs = mountTombstones(markers, {
     slots: () => slots,
     fade: () => settled && !motion.matches,
-    onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: bounds(), reduced: motion.matches }),
+    onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: bounds(), reduced: motion.matches, play }),
   });
   // Curse badges: beside their elements, never on them.
   const badges = mountCurses(markers, {
     slots: () => slots,
     fade: () => settled && !motion.matches,
-    onOpen: (c, opener) => openCurseCard(cards, c, opener, { bounds: bounds(), reduced: motion.matches }),
+    onOpen: (c, opener) => openCurseCard(cards, c, opener, { bounds: bounds(), reduced: motion.matches, play }),
   });
   let stopped = false;
   const commit = () => {
@@ -173,7 +180,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const onOpen = (company: string, opener: HTMLElement) => {
     const hit = scan.companies.find((c) => c.company === company);
     const listed = Object.hasOwn((trackerJson as TrackerData).entities, company);
-    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), listed, send, bounds: bounds(), reduced: motion.matches });
+    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), listed, send, bounds: bounds(), reduced: motion.matches, play });
   };
   const setExorcised = (companies: string[]) => {
     exorcised = new Set(companies);
@@ -318,6 +325,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     win.clearTimeout(rescanTimer);
     bridge.stop();
     closeCard(cards);
+    player?.dispose();
     tombs.stop();
     page.remove();
     motion.stop();
