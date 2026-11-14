@@ -130,6 +130,11 @@ button:focus-visible { ${ring} }
 .tomb-marker:hover svg { filter: drop-shadow(0 0 3px ${P.spectral}); }
 .tomb-marker:focus-visible { ${ring} }
 
+.curse-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box; height: 18px; margin: 0; padding: 0 4px; white-space: nowrap; cursor: pointer; pointer-events: auto; background: ${P.curse}; color: ${P.ink}; border: 1px solid ${P.ink}; box-shadow: 2px 2px 0 ${P.ink}; font: bold 11px/16px ${COMIC}; }
+.curse-badge svg { display: block; flex: none; image-rendering: pixelated; }
+.curse-badge:focus-visible { outline: 2px dotted ${P.star}; outline-offset: 2px; box-shadow: 2px 2px 0 ${P.ink}, 0 0 0 5px ${P.ink}; }
+.curse-card .quote { margin-bottom: 8px !important; font-style: italic; overflow-wrap: anywhere; }
+
 .card.tombstone-card { display: block; width: ${L.tombstoneWidth}px; height: 208px; max-height: none; overflow: hidden; background: ${P.stone}; border: 2px solid; border-color: ${P.ghostWhite} ${P.stoneShadow} ${P.stoneShadow} ${P.ghostWhite}; border-radius: 88px 88px 0 0; box-shadow: ${HARD_SHADOW}; }
 .tombstone-card .close { position: absolute; top: 24px; right: 30px; z-index: 1; }
 .tombstone-card .inscription { position: absolute; inset: 16px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }

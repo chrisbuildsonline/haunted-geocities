@@ -1,6 +1,6 @@
 // Original pixel art for the costume, drawn by hand as character maps, plus the helpers that
 // turn a map into a crisp SVG (one path per colour, runs merged). Every colour is a palette token.
-import { PALETTE as P } from "./tokens";
+import { PALETTE as P, PIXEL } from "./tokens";
 
 export type Px = { x: number; y: number; w: number; h: number; color: string };
 export type Legend = Record<string, string>;
@@ -107,6 +107,11 @@ export const TOMB = [
   "MMMMMMMM",
 ];
 export const TOMB_LEGEND: Legend = { o: P.crypt, G: P.stone, D: P.stoneShadow, M: P.moss };
+
+/** The 6×6 skull on a cursed badge (12×12 at 2px): white with black eyes, framed by the badge's own outline. */
+export const BADGE_SKULL = [".WWWW.", "WWWWWW", "WkWWkW", "WWWWWW", ".WkkW.", ".W..W."];
+export const BADGE_SKULL_LEGEND: Legend = { W: P.ghostWhite, k: P.ink };
+export const curseBadgeSvg = () => svgMarkup(mapToPx(BADGE_SKULL, BADGE_SKULL_LEGEND, PIXEL.iconScale), 12, 12);
 
 /** The 24×12 under-construction barricade: striped board, two legs, a lamp on each post. */
 export function signFrame(lit: boolean): string[] {
