@@ -29,7 +29,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 ### Top Bands: Neighborhood Bar + Marquee
 
 13. The renderer shall render a 24px neighborhood bar with `#330066` ground, Times New Roman 13px, `#ffffcc` text.
-14. The neighborhood bar shall display `You are in: <Neighborhood>` on the left side, where the neighborhood is a deterministic placeholder string assigned per host.
+14. The neighborhood bar shall display `You are in: <Neighborhood>` on the left side, where the neighborhood is the per-host address from the neighborhoods spec (`.kiro/specs/neighborhoods/`), not a placeholder.
 15. The neighborhood bar shall display the 48×24 under-construction sign on the right side.
 16. The under-construction sign shall be static, or 2 frames at 1 Hz with motion allowed.
 17. The renderer shall render a 24px marquee band below the neighborhood bar with `#000033` ground, Comic Sans MS 14px, `#66ff99` text.

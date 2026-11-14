@@ -53,7 +53,7 @@ It builds on the costume renderer (R4), which established the shadow DOM layers 
 28. Clicking a ghost or pressing Enter on a focused ghost shall open a card inside the `#cards` layer, following the card style in `design/DESIGN.md`.
 29. The card title bar shall show the company display name (`#330066` ground, Times New Roman bold 14px `#ffffcc`, 22px tall, with a 16×16 `[x]` close button).
 30. The card body shall show the category, `Haunts these domains:` followed by a Times New Roman 13px list of matched domains, and `Seen <N> times on this page` where `<N>` is the request count.
-31. The card body shall end with an `[Exorcise]` default Win95 button and the footnote `Blocked until you close the browser.`
+31. The card body shall end with an `[Exorcise]` default Win95 button and the footnote `Blocked on this tab until you un-haunt or leave the page.`
 32. After Exorcise, the ghost sprite shall fade to 40% opacity with an `EXORCISED` stamp, and the button shall become `[Let it back]`.
 33. Esc shall close the card and return focus to the opener ghost; the card shall be clamped between the top bands and the HUD.
 

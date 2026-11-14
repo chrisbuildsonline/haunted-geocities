@@ -156,7 +156,7 @@ Tests live under `test/tracker/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 29
   - Test: `test/tracker/card.test.ts` → `"card title bar has company name and close button"`.
 
-- [x] 10.3 Body: category, `Haunts these domains:` + Times New Roman 13px domain list, `Seen <N> times on this page`, `[Exorcise]` default Win95 button, footnote `Blocked until you close the browser.`
+- [x] 10.3 Body: category, `Haunts these domains:` + Times New Roman 13px domain list, `Seen <N> times on this page`, `[Exorcise]` default Win95 button, footnote `Blocked on this tab until you un-haunt or leave the page.`
   - Req: 30, 31
   - Test: `test/tracker/card.test.ts` → `"card body has category, domains, request count, Exorcise button, footnote"`.
 

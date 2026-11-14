@@ -172,7 +172,7 @@ Tests live under `test/vampire/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 36, 37
   - Test: `test/vampire/hud.test.ts` → `"HUD vampire count reflects number of vampire companies"`.
 
-- [x] 10.4 Modify `src/popup/screens.ts` haunted screen to list vampires after ghosts. Each row: 32px icon tile (vampire sprite), company/host name (15px ink), short line (13px muted: caught APIs or `Known to fingerprint`), and a pill: `Caught` (`#f1ecfb`/`#6633cc`) or `Known` (`#e3e6ec`/`#5b6170`).
+- [x] 10.4 Modify `src/popup/screens.ts` haunted screen to list vampires after ghosts. Each row: 32px icon tile (vampire sprite), company/host name (15px ink), short line (13px muted: caught APIs or, for a known vampire, `On the Tracker Radar fingerprint list`), and a pill: `Caught` (`#f1ecfb`/`#6633cc`) or `Known` (`#e3e6ec`/`#5b6170`).
   - Req: 38
   - Test: `test/vampire/popup.test.ts` → `"vampire row has icon, name, sub-line, Caught/Known pill"`.
 

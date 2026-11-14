@@ -81,7 +81,7 @@ Steering references: `product.md` (vampire scripts, costume overlay, scope bound
 
 ### Popup Vampire Rows
 
-38. The popup haunted screen shall list vampires after ghosts, each with a 32px icon tile (the vampire sprite), the company or host name (15px ink), a short line naming what it read or `Known to fingerprint` (13px muted), and a pill on the right: `Caught` (accent-tinted `#f1ecfb`/`#6633cc`) or `Known` (muted `#e3e6ec`/`#5b6170`).
+38. The popup haunted screen shall list vampires after ghosts, each with a 32px icon tile (the vampire sprite), the company or host name (15px ink), a short line naming what it read or, for a known vampire, `On the Tracker Radar fingerprint list` (13px muted), and a pill on the right: `Caught` (accent-tinted `#f1ecfb`/`#6633cc`) or `Known` (muted `#e3e6ec`/`#5b6170`).
 39. When a vampire belongs to a known tracker company, its row shall also show an `[Exorcise]` secondary button (same as a ghost row). When the vampire is an unlisted third-party host, no Exorcise button shall appear.
 40. When no vampires are found, the list surface shall show `No vampires. Your blood is safe.`
 

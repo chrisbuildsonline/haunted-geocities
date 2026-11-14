@@ -752,14 +752,14 @@ The haunted screen's list surface is extended to show vampires after ghosts:
 |  [v] cdn.example-metrics.net   [Caught]  |
 |      Canvas + audio fingerprinting       |
 |  [v] EvilCorp                [Known]     |
-|      Known to fingerprint                 |
+|      On the Tracker Radar fingerprint list|
 +------------------------------------------+
 ```
 
 Each vampire row:
 - 32px icon tile: the vampire sprite (using the existing `sprite(doc, "vampire", 16, ...)` from `sprites.ts`).
 - Company or host name (15px ink).
-- Short line (13px muted): `Canvas + audio fingerprinting` (caught APIs joined) or `Known to fingerprint`.
+- Short line (13px muted): `Canvas + audio fingerprinting` (caught APIs joined) or, for a known vampire, `On the Tracker Radar fingerprint list`.
 - Pill on the right: `Caught` (`#f1ecfb`/`#6633cc`) or `Known` (`#e3e6ec`/`#5b6170`).
 - If the vampire is a known tracker company: `[Exorcise]` secondary button (same as ghost rows).
 - If the vampire is an unlisted third-party host: no Exorcise button, just the pill.
@@ -772,7 +772,7 @@ function vampireRow(doc: Document, v: CompanyHit, exorcised: boolean, onExorcise
   const pillText = caught.length ? "Caught" : "Known";
   const sub = caught.length
     ? caught.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(" + ") + " fingerprinting"
-    : "Known to fingerprint";
+    : "On the Tracker Radar fingerprint list";
   // ... build row with icon, name, sub, pill, and optional Exorcise ...
 }
 ```

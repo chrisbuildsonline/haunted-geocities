@@ -456,7 +456,7 @@ Following the card style in `design/DESIGN.md`:
   - `Haunts these domains:` followed by a Times New Roman 13px list of domains.
   - `Seen <N> times on this page`.
   - `[Exorcise]` default Win95 button (extra 1px `#000000` ring).
-  - Footnote: `Blocked until you close the browser.`
+  - Footnote: `Blocked on this tab until you un-haunt or leave the page.`
 - Placement: anchored beside the ghost sprite, clamped between the top bands and the HUD.
 - Keyboard: focus moves into the card. Esc closes, focus returns to the opener.
 - Only one card open at a time.
