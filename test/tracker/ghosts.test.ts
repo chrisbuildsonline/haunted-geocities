@@ -140,7 +140,7 @@ describe("ghost card", () => {
     expect(card.textContent).toContain("Seen 3 times on this page");
     expect(card.querySelector("button.act")!.textContent).toBe("Exorcise");
     expect(card.querySelector("button.act")!.classList.contains("default")).toBe(true);
-    expect(card.querySelector(".foot")!.textContent).toBe("Blocked until you close the browser.");
+    expect(card.querySelector(".foot")!.textContent).toBe("Blocked on this tab until you un-haunt or leave the page.");
   });
   test("Exorcise sends EXORCISE without a tabId; when exorcised it reads Let it back and sends LET_BACK", () => {
     const { cards, opener, send, sent } = cardSetup();

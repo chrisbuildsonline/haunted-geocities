@@ -70,7 +70,7 @@ export function openCard(cards: HTMLElement, hit: CompanyHit, opener: HTMLElemen
   card.innerHTML =
     `<div class="bar"><h2 id="card-title"></h2><button class="close win95" type="button" aria-label="Close">x</button></div>` +
     `<div class="card-body">${vampire ? VAMPIRE_BODY : `<p class="cat"></p><p>Haunts these domains:</p><ul class="domains"></ul><p class="seen"></p>`}` +
-    (exorcisable ? `<button class="act win95 default" type="button"></button><p class="foot">Blocked until you close the browser.</p>` : "") +
+    (exorcisable ? `<button class="act win95 default" type="button"></button><p class="foot">Blocked on this tab until you un-haunt or leave the page.</p>` : "") +
     `</div>`;
   const domains = card.querySelector(".domains")!;
   if (vampire) {

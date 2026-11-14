@@ -97,7 +97,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
     });
   expect(await card()).toMatchObject({ title: "Criteo", act: "Exorcise", focused: true });
   expect((await card())!.text).toContain("Seen 3 times on this page");
-  expect((await card())!.text).toContain("Blocked until you close the browser.");
+  expect((await card())!.text).toContain("Blocked on this tab until you un-haunt or leave the page.");
   await expect.poll(() => inShadow(function () {
     return getComputedStyle(this.querySelector("#cards .card")!).opacity;
   })).toBe("1");

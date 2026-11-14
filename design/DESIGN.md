@@ -74,7 +74,8 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
 
 - **Neighborhood bar (24px):**
   - Colours: `#330066` ground, Times New Roman 13px, `#ffffcc` text.
-  - Left side: `You are in: Area51/Vault/2049`. The neighborhood is assigned per host from `src/data/` and is stable per host.
+  - Left side: `You are in: SiliconValley/Heights/2049`, the address in bold. Every host gets a neighborhood address `Neighborhood/Suburb/NNNN` from `src/data/neighborhoods.json` (`resolveNeighborhood` in `src/data/neighborhood.ts`): keyword and TLD rules first, else a stable hash. `localhost` is `Heartland/Homestead/1998`, an IP address is `Area51/Hangar/1998`. The address is never cut.
+  - Middle: the neighborhood's tagline (e.g. `Where the webmasters code all night.`), same colour and font as the address, 12px from each side. It takes the space left, stays on one line and is cut with an ellipsis. Hidden under 480px wide.
   - Right side: the 48×24 under-construction sign. It is static, or 2 frames at 1 Hz with motion allowed.
 - **Marquee (24px):** `#000033` ground, Comic Sans MS 14px, `#66ff99` text. It cycles lines such as `~*~ Welcome to my haunted homepage!!! ~*~ 7 ghosts are watching you ~*~ Best viewed at 800x600 ~*~`. Implemented as a CSS `translateX` keyframe. Never `<marquee>`.
 - **Placement:** the bands sit at `top: 0`. If page UI is fixed or sticky at y=0 (sampled with `elementsFromPoint` along the top row), the bands sit just below it.
@@ -116,7 +117,7 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
   - Title bar: company name.
   - Body: category, `Haunts these domains:` (Times New Roman 13px list), `Seen 12 times on this page`.
   - Then the `[Exorcise]` default button.
-  - Footnote: `Blocked until you close the browser.`
+  - Footnote: `Blocked on this tab until you un-haunt or leave the page.` (the block is a session rule for this tab; it goes on Un-haunt, reload, navigation or tab close).
   - After Exorcise, the sprite fades to 40% opacity with an `EXORCISED` stamp, and the button becomes `[Let it back]`.
 
 ### Vampires (runtime fingerprinting scripts)
@@ -230,7 +231,6 @@ The modern control room. It is 360px wide, at most 600px tall, and lists scroll 
 ```text
 [ghost 24] Haunted GeoCities                 ( Idle )
 example.org                                    <- 28px title
-Neighborhood: Area51/Vault/2049                <- 13px muted
 +------------------------------------------+
 |  Turn this page into a 1998 crypt.       |  15px ink
 |  Ghosts, vampires and dead links show up |  13px muted
@@ -250,6 +250,7 @@ Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0   <- 12px muted
 ```text
 [ghost 24] Haunted GeoCities              ( Haunted )
 example.org
+TimesSquare/Midway/7315                        <- address line: 13px muted, 4px under the title
 +------------------------------------------+
 |  7        1         3         2          |  36px numbers, 2x2 at <340
 |  Ghosts   Vampires  Tombstones Curses    |  13px muted, 16px sprite each
@@ -269,7 +270,9 @@ example.org
 ```
 
 - **Legend:** each count tile carries its 16px sprite, and the label under the number names the kind. The tiles are the legend.
+- **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 13px muted line under the title, `.address` with `margin-top: -8px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
 - **List order:** ghosts sorted by request count, then vampires.
+- **Vampire rows:** a caught vampire has the `Caught` pill and what it read (`Canvas readback · font probing`). A known vampire (on the list, not caught here) has the `Known` pill and the line `On the Tracker Radar fingerprint list`.
 - **Empty list:** the surface shows `No ghosts here. Suspiciously clean.` (15px ink) and `Trackers that load later will appear here.` (13px muted).
 
 ### Screen: restricted page
