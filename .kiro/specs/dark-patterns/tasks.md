@@ -98,73 +98,73 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 5. Badge art and CSS
 
-- [ ] 5.1 In `src/content/costume/art.ts`, add the 6×6 `BADGE_SKULL`, `BADGE_SKULL_LEGEND` (white and ink, web-safe) and `curseBadgeSvg()` (12×12 at 2px, `crispEdges`).
+- [x] 5.1 In `src/content/costume/art.ts`, add the 6×6 `BADGE_SKULL`, `BADGE_SKULL_LEGEND` (white and ink, web-safe) and `curseBadgeSvg()` (12×12 at 2px, `crispEdges`).
   - Req: 40
   - Test: `test/dark-patterns/markers.test.ts` → `"BADGE_SKULL is 6x6 with web-safe colours"`, `"curseBadgeSvg is 12x12 with pixelated crisp edges"`.
 
-- [ ] 5.2 In `src/content/costume/styles.ts`, add `.curse-badge`, `.curse-badge svg`, `.curse-badge:focus-visible` and `.curse-card .quote` from `design.md`, using the palette tokens (`P.curse`, `P.ink`, `P.star`).
+- [x] 5.2 In `src/content/costume/styles.ts`, add `.curse-badge`, `.curse-badge svg`, `.curse-badge:focus-visible` and `.curse-card .quote` from `design.md`, using the palette tokens (`P.curse`, `P.ink`, `P.star`).
   - Req: 40, 45, 59
   - Test: `test/dark-patterns/markers.test.ts` → `"CSS: 18px badge, #ff9900 ground, black 1px border, 2px hard shadow, bold 11px Comic Sans"`, `"CSS: focus ring is the costume ring"`, `"badge text contrast is at least 4.5:1"`.
 
 ## 6. Badges (`src/content/costume/curses.ts`)
 
-- [ ] 6.1 Export `textNear` from `src/content/costume/tombstones.ts` (no behaviour change).
+- [x] 6.1 Export `textNear` from `src/content/costume/tombstones.ts` (no behaviour change).
   - Req: 41
   - Test: `bun run test` (the tombstone tests still pass).
 
-- [ ] 6.2 Implement `lineRects(el)` (a `Range` over the contents, zero-size rects dropped) and the first/last line helpers.
+- [x] 6.2 Implement `lineRects(el)` (a `Range` over the contents, zero-size rects dropped) and the first/last line helpers.
   - Req: 42
   - Test: `test/dark-patterns/markers.test.ts` → `"lineRects uses range rects, not the block box"` (stubbed `getClientRects`), `"empty list when the element is not rendered"`.
 
-- [ ] 6.3 Implement `curseSpot(first, last, w, viewportWidth, text, slots)`: (a) right of the last line box, (b) above the first line box, (c) gutter lane slot, else `null`.
+- [x] 6.3 Implement `curseSpot(first, last, w, viewportWidth, text, slots)`: (a) right of the last line box, (b) above the first line box, (c) gutter lane slot, else `null`.
   - Req: 41, 42
   - Test: `test/dark-patterns/markers.test.ts` → `"spot a: 4px right of the last line box, centred"`, `"spot b when a would leave the viewport"`, `"spot b when a would cross text"`, `"spot c: the lane slot at the same y, nearest edge"`, `"null when no spot fits"`, `"a spot never intersects a text rect"`, `"spots are whole pixels"`.
 
-- [ ] 6.4 Implement `mountCurses(markers, opts)`: one `<button class="curse-badge" data-kind>` per pattern with the skull and `CURSED!`, `aria-label` `<title>: <snippet>`, `IntersectionObserver` on the page element, scroll (capture, passive) and resize listeners with one `requestAnimationFrame` pass, measure width before placing, fade-in for late badges, `stop()`.
+- [x] 6.4 Implement `mountCurses(markers, opts)`: one `<button class="curse-badge" data-kind>` per pattern with the skull and `CURSED!`, `aria-label` `<title>: <snippet>`, `IntersectionObserver` on the page element, scroll (capture, passive) and resize listeners with one `requestAnimationFrame` pass, measure width before placing, fade-in for late badges, `stop()`.
   - Req: 40, 43, 44, 45, 46, 47
   - Test: `test/dark-patterns/markers.test.ts` → `"one button per pattern in #markers with CURSED! and an aria-label"`, `"update removes badges whose pattern left the list and keeps the others"`, `"a badge for an element that is off screen is display:none"`, `"the observer only changes the badge, never the page element"`, `"scroll and resize cause one rAF pass"`, `"a badge with no spot is display:none"`, `"a late badge fades in 200ms linear"`, `"no animation when fade() is false"`, `"stop removes badges, disconnects the observer, cancels the frame and removes both listeners"`.
 
-- [ ] 6.5 Prove badges never touch the page.
+- [x] 6.5 Prove badges never touch the page.
   - Req: 27, 29
   - Test: `test/dark-patterns/markers.test.ts` → `"outerHTML is unchanged after mount, place and stop"`, `"clicking a badge dispatches no event on the page element"`.
 
 ## 7. Curse card (`src/content/costume/card.ts`)
 
-- [ ] 7.1 Add `openCurseCard(cards, curse, opener, { bounds, reduced })` built on the private `show()`: title from `KIND_INFO`, the snippet in quotation marks and the trick line via `textContent`, `#330066` title bar, `[x]` button, focus on `[x]`, one card at a time.
+- [x] 7.1 Add `openCurseCard(cards, curse, opener, { bounds, reduced })` built on the private `show()`: title from `KIND_INFO`, the snippet in quotation marks and the trick line via `textContent`, `#330066` title bar, `[x]` button, focus on `[x]`, one card at a time.
   - Req: 48, 49, 50, 51, 52
   - Test: `test/dark-patterns/card.test.ts` → `"title is Cursed: Fake scarcity for scarcity"`, `"title is Cursed: Countdown"`, `"title is Cursed: Ticking timer"`, `"title is Cursed: Confirmshaming"`, `"title is Cursed: Pre-checked opt-in"`, `"body quotes the snippet and has one trick line"`, `"a snippet with <img onerror> is text, not markup"`, `"title bar is not the vampire colour"`, `"opening a curse card closes an open ghost card"`.
 
-- [ ] 7.2 Verify focus, Esc and placement.
+- [x] 7.2 Verify focus, Esc and placement.
   - Req: 51, 52
   - Test: `test/dark-patterns/card.test.ts` → `"focus moves to the close button"`, `"Esc closes the card and returns focus to the badge"`, `"[x] closes the card"`, `"the card keeps 8px from both viewport edges at 1280 and 375 (stub geometry)"`, `"no animation under reduced motion"`.
 
-- [ ] 7.3 Enter and Space on a focused badge open the card (native `<button>` behaviour).
+- [x] 7.3 Enter and Space on a focused badge open the card (native `<button>` behaviour).
   - Req: 48
   - Test: `test/dark-patterns/markers.test.ts` → `"badge is a focusable button that calls onOpen on click"`.
 
 ## 8. Render integration (`src/content/costume/render.ts`)
 
-- [ ] 8.1 Factor the `setCounts` call in `refresh()` into `renderCounts()` and pass `curses: curses.length`.
+- [x] 8.1 Factor the `setCounts` call in `refresh()` into `renderCounts()` and pass `curses: curses.length`.
   - Req: 53
   - Test: `test/dark-patterns/wiring.test.ts` → `"HUD curse count equals the number of curses"`, `"the count updates when a curse is added"`, `"ghost updates keep the curse count"`.
 
-- [ ] 8.2 Add `known`, `timers`, `curses`, `lastSent`, `commit()` and `rescan()`. A known element keeps its first kind and snippet; a disconnected element is dropped; `CURSE_UPDATE` is sent only when `JSON.stringify(curses)` changes.
+- [x] 8.2 Add `known`, `timers`, `curses`, `lastSent`, `commit()` and `rescan()`. A known element keeps its first kind and snippet; a disconnected element is dropped; `CURSE_UPDATE` is sent only when `JSON.stringify(curses)` changes.
   - Req: 32, 33, 34, 35
   - Test: `test/dark-patterns/wiring.test.ts` → `"renderCostume detects once and sends CURSE_UPDATE with the curses"`, `"a re-render of the same patterns sends nothing"`, `"a ticking snippet does not change the curse"`, `"a removed element's curse is dropped"`, `"a new element's curse is added"`.
 
-- [ ] 8.3 Mount the badges (`slots`, `fade`, `onOpen` → `openCurseCard`), call `badges.place()` from `relayout`, and extend the `mo` callback with a trailing 500 ms debounced `scheduleRescan` that runs at most once per 2 seconds.
+- [x] 8.3 Mount the badges (`slots`, `fade`, `onOpen` → `openCurseCard`), call `badges.place()` from `relayout`, and extend the `mo` callback with a trailing 500 ms debounced `scheduleRescan` that runs at most once per 2 seconds.
   - Req: 33, 41, 43, 46
   - Test: `test/dark-patterns/wiring.test.ts` → `"a mutation triggers one rescan after 500 ms"`, `"rescans are at least 2 s apart"`, `"relayout re-places the badges"`.
 
-- [ ] 8.4 Start `watchTimers` after the layers exist; each timer pattern is added to `timers` and `commit()` runs.
+- [x] 8.4 Start `watchTimers` after the layers exist; each timer pattern is added to `timers` and `commit()` runs.
   - Req: 21, 25, 32
   - Test: `test/dark-patterns/wiring.test.ts` → `"a ticking clock becomes a timer curse"`.
 
-- [ ] 8.5 Add the `onUnhaunt` cleanup: `stopTimers()`, `badges.stop()`, clear the debounce timer.
+- [x] 8.5 Add the `onUnhaunt` cleanup: `stopTimers()`, `badges.stop()`, clear the debounce timer.
   - Req: 25, 47
   - Test: `test/dark-patterns/wiring.test.ts` → `"un-haunt stops the watcher, removes the badges and cancels the debounce"`, `"no CURSE_UPDATE is sent after un-haunt"`.
 
-- [ ] 8.6 Prove the integrated costume leaves the page alone.
+- [x] 8.6 Prove the integrated costume leaves the page alone.
   - Req: 27, 28, 30, 31
   - Test: `test/dark-patterns/wiring.test.ts` → `"outerHTML is identical after haunt and un-haunt"`, `"a pre-checked box stays checked through haunt, a badge click and un-haunt"`.
 
@@ -216,11 +216,11 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 12. Accessibility and motion
 
-- [ ] 12.1 Contrast and strobing.
+- [x] 12.1 Contrast and strobing.
   - Req: 59, 60
   - Test: `test/dark-patterns/markers.test.ts` → `"badge text meets 4.5:1 against its ground"`; `test/dark-patterns/card.test.ts` → `"card text meets 4.5:1"`, `"no badge or card animation has a period under 333ms"`.
 
-- [ ] 12.2 Reduced motion.
+- [x] 12.2 Reduced motion.
   - Req: 46, 61
   - Test: `test/dark-patterns/markers.test.ts` → `"reduced motion: late badges appear with no animation"`; `test/dark-patterns/card.test.ts` → `"reduced motion: the card has no open animation"`.
 
