@@ -59,7 +59,11 @@ Layers, bottom to top:
 | HUD icons | 8×8 | 16×16 |
 | Under-construction sign | 24×12 | 48×24 |
 
-Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-px hem is tinted per company. Pick the tint as hash(company) mod 6 over `#ff99cc #99ccff #ccff99 #ffcc99 #cc99ff #99ffcc`.
+Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-px hem is tinted per company, so ghosts side by side never share a hem colour:
+
+- **Base tint:** hash(company) mod 6 over `#ff99cc #99ccff #ccff99 #ffcc99 #cc99ff #99ffcc` (`hemTint`).
+- **Neighbours differ:** tints are handed out in ghost order (most requests first, then by name; vampires are not in it). A ghost whose base tint equals the tint of either of the two ghosts before it moves on to the next tint in the list (wrapping from the last to the first) until it differs from both. The first ghost keeps its base tint. With two lanes the slots alternate sides, so two back is the ghost just above in the same lane; with one lane it is one back (`assignTints` in `src/content/costume/ghosts.ts`).
+- **Same tint everywhere:** the lanes and the popup ghost rows use the same `assignTints` over the same order, so a company has one hem colour in both. A ghost whose tint changes on an update keeps its element, focus and label; only its sprite is redrawn.
 
 ### Starfield (tiled, never over text)
 
@@ -73,7 +77,7 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
 ### Top bands: neighborhood bar + marquee
 
 - **Neighborhood bar (24px):**
-  - Colours: `#330066` ground, Times New Roman 13px, `#ffffcc` text.
+  - 24px tall, one line. Colours: `#330066` ground, Times New Roman 13px, `#ffffcc` text, a 1px `#6633cc` bottom edge.
   - Left side: `You are in: SiliconValley/Heights/2049`, the address in bold. Every host gets a neighborhood address `Neighborhood/Suburb/NNNN` from `src/data/neighborhoods.json` (`resolveNeighborhood` in `src/data/neighborhood.ts`): keyword and TLD rules first, else a stable hash. `localhost` is `Heartland/Homestead/1998`, an IP address is `Area51/Hangar/1998`. The address is never cut.
   - Middle: the neighborhood's tagline (e.g. `Where the webmasters code all night.`), same colour and font as the address, 12px from each side. It takes the space left, stays on one line and is cut with an ellipsis. Hidden under 480px wide.
   - Right side: the 48×24 under-construction sign. It is static, or 2 frames at 1 Hz with motion allowed.
@@ -272,6 +276,7 @@ TimesSquare/Midway/7315                        <- address line: 13px muted, 4px 
 - **Legend:** each count tile carries its 16px sprite, and the label under the number names the kind. The tiles are the legend.
 - **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 13px muted line under the title, `.address` with `margin-top: -8px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
 - **List order:** ghosts sorted by request count, then vampires.
+- **Ghost row tiles:** each ghost sprite wears the same hem tint as its lane ghost (see the hem tint rule under Pixel-art grid), so neighbouring rows never share a hem colour.
 - **Vampire rows:** a caught vampire has the `Caught` pill and what it read (`Canvas readback · font probing`). A known vampire (on the list, not caught here) has the `Known` pill and the line `On the Tracker Radar fingerprint list`.
 - **Empty list:** the surface shows `No ghosts here. Suspiciously clean.` (15px ink) and `Trackers that load later will appear here.` (13px muted).
 
@@ -293,11 +298,44 @@ This page is protected                         <- 28px
 ### Row: "Check links to other sites" (opt-in)
 
 - **Off by default.** Sub-line: `Asks Chrome to visit linked sites. Off.`
-- **Turning it on:** calls `chrome.permissions.request` for http/https origins.
-  - Granted: the toggle is on and the sub-line reads `Checking links on other sites too.`
-  - Denied: the toggle springs back and the sub-line reads `Permission not granted.`
-- **Turning it off:** removes the permission.
+- **Turning it on:** opens `permissions.html` in a new tab. The popup never asks Chrome itself, because Chrome's permission dialog closes the toolbar popup before it answers. The toggle springs back to off and the sub-line reads `Finish on the page that just opened.`
+- **On:** whenever the popup opens (and while it stays open) the toggle follows `chrome.permissions.contains`. When granted the sub-line reads `Checking links on other sites too.`
+- **Turning it off:** removes the permission from the popup directly.
 - **Scope:** same-origin links are always checked.
+
+### Page: `permissions.html` (link-check permission)
+
+A tab, not a popup, in the popup's look scaled to a page. The body is not fixed at 360px. Nothing on it animates, not even the pill hover.
+
+```text
+                 [ghost 24] Haunted GeoCities            <- header, as the popup
+                +----------------------------------+
+                |  [tomb]                          |  48px tile, #efe9fb, sprite #6633cc
+                |  Check links                     |  28px/700 title, balanced
+                |  to other sites                  |
+                |  Haunted GeoCities will send     |  15px muted #5b6170, one honest
+                |  cookie-free requests ...        |  explanation (the exact copy below)
+                |  ( ###### Allow link checks ###### )  near-black pill, 48px
+                |  (* Link checks are on. ... )    |  status pill, hidden until answered
+                +----------------------------------+
+```
+
+- **Canvas** `#eef0f4`. **Column** max 440px, centred, 12vh from the top (32px under 480px wide).
+- **Surface:** one white card, radius 18, the popup shadow, 32px padding (24/20 under 480px).
+- **Copy:** title `Check links to other sites`. Explanation, exactly: `Haunted GeoCities will send cookie-free requests to the sites a haunted page links to, to find dead links. Chrome words this as access to all websites.`
+- **Button:** `Allow link checks`, the popup pill (`#111318`/`#ffffff`, 48px, full width). It calls `chrome.permissions.request` straight from the click. Once granted it is disabled and turns quiet: `#e3e6ec` ground, `#5b6170` text (5.1:1). After a refusal it stays enabled so the user can try again.
+- **Status pill** (`role="status"`, polite): 13px semibold, radius 999 (14 when it wraps on a phone), a 6px dot in the text colour.
+  - Granted: `#efe9fb`/`#6633cc`, `Link checks are on. You can close this tab.` (or `Link checks are already on.` when the page opens after a grant).
+  - Refused: `#fff1e0`/`#8a4600`, `Chrome didn't allow it. Link checks stay off.`
+- **Focus:** the popup ring, `2px solid #6633cc`, offset 2px.
+
+### Toolbar badge
+
+While a tab is haunted, the extension icon carries that tab's total: ghosts (vampires included) + tombstones + curses, the same sum as the popup tiles.
+
+- Text: empty at 0, `1` to `99`, then `99+`.
+- Colours: `#6633cc` ground, `#ffffff` text (7.1:1), the one accent.
+- Always set per tab. Cleared on Un-haunt, on a reload or navigation, and when the tab closes.
 
 ### Row: audio toggle
 
