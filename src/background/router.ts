@@ -20,6 +20,7 @@ import {
   type TrackerData,
   type VampireInfo,
 } from "../data/types";
+import { createBadge } from "./badge";
 import { Exorcist } from "./exorcise";
 import { refusedHost } from "./link-guard";
 import { isRestrictedUrl } from "./restricted";
@@ -69,6 +70,7 @@ const byCountThenName = (a: CompanyHit, b: CompanyHit) => b.count - a.count || (
 export function createBackground(api: typeof chrome, data: TrackerData = trackerJson as TrackerData, fetchFn: typeof fetch = fetch) {
   const session = api.storage.session;
   const exorcist = new Exorcist(api);
+  const badge = createBadge(api);
 
   /**
    * The tab a request is about. Only extension pages (the popup) name it in the body; for any
@@ -110,6 +112,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   async function clearTab(tabId: number) {
     await exorcist.clearTab(tabId);
     await session.remove([ghostsKey(tabId), nonceKey(tabId), tombstonesKey(tabId), cursesKey(tabId)]);
+    await badge.clear(tabId);
+  }
+
+  /** Recount the tab's badge from what is stored: the same sum as the popup tiles. */
+  async function refreshBadge(tabId: number) {
+    if (!(await isHaunted(tabId))) return badge.clear(tabId);
+    const tombs = (await session.get(tombstonesKey(tabId)))[tombstonesKey(tabId)] as DeadLink[] | undefined;
+    const curses = (await session.get(cursesKey(tabId)))[cursesKey(tabId)] as Curse[] | undefined;
+    await badge.show(tabId, (await reportedGhosts(tabId)).length + (tombs?.length ?? 0) + (curses?.length ?? 0));
   }
 
   async function haunt(tabId: number): Promise<TabState> {
@@ -225,11 +236,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         if (!(await isHaunted(tabId))) break;
         if (Array.isArray(msg.companies) && msg.companies.every(isHit) && Number.isFinite(msg.total)) {
           await session.set({ [ghostsKey(tabId)]: { companies: msg.companies.map(clean), total: msg.total } });
+          await refreshBadge(tabId);
         }
         break;
       case "TOMBSTONE_UPDATE":
         if (!(await isHaunted(tabId))) break;
-        if (Array.isArray(msg.dead)) await session.set({ [tombstonesKey(tabId)]: msg.dead.filter(isDead).map(({ url, path, status }) => ({ url, path, status })) });
+        if (Array.isArray(msg.dead)) {
+          await session.set({ [tombstonesKey(tabId)]: msg.dead.filter(isDead).map(({ url, path, status }) => ({ url, path, status })) });
+          await refreshBadge(tabId);
+        }
         break;
       case "CURSE_UPDATE":
         if (!(await isHaunted(tabId))) break;
@@ -240,6 +255,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
               .slice(0, 30)
               .map(({ kind, snippet }) => ({ kind, snippet: snippet.slice(0, 60) })),
           });
+          await refreshBadge(tabId);
         }
         break;
       case "CHECK_LINKS":

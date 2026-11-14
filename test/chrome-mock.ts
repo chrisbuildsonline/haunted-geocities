@@ -46,6 +46,16 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
     request: [] as unknown[],
     remove: [] as unknown[],
     runtimeMessages: [] as unknown[],
+    action: [] as { fn: string; arg: Record<string, unknown> }[],
+    createTab: [] as unknown[],
+  };
+  // chrome.action badge state per tab; a call for a tab that does not exist rejects, as Chrome does.
+  const badges = new Map<number, { text?: string; color?: string; textColor?: string }>();
+  const actionCall = (fn: string, field: "text" | "color" | "textColor", key: "text" | "color") => async (arg: Record<string, any>) => {
+    calls.action.push({ fn, arg });
+    if (mock.actionFail) throw new Error("action failed");
+    if (typeof arg.tabId !== "number" || !tabs.has(arg.tabId)) throw new Error(`No tab with id: ${arg.tabId}.`);
+    badges.set(arg.tabId, { ...badges.get(arg.tabId), [field]: arg[key] });
   };
   // declarativeNetRequest session rules, with the real API's rule: ids must be unique.
   const dnr = { rules: [] as any[], fail: false };
@@ -55,6 +65,9 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
     tabsById: tabs,
     granted,
     grant: opts.grant ?? false,
+    badges,
+    actionFail: false,
+    createTabFail: false,
     // what the content script answers to tabs.sendMessage; throw to simulate "no receiving end"
     contentReply: (_msg: unknown): unknown => ({ ok: true }),
     // what the background answers to runtime.sendMessage (popup tests set this)
@@ -63,6 +76,7 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
       runtime: {
         id: "test-extension-id",
         onMessage: event(),
+        getURL: (path: string) => `chrome-extension://test-extension-id/${path.replace(/^\//, "")}`,
         async sendMessage(msg: unknown) {
           calls.runtimeMessages.push(msg);
           return mock.backgroundReply(msg);
@@ -84,7 +98,17 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
           return structuredClone(dnr.rules);
         },
       },
+      action: {
+        setBadgeText: actionCall("setBadgeText", "text", "text"),
+        setBadgeBackgroundColor: actionCall("setBadgeBackgroundColor", "color", "color"),
+        setBadgeTextColor: actionCall("setBadgeTextColor", "textColor", "color"),
+      },
       tabs: {
+        async create(p: { url?: string }) {
+          calls.createTab.push(p);
+          if (mock.createTabFail) throw new Error("tabs.create failed");
+          return { id: 1000 + calls.createTab.length, url: p.url };
+        },
         onRemoved: event(),
         onUpdated: event(),
         async get(id: number) {
@@ -107,6 +131,8 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
         },
       },
       permissions: {
+        onAdded: event(),
+        onRemoved: event(),
         async contains(p: { origins?: string[] }) {
           return (p.origins ?? []).every((o) => granted.has(o));
         },
