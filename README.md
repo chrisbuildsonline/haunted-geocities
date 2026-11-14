@@ -95,7 +95,10 @@ The code is MIT (see [LICENSE](LICENSE)). The bundled `src/data/trackers.json` i
 
 ## Checks
 
+The browser tests use Playwright's own Chromium. Download it once after `bun install` (on a bare Linux machine add `--with-deps` for its system libraries):
+
 ```
+bunx playwright install chromium
 bun run typecheck
 bun run test
 bun run test:e2e

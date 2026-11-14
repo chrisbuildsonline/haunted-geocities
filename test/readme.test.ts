@@ -86,6 +86,13 @@ describe("README.md", () => {
     expect(section).toContain("bun run test:visual");
   });
 
+  test("the Checks section installs Playwright's Chromium before the browser tests", () => {
+    const section = readme.split(/^## Checks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    const install = section.indexOf("bunx playwright install chromium");
+    expect(install).toBeGreaterThan(-1);
+    expect(install).toBeLessThan(section.indexOf("bun run test:e2e"));
+  });
+
   test("How Kiro was used names the hooks folder and the kiro-hooks spec", () => {
     const section = readme.split(/^## How Kiro was used\s*$/m)[1] ?? "";
     expect(section).toContain(".kiro/hooks/");
