@@ -18,8 +18,6 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - The popup lists the ghosts, vampires, tombstones and curses found on the page.
 - While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 
-Kiro hooks are still to come.
-
 ![The popup on a haunted page: one ghost, two vampires, the Exorcise buttons](docs/screenshots/popup.png)
 
 ![A stone card for a dead link on the links fixture](docs/screenshots/tombstone.png)
@@ -96,13 +94,47 @@ The code is MIT (see [LICENSE](LICENSE)). The bundled `src/data/trackers.json` i
 bun run typecheck
 bun run test
 bun run test:e2e
+bun run lint:manifest
+bun run test:visual
 bun run docker:test
 ```
 
-`test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests and the e2e run in a clean Playwright image.
+`test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint and the e2e run in a clean Playwright image.
 
 The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`.
+
+### lint:manifest
+
+`bun run lint:manifest` builds `dist/` and checks the shipping manifest, both the object `src/manifest.ts` returns and the `dist/manifest.json` the build wrote. It checks that the manifest is MV3, loads no remote code, has exactly the four permissions listed above, has no `host_permissions` or `optional_permissions`, offers only `http://*/*` and `https://*/*` as optional hosts and has no `'unsafe-eval'` in its CSP. It also checks that every file the manifest names is in `dist/`, and that every script and stylesheet the built HTML pages load is there too. It prints `lint:manifest: ok`, or one line per problem with its rule name and exits with code 1. The e2e build is not linted, because it has host permissions on purpose.
+
+### test:visual
+
+`bun run test:visual` builds the e2e extension and takes screenshots of the haunted costume on `index.html`, `trackers.html`, `links.html`, `dark-patterns.html` and `column.html`, and of the popup before and after haunting, each at 1280 and 375 pixels wide. Motion is reduced, animations are stopped and the page clock is fixed, so a shot comes out the same on every run. Each shot is compared with its baseline in `e2e-visual/__screenshots__/`. If one differs, the run fails and the expected, actual and diff images are written to `test-results/`. A missing baseline also fails the run.
+
+When you change how the costume or the popup looks on purpose, update the baselines in the same commit and look at the new PNGs before committing them. The baselines are made in the Playwright Docker image the Dockerfile uses, because fonts differ between machines (Comic Sans is usually missing on Linux and the fallback varies), and the shots are compared at a tight tolerance:
+
+```
+docker build --target baselines --output e2e-visual/__screenshots__ .
+```
+
+That runs `bun run test:visual:update` inside the image and copies the PNGs out. Running `bun run test:visual:update` directly writes baselines from your own machine's fonts, which is only useful for trying things out.
+
+## Kiro hooks
+
+Three Kiro IDE hooks live in `.kiro/hooks/`. Kiro IDE runs a hook when you save a file that matches it. They are a quick local check while you work, not a replacement for the checks above.
+
+| Hook | Runs when you save | What it does |
+| --- | --- | --- |
+| `manifest-lint` | `src/manifest.ts` or `vite.config.ts` | Runs `bun run lint:manifest`. |
+| `visual-regression` | a file in `src/content/costume/` or `src/popup/`, or `design/DESIGN.md` | Runs `bun run test:visual`. |
+| `era-accuracy` | a file in `src/content/costume/` | Asks the agent to review the edit against `.kiro/steering/era-accuracy.md`: web-safe colours only, Comic Sans MS and Times New Roman only, original pixel art, nothing a 1998 GeoCities page would not have had, and no trademarks. It reports each problem with its file and line, and does not change any file. |
+
+A costume edit sets off both `visual-regression` and `era-accuracy`. The screenshot run takes a little while because it builds the extension and starts Chromium.
+
+To turn a hook off, set `"enabled": false` in its file, or switch it off in the Kiro hooks panel. `test/hooks.test.ts` checks every hook file: the fields Kiro needs, that each command is a `bun run` script that exists in `package.json`, and that each pattern points at a path that exists.
 
 ## How Kiro was used
 
 The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires, dark-pattern curses (`dark-patterns`) and neighborhoods. Each spec has requirements, a design and a task list.
+
+The three hooks in `.kiro/hooks/` were also written by kiro-cli, together with their spec in `.kiro/specs/kiro-hooks/` (`kiro-hooks`), which covers the hook files, `lint:manifest`, `test:visual` and the test that checks the hooks.

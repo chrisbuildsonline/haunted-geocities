@@ -38,7 +38,7 @@ describe("README.md", () => {
 
   test("every `bun run <script>` exists in package.json", () => {
     const used = [...readme.matchAll(/bun run ([\w:-]+)/g)].map((m) => m[1]!);
-    expect(used).toEqual(expect.arrayContaining(["build", "typecheck", "test", "test:e2e", "docker:test", "package", "screenshots", "fixtures"]));
+    expect(used).toEqual(expect.arrayContaining(["build", "typecheck", "test", "test:e2e", "docker:test", "package", "screenshots", "fixtures", "lint:manifest", "test:visual", "test:visual:update"]));
     for (const name of used) expect(Object.keys(scripts)).toContain(name);
   });
 
@@ -64,13 +64,26 @@ describe("README.md", () => {
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");
   });
 
-  test("Kiro hooks are still to come, and only they are", () => {
-    const lines = readme.split("\n");
-    const hooks = lines.filter((l) => /\bhooks?\b/i.test(l));
-    expect(hooks.length).toBe(1);
-    expect(hooks[0]).toMatch(/Kiro hooks are still to come/i);
-    expect(hooks[0]).not.toMatch(/neighbou?rhood|dark[- ]pattern|curse|badge/i);
-    for (const l of lines.filter((l) => /still to come/i.test(l))) expect(l).toBe(hooks[0]!);
+  test("names the three Kiro hooks, each of which exists in .kiro/hooks/, and nothing is still to come", () => {
+    const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toContain(".kiro/hooks/");
+    for (const name of ["manifest-lint", "visual-regression", "era-accuracy"]) {
+      expect({ name, inReadme: section.includes(`\`${name}\``) }).toEqual({ name, inReadme: true });
+      expect({ name, file: existsSync(join(root, ".kiro", "hooks", `${name}.kiro.hook`)) }).toEqual({ name, file: true });
+    }
+    expect(readme).not.toMatch(/still to come/i);
+  });
+
+  test("the Checks section lists lint:manifest and test:visual", () => {
+    const section = readme.split(/^## Checks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toContain("bun run lint:manifest");
+    expect(section).toContain("bun run test:visual");
+  });
+
+  test("How Kiro was used names the hooks folder and the kiro-hooks spec", () => {
+    const section = readme.split(/^## How Kiro was used\s*$/m)[1] ?? "";
+    expect(section).toContain(".kiro/hooks/");
+    expect(section).toContain("`kiro-hooks`");
   });
 
   test("describes neighborhoods, the toolbar badge and dark patterns as working", () => {
