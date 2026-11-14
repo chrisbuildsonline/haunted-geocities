@@ -5,6 +5,7 @@ import { h } from "./dom";
 import { caughtLine } from "../content/vampire";
 import { sprite, curseTile, tintedGhost, tombTile, vampireTile, type SpriteName } from "./sprites";
 import { KIND_INFO } from "../content/dark-patterns";
+import { resolveNeighborhood } from "../data/neighborhood";
 
 export type Screen = "idle" | "haunted" | "restricted";
 
@@ -96,7 +97,7 @@ function vampireRow(doc: Document, v: CompanyHit, exorcised: boolean, onExorcise
         "span",
         { class: "row-line" },
         h(doc, "span", { class: isCaught ? "tag-pill caught" : "tag-pill known" }, exorcised ? "Exorcised" : isCaught ? "Caught" : "Known"),
-        h(doc, "span", { class: "row-sub" }, isCaught ? did[0]!.toUpperCase() + did.slice(1) : "Known to fingerprint"),
+        h(doc, "span", { class: "row-sub" }, isCaught ? did[0]!.toUpperCase() + did.slice(1) : "On the Tracker Radar fingerprint list"),
       ),
     ),
     button,
@@ -156,6 +157,16 @@ const originOf =(url: string | null) => {
   }
 };
 
+/** The GeoCities address of the page's host; null when the URL has no host. */
+const addressOf = (url: string | null): string | null => {
+  try {
+    const host = url ? new URL(url).hostname : "";
+    return host ? resolveNeighborhood(host).address : null;
+  } catch {
+    return null;
+  }
+};
+
 /** Everything that goes inside #app for one screen. */
 export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
@@ -168,6 +179,8 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
     h(doc, "span", { class: "status", "data-status": screen }, STATUS[screen]),
   );
   const title = h(doc, "h1", { class: "title" }, screen === "restricted" ? "This page is protected" : hostname(state.url));
+  const address = screen === "haunted" ? addressOf(state.url) : null;
+  const addressLine = address ? h(doc, "p", { class: "address muted" }, address) : null;
 
   const pill = (label: string) => {
     const b = h(doc, "button", { type: "button", class: "pill" }, label);
@@ -264,5 +277,5 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
   // Keep the licence name on one line: "CC BY-NC-SA 4.0" must not break at its hyphens.
   const [source, licence] = ATTRIBUTION.split(", ");
   const attribution = h(doc, "p", { class: "attribution" }, `${source}, `, h(doc, "span", { class: "nowrap" }, licence));
-  return [header, title, ...surfaces, settings, attribution];
+  return [header, title, ...(addressLine ? [addressLine] : []), ...surfaces, settings, attribution];
 }

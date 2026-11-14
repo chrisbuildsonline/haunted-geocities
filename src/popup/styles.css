@@ -124,6 +124,15 @@ p {
   margin-top: 0;
 }
 
+/* The GeoCities address under the title: pulled up into the 12px gap so it reads with the title */
+.address {
+  margin-top: -8px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 /* The one primary action: near-black pill */
 .pill {
   display: block;

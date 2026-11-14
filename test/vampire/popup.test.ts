@@ -40,7 +40,7 @@ describe("popup vampires", () => {
     expect(p.rows(".ghost-row:not(.vampire-row)").map((r) => r[0])).toEqual(["Taboola", "Criteo"]);
     expect(p.rows(".vampire-row")).toEqual([
       ["AdTheorent", "Caught", "Canvas readback · font probing", "Exorcise"],
-      ["Hotjar", "Known", "Known to fingerprint", "Exorcise"],
+      ["Hotjar", "Known", "On the Tracker Radar fingerprint list", "Exorcise"],
       ["nightowl-metrics.test", "Caught", "AudioContext", null],
     ]);
     const heads = [...p.doc.querySelectorAll(".list-head")].map((h) => p.text(h));
