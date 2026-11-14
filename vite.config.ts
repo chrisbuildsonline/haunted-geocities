@@ -48,8 +48,13 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       modulePreload: false,
       rollupOptions: {
-        input: { popup: resolve(root, "src/popup/popup.html") },
+        input: {
+          popup: resolve(root, "src/popup/popup.html"),
+          permissions: resolve(root, "src/popup/permissions.html"),
+        },
         output: {
+          // What popup.html and permissions.html both load (the tokens, h(), the sprites) gets one plain name.
+          manualChunks: (id) => (/src\/popup\/(styles\.css|dom\.ts|sprites\.ts)$|src\/data\/types\.ts$/.test(id) ? "shared" : undefined),
           entryFileNames: "[name].js",
           chunkFileNames: "[name].js",
           assetFileNames: "[name][extname]",

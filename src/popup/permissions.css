@@ -1,0 +1,115 @@
+/* permissions.html: the popup design system (styles.css tokens) on a full page instead of a 360px box. */
+body.permissions {
+  width: auto;
+  max-height: none;
+  min-height: 100vh;
+  overflow: visible;
+  display: grid;
+  place-items: start center;
+  padding: 12vh 24px 48px;
+}
+
+/* The page does not move: no hover fades, nothing animates. */
+body.permissions *,
+body.permissions *::before,
+body.permissions *::after {
+  transition: none;
+  animation: none;
+}
+
+body.permissions #app {
+  width: 100%;
+  max-width: 440px;
+  min-height: 0;
+  padding: 0;
+  gap: 16px;
+}
+
+body.permissions .top {
+  padding: 0 8px;
+}
+
+body.permissions .surface {
+  padding: 32px;
+}
+
+/* 48px icon tile beside nothing: the tombstone the link check looks for, in the one accent */
+.perm-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.perm-sprite {
+  display: block;
+}
+
+body.permissions .title {
+  margin: 20px 0 0;
+  padding: 0;
+  text-wrap: balance;
+}
+
+body.permissions .surface .muted {
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+body.permissions .pill {
+  margin-top: 24px;
+}
+body.permissions .pill:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+/* The answer: a short tinted status pill, hidden until there is one. */
+.result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.result:empty {
+  display: none;
+}
+.result::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.result[data-status="on"] {
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+.result[data-status="off"] {
+  background: #fff1e0;
+  color: #8a4600;
+}
+
+@media (max-width: 479px) {
+  body.permissions {
+    padding: 32px 16px;
+  }
+  body.permissions .surface {
+    padding: 24px 20px;
+  }
+  .result {
+    border-radius: 14px;
+  }
+}
