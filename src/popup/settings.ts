@@ -4,7 +4,7 @@ import { h } from "./dom";
 export const LINK_SUB = {
   off: "Asks Chrome to visit linked sites. Off.",
   on: "Checking links on other sites too.",
-  denied: "Permission not granted.",
+  ask: "Finish on the page that just opened.",
 };
 export const SOUND_SUB = { off: "Muted", on: "On · plays only after you click" };
 
@@ -28,10 +28,12 @@ export async function createSettings(doc: Document, api: typeof chrome): Promise
   const link = row(doc, "link-check", "Check links to other sites", linkOn ? LINK_SUB.on : LINK_SUB.off, linkOn);
   link.input.addEventListener("change", () => {
     if (link.input.checked) {
-      // request() must run inside the click's user gesture, so no await before it.
-      api.permissions.request(origins).catch(() => false).then((granted) => {
-        link.input.checked = granted;
-        link.subEl.textContent = granted ? LINK_SUB.on : LINK_SUB.denied;
+      // Chrome's permission dialog closes the toolbar popup before it answers, so the asking
+      // happens on permissions.html in a tab. Not granted yet: the switch goes back to off.
+      link.input.checked = false;
+      link.subEl.textContent = LINK_SUB.ask;
+      api.tabs.create({ url: api.runtime.getURL("permissions.html") }).catch(() => {
+        link.subEl.textContent = LINK_SUB.off;
       });
     } else {
       api.permissions.remove(origins).catch(() => false).then(() => {
@@ -39,6 +41,16 @@ export async function createSettings(doc: Document, api: typeof chrome): Promise
       });
     }
   });
+  // Follow the grant while this popup stays open. Re-read contains: the event may name other origins.
+  const sync = (on: boolean) => {
+    link.input.checked = on;
+    link.subEl.textContent = on ? LINK_SUB.on : LINK_SUB.off;
+  };
+  const follow = (p: chrome.permissions.Permissions) => {
+    if (p.origins?.length) void api.permissions.contains(origins).catch(() => false).then(sync);
+  };
+  api.permissions.onAdded.addListener(follow);
+  api.permissions.onRemoved.addListener(follow);
 
   const sound = row(doc, "sound", "Sound effects", audioOn ? SOUND_SUB.on : SOUND_SUB.off, audioOn);
   sound.input.addEventListener("change", () => {

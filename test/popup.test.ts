@@ -152,21 +152,28 @@ describe("Check links to other sites", () => {
     expect(sw.checked).toBe(true);
     expect(description(root, sw)).toBe("Checking links on other sites too.");
   });
-  test("turning on requests the http/https origins; granted stays on", async () => {
+  test("turning on opens permissions.html in a tab instead of asking from the popup", async () => {
     const { root, m } = await mount({ grant: true });
     const sw = switchNamed(root, "Check links to other sites");
     await toggle(sw);
-    expect(m.calls.request).toEqual([{ origins: ["http://*/*", "https://*/*"] }]);
-    expect(sw.checked).toBe(true);
-    expect(description(root, sw)).toBe("Checking links on other sites too.");
+    expect(m.calls.createTab).toEqual([{ url: "chrome-extension://test-extension-id/permissions.html" }]);
+    expect(m.calls.request).toEqual([]);
   });
-  test("denied springs back and says so", async () => {
-    const { root, m } = await mount({ grant: false });
+  test("turning on springs back and points at the new page", async () => {
+    const { root } = await mount();
     const sw = switchNamed(root, "Check links to other sites");
     await toggle(sw);
-    expect(m.calls.request).toHaveLength(1);
     expect(sw.checked).toBe(false);
-    expect(description(root, sw)).toBe("Permission not granted.");
+    expect(description(root, sw)).toBe("Finish on the page that just opened.");
+  });
+  test("a grant made while the popup is open turns the switch on", async () => {
+    const { root, m } = await mount();
+    const sw = switchNamed(root, "Check links to other sites");
+    for (const o of LINK_CHECK_ORIGINS) m.granted.add(o);
+    for (const l of m.chrome.permissions.onAdded.listeners) l({ origins: LINK_CHECK_ORIGINS });
+    await flush();
+    expect(sw.checked).toBe(true);
+    expect(description(root, sw)).toBe("Checking links on other sites too.");
   });
   test("turning off removes the origins", async () => {
     const { root, m } = await mount({ granted: true });
