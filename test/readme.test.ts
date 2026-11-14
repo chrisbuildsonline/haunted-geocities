@@ -38,7 +38,7 @@ describe("README.md", () => {
 
   test("every `bun run <script>` exists in package.json", () => {
     const used = [...readme.matchAll(/bun run ([\w:-]+)/g)].map((m) => m[1]!);
-    expect(used).toEqual(expect.arrayContaining(["build", "typecheck", "test", "test:e2e", "docker:test", "package", "screenshots", "fixtures", "lint:manifest", "test:visual", "test:visual:update"]));
+    expect(used).toEqual(expect.arrayContaining(["build", "typecheck", "test", "test:e2e", "docker:test", "package", "screenshots", "fixtures", "lint:manifest", "test:visual", "test:visual:update", "visual:baselines"]));
     for (const name of used) expect(Object.keys(scripts)).toContain(name);
   });
 

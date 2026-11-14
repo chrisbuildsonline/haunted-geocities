@@ -99,7 +99,7 @@ bun run test:visual
 bun run docker:test
 ```
 
-`test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint and the e2e run in a clean Playwright image.
+`test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint, the e2e run and the visual check in a clean Playwright image.
 
 The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`.
 
@@ -114,10 +114,10 @@ The screenshots above are taken from the real extension on the fixtures by `bun 
 When you change how the costume or the popup looks on purpose, update the baselines in the same commit and look at the new PNGs before committing them. The baselines are made in the Playwright Docker image the Dockerfile uses, because fonts differ between machines (Comic Sans is usually missing on Linux and the fallback varies), and the shots are compared at a tight tolerance:
 
 ```
-docker build --target baselines --output e2e-visual/__screenshots__ .
+bun run visual:baselines
 ```
 
-That runs `bun run test:visual:update` inside the image and copies the PNGs out. Running `bun run test:visual:update` directly writes baselines from your own machine's fonts, which is only useful for trying things out.
+That runs `bun run test:visual:update` inside the image and copies the PNGs out. The authoritative check is `bun run docker:test`, which runs `test:visual` in the same image against the committed baselines; `bun run test:visual` on your own machine can fail on font differences alone. Running `bun run test:visual:update` directly writes baselines from your own machine's fonts, which is only useful for trying things out.
 
 ## Kiro hooks
 
