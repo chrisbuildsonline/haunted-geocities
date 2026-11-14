@@ -10,6 +10,6 @@
     "skipLibCheck": true,
     "types": ["bun", "chrome", "vite/client"]
   },
-  "include": ["src", "test", "e2e", "scripts", "vite.config.ts", "playwright.config.ts"],
+  "include": ["src", "test", "e2e", "e2e-visual", "scripts", "vite.config.ts", "playwright.config.ts", "playwright.visual.config.ts"],
   "exclude": ["prototype", "node_modules", "dist", "dist-e2e"]
 }

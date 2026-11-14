@@ -14,7 +14,9 @@
     "docker:test": "docker build --progress=plain -t haunted-geocities:test .",
     "package": "vite build && bun scripts/package.ts",
     "fixtures": "bun scripts/fixture-server.ts",
-    "lint:manifest": "bun scripts/lint-manifest.ts"
+    "lint:manifest": "bun scripts/lint-manifest.ts",
+    "test:visual": "vite build --mode e2e && playwright test --config playwright.visual.config.ts",
+    "test:visual:update": "vite build --mode e2e && playwright test --config playwright.visual.config.ts --update-snapshots"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
