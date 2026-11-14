@@ -64,7 +64,7 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
   - Req: 43, 44, 46
   - Check: 14 tests listed by `playwright test --config playwright.visual.config.ts --list`.
 
-- [ ] 4.5 Generate the baselines in the Playwright Docker image (same version as `package.json`) with `bun run test:visual:update` and commit `e2e-visual/__screenshots__/`.
+- [x] 4.5 Generate the baselines in the Playwright Docker image (same version as `package.json`) with `bun run test:visual:update` and commit `e2e-visual/__screenshots__/`.
   - Req: 51, 54
   - Check: `bun run test:visual` passes in the same image with no diff, twice.
 
