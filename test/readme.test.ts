@@ -59,6 +59,12 @@ describe("README.md", () => {
     for (const s of shots) expect(statSync(join(root, s)).size).toBeLessThan(500 * 1024);
   });
 
+  test("shows the curses and the neighborhood bar, and every docs/screenshots PNG it names exists", () => {
+    const named = [...new Set(readme.match(/docs\/screenshots\/[\w.-]+\.png/g) ?? [])];
+    expect(named).toEqual(expect.arrayContaining(["docs/screenshots/curses.png", "docs/screenshots/neighborhood.png"]));
+    for (const s of named) expect({ s, exists: existsSync(join(root, s)) }).toEqual({ s, exists: true });
+  });
+
   test("says Exorcise ends with the page or tab, not the browser session", () => {
     expect(readme).not.toMatch(/until you close the browser/i);
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");

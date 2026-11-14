@@ -22,6 +22,10 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 
 ![A stone card for a dead link on the links fixture](docs/screenshots/tombstone.png)
 
+![CURSED! badges on the coffee shop fixture, with one curse card open](docs/screenshots/curses.png)
+
+![The neighborhood bar at the top of a haunted page, with its address and tagline](docs/screenshots/neighborhood.png)
+
 ## Load it
 
 You need [bun](https://bun.sh) and Chrome.
