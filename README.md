@@ -14,9 +14,11 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - Scripts caught fingerprinting at runtime (canvas, audio or font probing) become vampires. Companies that Tracker Radar already rates as fingerprinters are listed as known vampires.
 - Dead links get a tombstone beside them. The extension sends a HEAD request, and a 404 or 410 answer makes a tombstone. Clicking one opens a stone card with the path and the status.
 - Dark patterns get a CURSED! badge beside them: fake scarcity ("Only 2 left"), countdown text, ticking timers, confirmshaming and pre-checked opt-in boxes. Clicking a badge opens a card that quotes the page's own words and names the trick. The pre-checked box is only labelled, never unticked.
+- Every site gets a GeoCities neighborhood address, such as `SiliconValley/Heights/2049`, worked out from its host name. The bar at the top shows it with the neighborhood's tagline, and the popup shows it under the site title.
 - The popup lists the ghosts, vampires, tombstones and curses found on the page.
+- While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 
-Per-host neighborhoods and Kiro hooks are still to come.
+Kiro hooks are still to come.
 
 ![The popup on a haunted page: one ghost, two vampires, the Exorcise buttons](docs/screenshots/popup.png)
 
@@ -74,7 +76,7 @@ From `src/manifest.ts`:
 - `scripting`: injects the costume script into that tab when you click Haunt.
 - `declarativeNetRequest`: Exorcise, which blocks a tracker company's domains for one tab.
 - `storage`: keeps per-tab state for the session and the sound setting.
-- Optional `http://*/*` and `https://*/*`: asked for only if you switch on "Check links to other sites" in the popup. Without it, only links on the same site are checked. You can turn it off again, which removes the permission.
+- Optional `http://*/*` and `https://*/*`: asked for only if you switch on "Check links to other sites" in the popup. That opens a small extension page, `permissions.html`, in a new tab, and you allow it there, because Chrome's permission prompt would close the popup. Without it, only links on the same site are checked. You can turn it off again in the popup, which removes the permission.
 
 There are no host permissions at install.
 
@@ -103,4 +105,4 @@ The screenshots above are taken from the real extension on the fixtures by `bun 
 
 ## How Kiro was used
 
-The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires and dark-pattern curses (`dark-patterns`). Each spec has requirements, a design and a task list.
+The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires, dark-pattern curses (`dark-patterns`) and neighborhoods. Each spec has requirements, a design and a task list.

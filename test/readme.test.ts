@@ -64,13 +64,30 @@ describe("README.md", () => {
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");
   });
 
-  test("does not claim neighborhoods or Kiro hooks work, and does not call dark patterns still to come", () => {
-    const mentions = readme.split("\n").filter((l) => /neighbou?rhood|hooks?\b/i.test(l));
-    expect(mentions.length).toBeLessThanOrEqual(1);
-    for (const l of mentions) {
-      expect(l).toMatch(/still to come/i);
-      expect(l).not.toMatch(/dark[- ]pattern|curse/i);
-    }
+  test("Kiro hooks are still to come, and only they are", () => {
+    const lines = readme.split("\n");
+    const hooks = lines.filter((l) => /\bhooks?\b/i.test(l));
+    expect(hooks.length).toBe(1);
+    expect(hooks[0]).toMatch(/Kiro hooks are still to come/i);
+    expect(hooks[0]).not.toMatch(/neighbou?rhood|dark[- ]pattern|curse|badge/i);
+    for (const l of lines.filter((l) => /still to come/i.test(l))) expect(l).toBe(hooks[0]!);
+  });
+
+  test("describes neighborhoods, the toolbar badge and dark patterns as working", () => {
+    const section = readme.split(/^## What it does\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    const bullets = section.match(/^- .+/gm) ?? [];
+    expect(bullets.some((b) => /neighbou?rhood address/i.test(b) && /tagline/i.test(b))).toBe(true);
+    expect(bullets.some((b) => /toolbar icon/i.test(b))).toBe(true);
     expect(readme).toMatch(/dark[- ]pattern.*CURSED!/i);
+  });
+
+  test("the optional link check names permissions.html", () => {
+    const line = readme.split("\n").find((l) => l.includes("Check links to other sites")) ?? "";
+    expect(line).toContain("permissions.html");
+  });
+
+  test("lists the neighborhoods spec under How Kiro was used", () => {
+    const section = readme.split(/^## How Kiro was used\s*$/m)[1] ?? "";
+    expect(section).toMatch(/\bneighborhoods\b/);
   });
 });
