@@ -13,9 +13,10 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - Exorcise blocks a company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - Scripts caught fingerprinting at runtime (canvas, audio or font probing) become vampires. Companies that Tracker Radar already rates as fingerprinters are listed as known vampires.
 - Dead links get a tombstone beside them. The extension sends a HEAD request, and a 404 or 410 answer makes a tombstone. Clicking one opens a stone card with the path and the status.
-- The popup lists the ghosts, vampires and tombstones found on the page.
+- Dark patterns get a CURSED! badge beside them: fake scarcity ("Only 2 left"), countdown text, ticking timers, confirmshaming and pre-checked opt-in boxes. Clicking a badge opens a card that quotes the page's own words and names the trick. The pre-checked box is only labelled, never unticked.
+- The popup lists the ghosts, vampires, tombstones and curses found on the page.
 
-Dark-pattern curses, per-host neighborhoods and Kiro hooks are still to come.
+Per-host neighborhoods and Kiro hooks are still to come.
 
 ![The popup on a haunted page: one ghost, two vampires, the Exorcise buttons](docs/screenshots/popup.png)
 
@@ -54,6 +55,7 @@ It serves them on `http://127.0.0.1:4321` (`scripts/fixture-server.ts`, an optio
 | `trackers.html` | Ghosts (Criteo), plus Hotjar and Taboola as known vampires. Try Exorcise on the card or in the popup. |
 | `vampires.html` | Two scripts that fingerprint the visitor when you click into the email field. After that they show up as caught vampires. |
 | `links.html` | Three dead links (404, 410 and a long path) that get tombstones. |
+| `dark-patterns.html` | A fake coffee shop cart with low-stock lines, an offer countdown, a ticking clock, a pre-checked newsletter box and a shaming decline link. Haunt it for six curses. |
 | `forms.html` | Page scripts and a form that haunting must leave alone. |
 
 The tracker and vampire pages load scripts from real tracker domains. Chrome has to send those names to the local server, so start a separate Chrome with a host-resolver flag, and load the extension in that one:
@@ -62,7 +64,7 @@ The tracker and vampire pages load scripts from real tracker domains. Chrome has
 google-chrome --user-data-dir=/tmp/hg-profile --host-resolver-rules="MAP criteo.com 127.0.0.1,MAP hotjar.com 127.0.0.1,MAP taboola.com 127.0.0.1,MAP adentifi.com 127.0.0.1,MAP nightowl-metrics.test 127.0.0.1"
 ```
 
-`index.html`, `clean.html`, `column.html`, `links.html` and `forms.html` work in any Chrome. The tracker and vampire pages need the flag, because otherwise the tracker hosts do not resolve and nothing is seen.
+`index.html`, `clean.html`, `column.html`, `links.html`, `dark-patterns.html` and `forms.html` work in any Chrome. The tracker and vampire pages need the flag, because otherwise the tracker hosts do not resolve and nothing is seen.
 
 ## Permissions
 
@@ -101,4 +103,4 @@ The screenshots above are taken from the real extension on the fixtures by `bun 
 
 ## How Kiro was used
 
-The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones and runtime vampires. Each spec has requirements, a design and a task list.
+The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires and dark-pattern curses (`dark-patterns`). Each spec has requirements, a design and a task list.

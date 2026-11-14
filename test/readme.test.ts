@@ -64,9 +64,13 @@ describe("README.md", () => {
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");
   });
 
-  test("does not claim dark patterns, neighborhoods or Kiro hooks work", () => {
-    const mentions = readme.split("\n").filter((l) => /dark[- ]pattern|curse|neighbou?rhood|hooks?\b/i.test(l));
+  test("does not claim neighborhoods or Kiro hooks work, and does not call dark patterns still to come", () => {
+    const mentions = readme.split("\n").filter((l) => /neighbou?rhood|hooks?\b/i.test(l));
     expect(mentions.length).toBeLessThanOrEqual(1);
-    for (const l of mentions) expect(l).toMatch(/still to come/i);
+    for (const l of mentions) {
+      expect(l).toMatch(/still to come/i);
+      expect(l).not.toMatch(/dark[- ]pattern|curse/i);
+    }
+    expect(readme).toMatch(/dark[- ]pattern.*CURSED!/i);
   });
 });
