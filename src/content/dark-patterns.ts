@@ -185,10 +185,10 @@ function shownText(el: Element): string {
   return text;
 }
 
-/** The element's collapsed shown text, cut at 60 characters and starting at the match. */
+/** The element's collapsed shown text; when it has to be cut at 60 characters, the cut starts at the match. */
 export function snippetOf(element: Element, re: RegExp): string {
   const text = collapse(shownText(element));
-  return snippet(text, re.exec(text)?.index ?? 0);
+  return text.length <= 60 ? text : snippet(text, re.exec(text)?.index ?? 0);
 }
 
 const byDocumentOrder = (a: DarkPattern, b: DarkPattern) => (a.element === b.element ? 0 : a.element.compareDocumentPosition(b.element) & 4 ? -1 : 1);

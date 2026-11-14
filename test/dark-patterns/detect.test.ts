@@ -169,6 +169,10 @@ describe("snippet, precedence, order and cap", () => {
     const [p] = detect(`<p>  Only\n  <b>2</b>   left   in stock!  </p>`);
     expect(p!.snippet).toBe("Only 2 left in stock!");
   });
+  test("a short snippet keeps the words before the match", () => {
+    const [p] = detect(`<p>Hurry! Only 2 left</p>`);
+    expect(p!.snippet).toBe("Hurry! Only 2 left");
+  });
   test("snippet is at most 60 characters and ends in … when cut", () => {
     const [p] = detect(`<p>Only 2 left ${"very ".repeat(30)}</p>`);
     expect(p!.snippet.length).toBe(60);
