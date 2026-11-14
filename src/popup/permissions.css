@@ -63,15 +63,18 @@ body.permissions .surface .muted {
 body.permissions .pill {
   margin-top: 24px;
 }
+/* Done, not broken: a quiet canvas-tone pill (#5b6170 on #e3e6ec is 5.1:1) once the answer is in. */
 body.permissions .pill:disabled {
   cursor: default;
-  opacity: 0.35;
+  opacity: 1;
+  background: #e3e6ec;
+  color: var(--muted);
 }
 
 /* The answer: a short tinted status pill, hidden until there is one. */
 .result {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   width: fit-content;
   max-width: 100%;
@@ -90,6 +93,7 @@ body.permissions .pill:disabled {
   flex: none;
   width: 6px;
   height: 6px;
+  margin-top: 6px; /* centred on the first line when the sentence wraps */
   border-radius: 50%;
   background: currentColor;
 }
