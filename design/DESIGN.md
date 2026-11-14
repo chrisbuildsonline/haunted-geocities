@@ -341,6 +341,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 - **Default:** `Sound effects`, toggle off, sub-line `Muted`.
 - **When on:** the sub-line reads `On · plays only after you click`. Sound starts only from that gesture. There is no ambient loop.
+- **What plays:** the Haunt click plays the whoosh (see "Haunt moment"). Opening a card plays one short sound: a ghost card a soft "ooo", a vampire card a low organ stab, a tombstone card a stone thud, a curse card a short sting. Closing a card, or clicking the marker of the card already open, plays nothing.
 
 ## Haunt moment
 
@@ -363,7 +364,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | 2300-2500 | Markers | Tombstones and curse badges fade in, 200ms | linear |
 
 - **Flash safety:** every change is monotonic, and nothing toggles back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
-- **Audio:** muted by default. If the user has turned sound on, the wipe plays a 900ms band-passed noise "whoosh" synced to 200-1100ms.
+- **Audio:** muted by default. If the user has turned sound on, the popup plays a 900ms band-passed noise "whoosh" from the Haunt click itself, so it runs alongside the wipe. The page plays nothing during the haunt moment.
 - **Cost:** 1 sprite, 1 dither strip, 1 vignette div. The FX layer is removed at 2500ms.
 
 **Un-haunt (reverse), 1100ms:**
