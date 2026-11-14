@@ -1,6 +1,7 @@
 // The ghost (or vampire) card: a Win95 window in #cards, one at a time, beside its sprite toward the page centre.
 // The tombstone card is the stone itself, in the same slot and placement.
-import type { CompanyHit, ContentRequest, DeadLink } from "../../data/types";
+import type { CompanyHit, ContentRequest, Curse, DeadLink } from "../../data/types";
+import { KIND_INFO } from "../dark-patterns";
 import { caughtLine } from "../vampire";
 import { categoryOf } from "./ghosts";
 import { appendPath, statusText } from "./tombstones";
@@ -125,6 +126,27 @@ function show(cards: HTMLElement, card: HTMLElement, opener: HTMLElement, width:
   card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - SHADOW - width))}px`; // the 4px hard shadow keeps 8px off the edge too
   card.style.top = `${Math.max(opts.bounds.top + 8, top)}px`;
   if (!opts.reduced) card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
+}
+
+/** The curse card: the default frame, titled for the trick, quoting the page's own words. All strings are set as text. */
+export function openCurseCard(cards: HTMLElement, curse: Curse, opener: HTMLElement, opts: Pick<CardOptions, "bounds" | "reduced">): HTMLElement {
+  cards.querySelector(".card")?.remove();
+  const doc = cards.ownerDocument;
+  const info = KIND_INFO[curse.kind];
+  const card = doc.createElement("section");
+  card.className = "card curse-card";
+  card.dataset.kind = curse.kind;
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-labelledby", "card-title");
+  card.innerHTML =
+    `<div class="bar"><h2 id="card-title"></h2><button class="close win95" type="button" aria-label="Close">x</button></div>` +
+    `<div class="card-body"><p class="quote"></p><p class="trick"></p></div>`;
+  card.querySelector("h2")!.textContent = info.title;
+  card.querySelector(".quote")!.textContent = `“${curse.snippet}”`;
+  card.querySelector(".trick")!.textContent = info.trick;
+  show(cards, card, opener, L.cardWidth, opts);
+  card.querySelector<HTMLElement>(".close")!.focus();
+  return card;
 }
 
 /** The tombstone card: the stone itself, inscribed HERE LIES, the path, the status (and the host when cross-site). */
