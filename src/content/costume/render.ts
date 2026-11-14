@@ -11,13 +11,19 @@ import { watchReducedMotion } from "./reduced-motion";
 import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
 import trackerJson from "../../data/trackers.json";
-import { LINK_CHECK_ORIGINS, type ContentRequest, type DeadLink, type TrackerData } from "../../data/types";
+import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
 import { startScanner, type ScanResult } from "../scanner";
 import { createVampireBridge, type Api } from "../hooks-bridge";
 import { markKnownVampires, mergeVampire } from "../vampire";
-import { closeCard, openCard, openTombstoneCard, setCardCount, setCardExorcised } from "./card";
+import { closeCard, openCard, openCurseCard, openTombstoneCard, setCardCount, setCardExorcised } from "./card";
 import { planSlots, updateGhosts, type Slot } from "./ghosts";
 import { mountTombstones } from "./tombstones";
+import { mountCurses } from "./curses";
+import { detectDarkPatterns, mergeCurses, type DarkPattern } from "../dark-patterns";
+import { watchTimers } from "../timers";
+
+const RESCAN_DEBOUNCE = 500;
+const RESCAN_SPACING = 2000;
 
 type Costume = {
   root: ShadowRoot;
@@ -97,10 +103,18 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   let scan: ScanResult = scanned;
   const catches: [string, Api][] = [];
   let dead: DeadLink[] = [];
+  // Curses: static patterns by element (the first kind and snippet seen stay), ticking timers, and what was last sent.
+  const known = new Map<Element, DarkPattern>();
+  let timers: DarkPattern[] = [];
+  let curses: Curse[] = [];
+  let lastSent = "";
+  const renderCounts = () => {
+    const vampires = scan.companies.filter((c) => c.vampire).length;
+    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: dead.length, curses: curses.length });
+  };
   const refresh = () => {
     scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
-    const vampires = scan.companies.filter((c) => c.vampire).length;
-    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: dead.length, curses: 0 });
+    renderCounts();
     setOdometer(hud, scan.total);
     placeGhosts();
     setCardCount(cards, scan.companies);
@@ -121,6 +135,40 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     fade: () => settled && !motion.matches,
     onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: bounds(), reduced: motion.matches }),
   });
+  // Curse badges: beside their elements, never on them.
+  const badges = mountCurses(markers, {
+    slots: () => slots,
+    fade: () => settled && !motion.matches,
+    onOpen: (c, opener) => openCurseCard(cards, c, opener, { bounds: bounds(), reduced: motion.matches }),
+  });
+  let stopped = false;
+  const commit = () => {
+    const patterns = mergeCurses([...known.values()], timers);
+    badges.update(patterns);
+    curses = patterns.map(({ kind, snippet }) => ({ kind, snippet }));
+    renderCounts();
+    const key = JSON.stringify(curses);
+    if (key === lastSent || stopped) return;
+    lastSent = key;
+    send({ type: "CURSE_UPDATE", curses });
+  };
+  const rescan = () => {
+    for (const p of detectDarkPatterns(doc, HOST_TAG)) if (!known.has(p.element)) known.set(p.element, p);
+    for (const e of known.keys()) if (!e.isConnected) known.delete(e);
+    timers = timers.filter((t) => t.element.isConnected);
+    commit();
+  };
+  // A trailing 500 ms debounce that never runs sooner than 2 s after the last rescan.
+  let rescanTimer: number | undefined;
+  let lastRescan = -Infinity;
+  const scheduleRescan = () => {
+    win.clearTimeout(rescanTimer);
+    rescanTimer = win.setTimeout(() => {
+      rescanTimer = undefined;
+      lastRescan = Date.now();
+      rescan();
+    }, Math.max(RESCAN_DEBOUNCE, lastRescan + RESCAN_SPACING - Date.now()));
+  };
   const onOpen = (company: string, opener: HTMLElement) => {
     const hit = scan.companies.find((c) => c.company === company);
     const listed = Object.hasOwn((trackerJson as TrackerData).entities, company);
@@ -187,10 +235,14 @@ export function renderCostume(doc: Document = document): ShadowRoot {
       pad();
       placeGhosts();
       tombs.place();
+      badges.place();
     });
   };
   win.addEventListener("resize", relayout);
-  const mo = new win.MutationObserver(relayout);
+  const mo = new win.MutationObserver(() => {
+    relayout();
+    scheduleRescan();
+  });
   mo.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
   const ro = typeof win.ResizeObserver === "function" ? new win.ResizeObserver(pad) : undefined;
   ro?.observe(hud);
@@ -217,7 +269,6 @@ export function renderCostume(doc: Document = document): ShadowRoot {
 
   // Tombstones: dead links from the page-origin check here and the background's cross-site check.
   // Results that arrive once the costume is leaving are ignored.
-  let stopped = false;
   const addDead = (found: DeadLink[]) => {
     const known = new Set(dead.map((d) => d.url));
     const fresh = found.filter((d, i) => !known.has(d.url) && found.findIndex((f) => f.url === d.url) === i);
@@ -252,8 +303,18 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     dead: () => dead,
   };
   costumes.set(doc, costume);
+  // Curses: what is on the page now, then every clock that starts to tick.
+  lastRescan = Date.now();
+  rescan();
+  const stopTimers = watchTimers(doc, HOST_TAG, (p) => {
+    timers.push(p);
+    commit();
+  });
   onUnhaunt(doc, () => {
     costume.stopScan();
+    stopTimers();
+    badges.stop();
+    win.clearTimeout(rescanTimer);
     bridge.stop();
     closeCard(cards);
     tombs.stop();

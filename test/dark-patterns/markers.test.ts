@@ -101,8 +101,19 @@ describe("curseSpot (req 41, 42)", () => {
 });
 
 const windows: Window[] = [];
+// happy-dom's classes are shared between windows: put back what a test replaces.
+const base = new Window() as any;
+const originals = {
+  rects: base.Range.prototype.getClientRects,
+  animate: base.Element.prototype.animate,
+  offsetWidth: Object.getOwnPropertyDescriptor(base.HTMLElement.prototype, "offsetWidth"),
+};
 afterEach(() => {
   for (const w of windows.splice(0)) w.happyDOM.abort();
+  base.Range.prototype.getClientRects = originals.rects;
+  base.Element.prototype.animate = originals.animate;
+  if (originals.offsetWidth) Object.defineProperty(base.HTMLElement.prototype, "offsetWidth", originals.offsetWidth);
+  else delete base.HTMLElement.prototype.offsetWidth;
 });
 
 /** A happy-dom page; `rects` answers Range rects per selected node (the element's contents). */
@@ -116,9 +127,9 @@ function setup(html: string, opts: { io?: boolean } = {}) {
     return rects.get(this.commonAncestorContainer) ?? [];
   };
   const animations: { el: HTMLElement; kf: unknown; o: any }[] = [];
-  (win.HTMLElement.prototype as any).animate = function (this: HTMLElement, kf: unknown, o: unknown) {
+  (win.Element.prototype as any).animate = function (this: HTMLElement, kf: unknown, o: unknown) {
     animations.push({ el: this, kf, o });
-    return { cancel() {} };
+    return { finished: Promise.resolve(), cancel() {}, finish() {} };
   };
   Object.defineProperty(win.HTMLElement.prototype, "offsetWidth", { configurable: true, get: () => 80 });
   const observers: { cb: (e: any[]) => void; observed: Element[]; disconnected: boolean }[] = [];
