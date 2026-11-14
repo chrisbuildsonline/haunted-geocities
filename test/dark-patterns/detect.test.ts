@@ -96,6 +96,9 @@ describe("countdown", () => {
   test("countdown: Offer ends in 3 hours, Ends in 15 min, Limited-time offer, 2 hours left", () => {
     for (const t of ["Offer ends in 3 hours", "Ends in 15 min", "Limited-time offer", "2 hours left", "Sale expires today"]) expect(kinds(detect(`<p>${t}</p>`))).toEqual(["countdown"]);
   });
+  test("countdown: Limited time offer with a tab, a space and a newline between words", () => {
+    expect(kinds(detect('<p><b>LIMITED\t time \n offer</b> Thanks for visiting.</p>'))).toEqual(["countdown"]);
+  });
   test("countdown: Our road ends in a cul-de-sac and Open daily 09:00 to 17:30 do not match", () => {
     for (const t of ["Our road ends in a cul-de-sac", "Open daily 09:00 to 17:30"]) expect(detect(`<p>${t}</p>`)).toEqual([]);
   });

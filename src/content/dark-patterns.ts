@@ -41,7 +41,7 @@ const SCARCITY = [
 const COUNTDOWN = [
   /\b(?:offer|sale|deal|discount|price|promo)s?\s+(?:ends?|expires?)\s+(?:in|on|at|soon|today|tonight)\b/i,
   /\b(?:ends?|expires?)\s+in\s+\d{1,3}\s*(?:d|h|m|s|days?|hours?|hrs?|minutes?|mins?|seconds?|secs?)\b/i,
-  /\blimited[\s-]time\s+(?:offer|deal)\b/i,
+  /\blimited(?:\s+|-)time\s+(?:offer|deal)\b/i,
   /\b\d{1,3}\s*(?:hours?|hrs?|minutes?|mins?)\s+(?:left|remaining)\b/i,
 ];
 
