@@ -105,6 +105,11 @@ describe("README.md", () => {
     expect(line).toContain("permissions.html");
   });
 
+  test("Load it says the test build is dist.zip on the GitHub release", () => {
+    const section = readme.split(/^## Load it\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toMatch(/`dist\.zip`[^\n]*GitHub release|GitHub release[^\n]*`dist\.zip`/);
+  });
+
   test("lists the neighborhoods spec under How Kiro was used", () => {
     const section = readme.split(/^## How Kiro was used\s*$/m)[1] ?? "";
     expect(section).toMatch(/\bneighborhoods\b/);

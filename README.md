@@ -37,7 +37,7 @@ bun run build
 
 Open `chrome://extensions`, turn on Developer mode, choose **Load unpacked** and pick the `dist/` folder.
 
-To load the packaged build instead, run `bun run package`. It builds and writes `dist.zip` at the repo root with `manifest.json` at the top of the zip. Unzip it into an empty folder and load that folder with **Load unpacked**.
+The test build is `dist.zip`, attached to the GitHub release. Unzip it into an empty folder and load that folder with **Load unpacked**. To make the same zip yourself, run `bun run package`. It builds and writes `dist.zip` at the repo root with `manifest.json` at the top of the zip.
 
 Open a page and click the toolbar icon, then **Haunt this page**.
 
