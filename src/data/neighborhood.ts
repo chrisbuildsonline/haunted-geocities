@@ -1,5 +1,6 @@
 // The GeoCities neighborhood of a host: pure, so the costume, the popup and the tests share it.
-import data from "./neighborhoods.json";
+// The import attribute lets plain Node ESM (the Playwright spec) load this module too.
+import data from "./neighborhoods.json" with { type: "json" };
 
 export interface Neighborhood {
   name: string;
