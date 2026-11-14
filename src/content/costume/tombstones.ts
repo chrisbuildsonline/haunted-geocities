@@ -87,7 +87,7 @@ const fragmentFree = (href: string) => {
 };
 
 /** Text rects around a link: its block and that block's siblings (the lines a stone beside it could touch). */
-function textNear(link: Element, cache: Map<Element, Rect[]>): Rect[] {
+export function textNear(link: Element, cache: Map<Element, Rect[]>): Rect[] {
   const doc = link.ownerDocument;
   const win = doc.defaultView!;
   let block: Element = link;
