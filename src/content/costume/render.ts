@@ -3,7 +3,7 @@
 import { HOST_TAG, haunt, onUnhaunt, unhaunt } from "../overlay";
 import { checkLinks } from "../link-check";
 import { collectLinks } from "../links";
-import { buildBands, MARQUEE_LINES, marqueeSeconds, neighborhoodFor, topOffset } from "./bands";
+import { buildBands, MARQUEE_LINES, marqueeSeconds, topOffset } from "./bands";
 import { addPageSheet } from "./body-padding";
 import { playHaunt, playUnhaunt, type Moment } from "./haunt-moment";
 import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud";
@@ -11,6 +11,7 @@ import { watchReducedMotion } from "./reduced-motion";
 import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
 import trackerJson from "../../data/trackers.json";
+import { resolveNeighborhood } from "../../data/neighborhood";
 import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
 import { startScanner, type ScanResult } from "../scanner";
 import { createVampireBridge, type Api } from "../hooks-bridge";
@@ -72,7 +73,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
 
   const croot = el(doc, "crypt-root");
   const starfield = buildStarfield(doc);
-  const bands = buildBands(doc, neighborhoodFor(win.location.hostname));
+  const bands = buildBands(doc, resolveNeighborhood(win.location.hostname));
   const hud = buildHud(doc);
   const tab = doc.createElement("button");
   Object.assign(tab, { id: "show-tab", type: "button", className: "win95", hidden: true });

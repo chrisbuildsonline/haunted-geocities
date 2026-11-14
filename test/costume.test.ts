@@ -6,7 +6,8 @@ import { HOST_TAG } from "../src/content/overlay";
 import * as T from "../src/content/costume/tokens";
 import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, STAR_TILE } from "../src/content/costume/starfield";
 import { planSlots } from "../src/content/costume/ghosts";
-import { MARQUEE_LINES, marqueeSeconds, neighborhoodFor, topOffset } from "../src/content/costume/bands";
+import { buildBands, MARQUEE_LINES, marqueeSeconds, topOffset } from "../src/content/costume/bands";
+import { resolveNeighborhood } from "../src/data/neighborhood";
 import { sampleBottomLift, setCounts, setOdometer } from "../src/content/costume/hud";
 import { costumeCss } from "../src/content/costume/styles";
 import { leaveCostume, renderCostume } from "../src/content/costume/render";
@@ -231,12 +232,13 @@ describe("starfield", () => {
 // ---------- bands ----------
 
 describe("top bands", () => {
-  test("neighborhoodFor is a stable Area/Vault/NNNN placeholder per host", () => {
-    const a = neighborhoodFor("example.org");
-    expect(a).toBe(neighborhoodFor("example.org"));
-    expect(a).toMatch(/^(Area51|Heartland|SiliconValley|SunsetStrip|Tokyo|Vienna)\/Vault\/\d{4}$/);
-    const many = new Set(["a.com", "b.com", "c.org", "d.net", "e.io", "f.dev"].map(neighborhoodFor));
-    expect(many.size).toBeGreaterThan(1);
+  test("buildBands shows the resolved address and tagline of a host", () => {
+    const { win, doc } = setup();
+    windows.push(win);
+    const n = resolveNeighborhood("example.org");
+    const bar = buildBands(doc, n).querySelector("#neighborhood")!;
+    expect(bar.querySelector(".where")!.textContent).toBe(`You are in: ${n.address}`);
+    expect(bar.querySelector(".tagline")!.textContent).toBe(n.tagline);
   });
 
   test("the bar says 'You are in:' with the host's neighborhood and carries a 48×24 sign", () => {
@@ -244,7 +246,7 @@ describe("top bands", () => {
     windows.push(win);
     const root = renderCostume(doc);
     const bar = byId(root, "neighborhood")!;
-    expect(bar.textContent).toContain(`You are in: ${neighborhoodFor("haunt.example")}`);
+    expect(bar.textContent).toContain(`You are in: ${resolveNeighborhood("haunt.example").address}`);
     const sign = bar.querySelector(".sign") as HTMLElement;
     expect(sign).not.toBeNull();
     expect(sign.getAttribute("role")).toBe("img");

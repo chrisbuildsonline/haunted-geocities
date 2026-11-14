@@ -50,6 +50,10 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 
 #neighborhood { display: flex; align-items: center; justify-content: space-between; height: ${L.neighborhoodBar}px; padding: 0 4px 0 10px; background: ${P.cryptViolet}; color: ${P.bone}; font: 13px ${TIMES}; box-shadow: inset 0 -1px 0 ${P.spectral}; white-space: nowrap; }
 #neighborhood b { letter-spacing: .5px; }
+#neighborhood .where { flex: none; }
+#neighborhood .tagline { flex: 1 1 0; min-width: 0; margin: 0 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#neighborhood .sign { flex: none; }
+@media (max-width: 479px) { #neighborhood .tagline { display: none; } }
 .sign { display: block; width: 48px; height: 24px; overflow: hidden; flex: none; image-rendering: pixelated; }
 .sign-strip { display: block; width: 96px; height: 24px; background-image: ${signsUrl()}; animation: hg-sign 1000ms steps(2) infinite; }
 @keyframes hg-sign { from { transform: translateX(0); } to { transform: translateX(-96px); } }

@@ -58,7 +58,8 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   expect(look.gutterOpacity).toBe("0.92");
   expect(look.starTile).toBe(true);
   expect(look.bar).toEqual([0, 24, "rgb(51, 0, 102)", "rgb(255, 255, 204)"]);
-  expect(look.barText).toMatch(/You are in: \w+\/Vault\/\d{4}/);
+  // The fixture is served from 127.0.0.1: an IP literal has the fixed Area51 address.
+  expect(look.barText).toBe("You are in: Area51/Hangar/1998Strange lights, strange pages. Aliens welcome!");
   expect(look.sign).toEqual([48, 24]);
   expect(look.marquee).toEqual([24, 24, "rgb(0, 0, 51)", "rgb(102, 255, 153)"]);
   expect(look.marqueeRunning).toBe(true);
