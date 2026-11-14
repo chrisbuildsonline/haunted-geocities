@@ -188,25 +188,25 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 12. Docs
 
-- [ ] 12.1 Update `design/DESIGN.md`: the neighborhood bar (address, tagline, ellipsis, hidden under 480px), the popup address line under the site title, the `permissions.html` page (canvas, surface, pill, copy), the toolbar badge (colours, `99+`), the hem tint rule, the known vampire sub line and the new footnote.
+- [x] 12.1 Update `design/DESIGN.md`: the neighborhood bar (address, tagline, ellipsis, hidden under 480px), the popup address line under the site title, the `permissions.html` page (canvas, surface, pill, copy), the toolbar badge (colours, `99+`), the hem tint rule, the known vampire sub line and the new footnote.
   - Req: 47
   - Test: `test/neighborhoods/docs.test.ts` → `"DESIGN.md names the neighborhood bar address and tagline"`, `"DESIGN.md names the popup address line"`, `"DESIGN.md names permissions.html"`, `"DESIGN.md contains the new footnote and no longer contains the old one"`, `"DESIGN.md names the badge colour #6633cc"`.
 
-- [ ] 12.2 Update `README.md`: describe neighborhoods and the toolbar badge in "What it does", change the "still to come" sentence so it names only Kiro hooks, mention `permissions.html` where the optional link check is described, correct the Exorcise lifetime sentence if needed, and add `neighborhoods` to the specs list in "How Kiro was used". Update `test/readme.test.ts` so neighborhoods are allowed to describe working behaviour and Kiro hooks must still say "still to come".
+- [x] 12.2 Update `README.md`: describe neighborhoods and the toolbar badge in "What it does", change the "still to come" sentence so it names only Kiro hooks, mention `permissions.html` where the optional link check is described, correct the Exorcise lifetime sentence if needed, and add `neighborhoods` to the specs list in "How Kiro was used". Update `test/readme.test.ts` so neighborhoods are allowed to describe working behaviour and Kiro hooks must still say "still to come".
   - Req: 47
   - Test: `test/readme.test.ts` (updated), `bun run test`.
 
 ## 13. Checks
 
-- [ ] 13.1 Run `bun run typecheck`, `bun run test`, `bun run test:e2e` and `bun run docker:test`. Fix any failure before closing the spec.
+- [x] 13.1 Run `bun run typecheck`, `bun run test`, `bun run test:e2e` and `bun run docker:test`. Fix any failure before closing the spec.
   - Req: 44, 45, 46
   - Test: all four commands exit 0.
 
-- [ ] 13.2 Confirm no new permission or dependency.
+- [x] 13.2 Confirm no new permission or dependency.
   - Req: 27, 35
   - Test: `test/manifest.test.ts` passes unchanged; `package.json` has no new entry.
 
-- [ ] 13.3 Check the tracker data licence notice is intact (no data change).
+- [x] 13.3 Check the tracker data licence notice is intact (no data change).
   - Req: Overview
   - Test: `src/data/ATTRIBUTION.md` and `src/data/LICENSE-tracker-radar.txt` are unchanged; `src/data/neighborhoods.json` holds only our own text.
 
