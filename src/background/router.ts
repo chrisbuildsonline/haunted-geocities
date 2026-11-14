@@ -3,6 +3,8 @@ import { checkLinks } from "../content/link-check";
 import { lookup } from "../content/matcher";
 import trackerJson from "../data/trackers.json";
 import {
+  cursesKey,
+  DARK_PATTERN_KINDS,
   ghostsKey,
   hauntKey,
   LINK_CHECK_ORIGINS,
@@ -11,6 +13,7 @@ import {
   type CompanyHit,
   type ContentMessage,
   type ContentRequest,
+  type Curse,
   type DeadLink,
   type PopupRequest,
   type TabState,
@@ -23,7 +26,10 @@ import { isRestrictedUrl } from "./restricted";
 
 type Request = PopupRequest | ContentRequest;
 
-const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE", "CHECK_LINKS", "TOMBSTONE_UPDATE"]);
+const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE", "CHECK_LINKS", "TOMBSTONE_UPDATE", "CURSE_UPDATE"]);
+
+const isCurse = (c: unknown): c is Curse =>
+  typeof c === "object" && c !== null && (DARK_PATTERN_KINDS as readonly unknown[]).includes((c as Curse).kind) && typeof (c as Curse).snippet === "string";
 
 const isDead = (d: unknown): d is DeadLink =>
   typeof d === "object" && d !== null && typeof (d as DeadLink).url === "string" && typeof (d as DeadLink).path === "string" && [404, 410].includes((d as DeadLink).status);
@@ -72,7 +78,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
   function tabOf(msg: Request, sender: chrome.runtime.MessageSender): number | undefined {
     const fromPage = sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) ?? false;
     let id: unknown;
-    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || msg.type === "TOMBSTONE_UPDATE" || msg.type === "CHECK_LINKS" || (sender.tab && !fromPage)) id = sender.tab?.id;
+    if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || msg.type === "TOMBSTONE_UPDATE" || msg.type === "CURSE_UPDATE" || msg.type === "CHECK_LINKS" || (sender.tab && !fromPage)) id = sender.tab?.id;
     else id = (msg as PopupRequest).tabId;
     return Number.isInteger(id) ? (id as number) : undefined;
   }
@@ -96,13 +102,14 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       ghosts: await reportedGhosts(tabId),
       exorcised: await exorcist.exorcised(tabId),
       tombstones: ((await session.get(tombstonesKey(tabId)))[tombstonesKey(tabId)] as DeadLink[] | undefined) ?? [],
+      curses: ((await session.get(cursesKey(tabId)))[cursesKey(tabId)] as Curse[] | undefined) ?? [],
     };
   }
 
   /** Drop everything the tab's haunt left behind: its block rules and what it reported. */
   async function clearTab(tabId: number) {
     await exorcist.clearTab(tabId);
-    await session.remove([ghostsKey(tabId), nonceKey(tabId), tombstonesKey(tabId)]);
+    await session.remove([ghostsKey(tabId), nonceKey(tabId), tombstonesKey(tabId), cursesKey(tabId)]);
   }
 
   async function haunt(tabId: number): Promise<TabState> {
@@ -224,6 +231,17 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         if (!(await isHaunted(tabId))) break;
         if (Array.isArray(msg.dead)) await session.set({ [tombstonesKey(tabId)]: msg.dead.filter(isDead).map(({ url, path, status }) => ({ url, path, status })) });
         break;
+      case "CURSE_UPDATE":
+        if (!(await isHaunted(tabId))) break;
+        if (Array.isArray(msg.curses)) {
+          await session.set({
+            [cursesKey(tabId)]: msg.curses
+              .filter(isCurse)
+              .slice(0, 30)
+              .map(({ kind, snippet }) => ({ kind, snippet: snippet.slice(0, 60) })),
+          });
+        }
+        break;
       case "CHECK_LINKS":
         await checkCrossSite(tabId, msg.urls, sender);
         break;
@@ -235,7 +253,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     api.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
       if (sender.id !== api.runtime.id || !isRequest(msg) || tabOf(msg, sender) === undefined) return false;
       handle(msg, sender).then(sendResponse, (e) =>
-        sendResponse({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [], error: message(e) } satisfies TabState),
+        sendResponse({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [], curses: [], error: message(e) } satisfies TabState),
       );
       return true; // keep the channel open for the async answer
     });

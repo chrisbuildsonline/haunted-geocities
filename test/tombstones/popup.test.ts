@@ -21,7 +21,7 @@ function render(tombstones: DeadLink[], ghosts: CompanyHit[] = []) {
   const win = new Window({ url: "chrome-extension://x/popup.html" });
   windows.push(win);
   const doc = win.document as unknown as Document;
-  const state: TabState = { haunted: true, restricted: false, url: "https://example.org/links.html", ghosts, exorcised: [], tombstones };
+  const state: TabState = { haunted: true, restricted: false, url: "https://example.org/links.html", ghosts, exorcised: [], tombstones, curses: [] };
   doc.body.append(...renderScreen(doc, { state, settings: doc.createElement("div"), onPrimary: () => undefined, onExorcise: () => undefined }));
   return doc;
 }

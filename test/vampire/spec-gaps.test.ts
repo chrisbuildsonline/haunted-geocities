@@ -226,7 +226,7 @@ describe("12.6 popup vampire controls (what is reachable)", () => {
   const popupCss = readFileSync(join(import.meta.dir, "../../src/popup/styles.css"), "utf8");
   const render = (ghosts: CompanyHit[]) => {
     const doc = newWindow("chrome-extension://x/popup.html").document as unknown as Document;
-    const state: TabState = { haunted: true, restricted: false, url: "https://example.org/", ghosts, exorcised: [], tombstones: [] };
+    const state: TabState = { haunted: true, restricted: false, url: "https://example.org/", ghosts, exorcised: [], tombstones: [], curses: [] };
     doc.body.append(...renderScreen(doc, { state, settings: doc.createElement("div"), onPrimary: () => undefined, onExorcise: () => undefined }));
     return doc;
   };

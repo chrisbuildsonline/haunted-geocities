@@ -41,6 +41,16 @@ export interface DeadLink {
   status: 404 | 410;
 }
 
+export const DARK_PATTERN_KINDS = ["scarcity", "countdown", "timer", "confirmshaming", "prechecked"] as const;
+export type DarkPatternKind = (typeof DARK_PATTERN_KINDS)[number];
+
+/** A dark pattern the costume found, as the background stores it and the popup lists it. */
+export interface Curse {
+  kind: DarkPatternKind;
+  /** The quoted text, at most 60 characters. */
+  snippet: string;
+}
+
 /** Popup → background, via chrome.runtime.sendMessage. */
 export type PopupRequest =
   | { type: "HAUNT"; tabId: number }
@@ -56,6 +66,7 @@ export type ContentRequest =
   /** Cross-site links for the background to check; honoured only for a haunted tab with the optional origins granted. */
   | { type: "CHECK_LINKS"; urls: string[] }
   | { type: "TOMBSTONE_UPDATE"; dead: DeadLink[] }
+  | { type: "CURSE_UPDATE"; curses: Curse[] }
   | { type: "EXORCISE"; company: string; domains?: string[] }
   | { type: "LET_BACK"; company: string }
   | { type: "CLEAR_EXORCISE" };
@@ -82,6 +93,8 @@ export interface TabState {
   exorcised: string[];
   /** Dead links (404/410) the costume reported; [] when none. */
   tombstones: DeadLink[];
+  /** Dark patterns the costume reported; [] when none. */
+  curses: Curse[];
   /** Set when a HAUNT or UNHAUNT could not be carried out. */
   error?: string;
 }
@@ -94,6 +107,9 @@ export const ghostsKey = (tabId: number) => `ghosts:${tabId}`;
 
 /** chrome.storage.session key holding the `DeadLink[]` last reported by the tab. */
 export const tombstonesKey = (tabId: number) => `tombstones:${tabId}`;
+
+/** chrome.storage.session key holding the `Curse[]` last reported by the tab. */
+export const cursesKey = (tabId: number) => `curses:${tabId}`;
 
 /** chrome.storage.session key holding the random nonce the tab's MAIN-world hooks were installed with. */
 export const nonceKey = (tabId: number) => `nonce:${tabId}`;
