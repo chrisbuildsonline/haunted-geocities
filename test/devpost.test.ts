@@ -102,6 +102,12 @@ describe("docs/devpost.md", () => {
     expect(section).toContain("bun run build");
   });
 
+  test("Built with names the Web Audio API, which src/audio/sound.ts uses", () => {
+    const section = doc.split(/^## Built with\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(readFileSync(join(root, "src", "audio", "sound.ts"), "utf8")).toMatch(/\bAudioContext\b/);
+    expect(section).toContain("Web Audio API");
+  });
+
   test("keeps a plain tone", () => {
     expect(doc).not.toMatch(/\b(revolutionary|seamless(ly)?|cutting-edge|game-?chang\w*|blazing(ly)?|supercharg\w*|unleash\w*|next-level|leverag\w*|delight\w*|magic(al)?)\b/i);
     expect(doc).not.toMatch(/!{2,}/);

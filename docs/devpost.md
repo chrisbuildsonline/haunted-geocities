@@ -78,7 +78,7 @@ The `.kiro/` folder holds what kiro-cli generated for the project.
 
 ## Built with
 
-TypeScript, Chrome Extensions Manifest V3, Shadow DOM, declarativeNetRequest, Vite, Bun, happy-dom, Playwright, Docker, DuckDuckGo Tracker Radar data (CC BY-NC-SA 4.0), Kiro.
+TypeScript, Chrome Extensions Manifest V3, Shadow DOM, declarativeNetRequest, Web Audio API, Vite, Bun, happy-dom, Playwright, Docker, DuckDuckGo Tracker Radar data (CC BY-NC-SA 4.0), Kiro.
 
 ## Try it
 
