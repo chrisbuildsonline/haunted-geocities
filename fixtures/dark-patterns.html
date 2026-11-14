@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Lantern Moth Coffee: Cart</title>
+    <style>
+      body { margin: 0; padding: 24px 0 0; font-family: Georgia, serif; line-height: 1.6; color: #1d1d1b; background: #fbfaf6; }
+      main { max-width: 520px; margin: 0 auto; padding: 0 16px 96px; }
+      h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+      p, label, .row { margin: 0; }
+      .gap { margin-top: 28px; }      /* room above every cursed element for a badge in the margin */
+      label { display: block; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Lantern Moth Coffee</h1>
+      <p>Only the best coffee, roasted by candlelight in a very small shed.</p>
+      <p class="gap">Just 2 minutes from the station. Open daily 09:00 to 17:30.</p>
+      <p class="gap">Left-handed mugs ship free.</p>
+      <h2 class="gap">Midnight Blend, 250 g</h2>
+      <p id="stock" class="gap">Only <b>2</b> left in stock!</p>
+      <p id="viewers" class="gap">12 people are viewing this blend right now</p>
+      <p id="sale" class="gap">Offer ends in 3 hours, so hurry.</p>
+      <p id="clock" class="gap">Cart reserved for 09:59</p>
+      <form action="thanks.html" class="gap">
+        <label id="optin" class="gap"><input type="checkbox" name="news" checked> Yes, send me the newsletter and partner offers</label>
+        <label class="gap"><input type="checkbox" name="remember" checked> Remember my cart</label>
+        <label class="gap"><input type="checkbox" name="restock"> Email me when it is back</label>
+        <div class="row gap"><button id="plain-decline" type="button">No thanks</button></div>
+        <div class="row gap"><a id="decline" href="#no">No thanks, I hate saving money</a></div>
+        <div class="row gap"><button type="submit">Place order</button></div>
+      </form>
+      <p hidden>Only 1 left</p>
+      <div style="display: none">Only 1 left</div>
+      <noscript>Only 1 left</noscript>
+      <template>Only 1 left</template>
+    </main>
+    <script>
+      /* Only 1 left */
+      (function () {
+        var el = document.getElementById("clock");
+        var left = 599;
+        setInterval(function () {
+          left = left > 0 ? left - 1 : 599;
+          var m = ("0" + Math.floor(left / 60)).slice(-2), s = ("0" + (left % 60)).slice(-2);
+          el.firstChild.nodeValue = "Cart reserved for " + m + ":" + s;
+        }, 1000);
+      })();
+    </script>
+  </body>
+</html>
