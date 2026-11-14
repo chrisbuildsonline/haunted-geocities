@@ -22,27 +22,27 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
 
 ## 3. lint:manifest
 
-- [ ] 3.1 Create `scripts/lint-manifest.ts` with the `RuleId` and `Violation` types, the `PERMISSIONS` and `OPTIONAL_HOSTS` constants, and `lintManifest(manifest, exists)`.
+- [x] 3.1 Create `scripts/lint-manifest.ts` with the `RuleId` and `Violation` types, the `PERMISSIONS` and `OPTIONAL_HOSTS` constants, and `lintManifest(manifest, exists)`.
   - Req: 19 to 29
   - Check: tasks 3.4 and 3.5.
 
-- [ ] 3.2 Add `lintHtmlReferences(htmlFiles, exists)` for relative `<script src>` and `<link href>` targets missing from `dist/`.
+- [x] 3.2 Add `lintHtmlReferences(htmlFiles, exists)` for relative `<script src>` and `<link href>` targets missing from `dist/`.
   - Req: 29
   - Check: task 3.5.
 
-- [ ] 3.3 Add the CLI under `import.meta.main`: run `vite build`, lint `buildManifest("production")` and `dist/manifest.json`, lint `dist/*.html`, print violations, exit 1 on any violation or build failure, else print `lint:manifest: ok` and exit 0.
+- [x] 3.3 Add the CLI under `import.meta.main`: run `vite build`, lint `buildManifest("production")` and `dist/manifest.json`, lint `dist/*.html`, print violations, exit 1 on any violation or build failure, else print `lint:manifest: ok` and exit 0.
   - Req: 18, 30 to 33
   - Check: run `bun run lint:manifest` on the current tree and see exit code 0.
 
-- [ ] 3.4 Add `"lint:manifest": "bun scripts/lint-manifest.ts"` to `package.json`.
+- [x] 3.4 Add `"lint:manifest": "bun scripts/lint-manifest.ts"` to `package.json`.
   - Req: 17
   - Check: `test/hooks.test.ts` finds the script.
 
-- [ ] 3.5 Write `test/lint-manifest.test.ts`: clean baseline, one table-driven row per rule (each expects only its own rule id), the combined bad manifest, the `wasm-unsafe-eval` pass, the `{}` manifest that must not throw, and the HTML reference cases. Pass a stub `exists`; no build, no `dist/` reads.
+- [x] 3.5 Write `test/lint-manifest.test.ts`: clean baseline, one table-driven row per rule (each expects only its own rule id), the combined bad manifest, the `wasm-unsafe-eval` pass, the `{}` manifest that must not throw, and the HTML reference cases. Pass a stub `exists`; no build, no `dist/` reads.
   - Req: 34 to 38
   - Check: `bun test ./test/lint-manifest.test.ts`.
 
-- [ ] 3.6 Prove the CLI catches a real break: temporarily add `"tabs"` to `permissions` in `src/manifest.ts`, run `bun run lint:manifest`, see exit code 1 and an `extra-permission` line, then revert the change.
+- [x] 3.6 Prove the CLI catches a real break: temporarily add `"tabs"` to `permissions` in `src/manifest.ts`, run `bun run lint:manifest`, see exit code 1 and an `extra-permission` line, then revert the change.
   - Req: 22, 31
   - Check: command output pasted into the PR or commit message.
 
@@ -52,7 +52,7 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
   - Req: 41, 45, 50, 51
   - Check: `bun run test:visual` starts and finds the specs.
 
-- [ ] 4.2 Add `"test:visual"` and `"test:visual:update"` to `package.json`.
+- [x] 4.2 Add `"test:visual"` and `"test:visual:update"` to `package.json`.
   - Req: 39, 40
   - Check: `test/hooks.test.ts` finds `test:visual`.
 
@@ -60,7 +60,7 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
   - Req: 47 to 49
   - Check: run each shot twice in a row with no diff.
 
-- [ ] 4.4 Create `e2e-visual/visual.spec.ts`: costume shots for `index`, `trackers`, `links`, `dark-patterns` and `column`, popup idle and haunted, each at 1280 and 375, all with `reducedMotion: "reduce"`.
+- [x] 4.4 Create `e2e-visual/visual.spec.ts`: costume shots for `index`, `trackers`, `links`, `dark-patterns` and `column`, popup idle and haunted, each at 1280 and 375, all with `reducedMotion: "reduce"`.
   - Req: 43, 44, 46
   - Check: 14 tests listed by `playwright test --config playwright.visual.config.ts --list`.
 
@@ -68,37 +68,37 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
   - Req: 51, 54
   - Check: `bun run test:visual` passes in the same image with no diff, twice.
 
-- [ ] 4.6 Prove the checks bite. Delete one baseline and see the run fail. Change one costume colour by one web-safe step and see the run fail with a diff image in `test-results/`. Revert both.
+- [x] 4.6 Prove the checks bite. Delete one baseline and see the run fail. Change one costume colour by one web-safe step and see the run fail with a diff image in `test-results/`. Revert both.
   - Req: 52, 53
   - Check: both failures observed, trees clean afterwards.
 
-- [ ] 4.7 Confirm `bun run test:e2e` does not run any visual test.
+- [x] 4.7 Confirm `bun run test:e2e` does not run any visual test.
   - Req: 42
   - Check: `playwright test --list` output has no `e2e-visual` files.
 
 ## 5. Hook file test
 
-- [ ] 5.1 Write `test/hooks.test.ts`: file discovery, required fields and types, name equals file name, `version`, `enabled`, `when.type`, `then` shape per type.
+- [x] 5.1 Write `test/hooks.test.ts`: file discovery, required fields and types, name equals file name, `version`, `enabled`, `when.type`, `then` shape per type.
   - Req: 55 to 57
   - Check: `bun test ./test/hooks.test.ts`.
 
-- [ ] 5.2 Add the command check (`^bun run ([\w:-]+)$`, script exists in `package.json`) with a failure message that names the hook and the command.
+- [x] 5.2 Add the command check (`^bun run ([\w:-]+)$`, script exists in `package.json`) with a failure message that names the hook and the command.
   - Req: 58, 59
   - Check: a copy of a hook with `command: "rm -rf dist"` in a temp folder fails (test the checker function directly with a bad object).
 
-- [ ] 5.3 Add the named-hook table, the `era-accuracy` prompt checks (required words, the read-only sentence, no `then.command`), and the pattern-prefix existence check.
+- [x] 5.3 Add the named-hook table, the `era-accuracy` prompt checks (required words, the read-only sentence, no `then.command`), and the pattern-prefix existence check.
   - Req: 60 to 63
   - Check: `bun test ./test/hooks.test.ts`.
 
 ## 6. README
 
-- [ ] 6.1 Add a `## Kiro hooks` section: the three hooks in a table (hook, trigger, action), `.kiro/hooks/` and the Kiro IDE note, how to turn one off.
+- [x] 6.1 Add a `## Kiro hooks` section: the three hooks in a table (hook, trigger, action), `.kiro/hooks/` and the Kiro IDE note, how to turn one off.
   - Req: 64, 65
 
-- [ ] 6.2 Describe `lint:manifest`, `test:visual` and `test:visual:update`, including when to update baselines and that baselines come from the Docker image.
+- [x] 6.2 Describe `lint:manifest`, `test:visual` and `test:visual:update`, including when to update baselines and that baselines come from the Docker image.
   - Req: 66
 
-- [ ] 6.3 Add `lint:manifest` and `test:visual` to the "Checks" list, remove "Kiro hooks are still to come.", and mention `.kiro/hooks/` and the `kiro-hooks` spec under "How Kiro was used".
+- [x] 6.3 Add `lint:manifest` and `test:visual` to the "Checks" list, remove "Kiro hooks are still to come.", and mention `.kiro/hooks/` and the `kiro-hooks` spec under "How Kiro was used".
   - Req: 67 to 69
 
 ## 7. Final check
