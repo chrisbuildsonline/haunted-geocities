@@ -224,54 +224,54 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
   - Req: 46, 61
   - Test: `test/dark-patterns/markers.test.ts` → `"reduced motion: late badges appear with no animation"`; `test/dark-patterns/card.test.ts` → `"reduced motion: the card has no open animation"`.
 
-- [ ] 12.3 Keyboard and focus ring.
+- [x] 12.3 Keyboard and focus ring.
   - Req: 45, 52, 57
   - Test: `test/dark-patterns/markers.test.ts` → `"badge shows the dotted #ffff66 focus ring with the black halo"`; `test/dark-patterns/popup.test.ts` → `"curse row focus ring is 2px solid #6633cc, offset 2px"`.
 
 ## 13. End-to-end tests (`e2e/dark-patterns.spec.ts`)
 
-- [ ] 13.1 Scaffold the spec with the helpers from `e2e/fixtures.ts`. For `width` in `[1280, 375]`: load `dark-patterns.html`, take `before` with the clock value normalised (`Cart reserved for \d\d:\d\d` → `Cart reserved for MM:SS`), haunt through the popup, poll up to 10 s for six `.curse-badge` elements in kind order `scarcity, scarcity, countdown, timer, prechecked, confirmshaming`.
+- [x] 13.1 Scaffold the spec with the helpers from `e2e/fixtures.ts`. For `width` in `[1280, 375]`: load `dark-patterns.html`, take `before` with the clock value normalised (`Cart reserved for \d\d:\d\d` → `Cart reserved for MM:SS`), haunt through the popup, poll up to 10 s for six `.curse-badge` elements in kind order `scarcity, scarcity, countdown, timer, prechecked, confirmshaming`.
   - Req: 62, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"six curses appear on the fake shop at 1280 and 375"`.
 
-- [ ] 13.2 Geometry: each badge is 18px tall, shown, labelled `Cursed: …`, sits at spot (a), (b) or (c) of its page element, overlaps no page text, and the page has no horizontal scroll at 375.
+- [x] 13.2 Geometry: each badge is 18px tall, shown, labelled `Cursed: …`, sits at spot (a), (b) or (c) of its page element, overlaps no page text, and the page has no horizontal scroll at 375.
   - Req: 41, 42, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"badges sit beside their elements and never over text at 1280 and 375"`.
 
-- [ ] 13.3 Cards: click each badge; check title, quoted snippet (timer matches `/^“Cart reserved for \d\d:\d\d”$/`), trick line, focus inside, 8px from both edges (plus the 4px shadow); Esc closes and focus returns to the badge; Enter reopens.
+- [x] 13.3 Cards: click each badge; check title, quoted snippet (timer matches `/^“Cart reserved for \d\d:\d\d”$/`), trick line, focus inside, 8px from both edges (plus the 4px shadow); Esc closes and focus returns to the badge; Enter reopens.
   - Req: 48, 49, 50, 51, 52, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"each badge opens its card with title, quote and trick"`, `"Esc closes the card and focus returns to the badge"`, `"Enter on a focused badge opens the card"`, `"cards keep 8px from both viewport edges at 1280 and 375"`.
 
-- [ ] 13.4 Popup and HUD: the Curses tile shows 6; six rows with kind names and quoted snippets; the Curses heading follows `No tombstones. Every link is alive.` in document order; a row shows the `#6633cc` ring on Tab; `GET_STATE.curses` has length 6 and the session key `curses:<tabId>` holds the same; the HUD count is `6`.
+- [x] 13.4 Popup and HUD: the Curses tile shows 6; six rows with kind names and quoted snippets; the Curses heading follows `No tombstones. Every link is alive.` in document order; a row shows the `#6633cc` ring on Tab; `GET_STATE.curses` has length 6 and the session key `curses:<tabId>` holds the same; the HUD count is `6`.
   - Req: 53, 54, 56, 57, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"popup lists the six curses after tombstones"`, `"HUD curse count is 6"`, `"the session key holds the curses"`.
 
-- [ ] 13.5 Checkbox: `input[name=news]` is checked (property and attribute) after Haunt, after clicking its badge and after Un-haunt; `remember` is still checked and `restock` still unchecked.
+- [x] 13.5 Checkbox: `input[name=news]` is checked (property and attribute) after Haunt, after clicking its badge and after Un-haunt; `remember` is still checked and `restock` still unchecked.
   - Req: 28, 29, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"the pre-checked box stays checked"`.
 
-- [ ] 13.6 Un-haunt: `hg-crypt` is gone, `GET_STATE.curses` is `[]`, the session key is gone, and `outerHTML` (clock normalised) equals `before`.
+- [x] 13.6 Un-haunt: `hg-crypt` is gone, `GET_STATE.curses` is `[]`, the session key is gone, and `outerHTML` (clock normalised) equals `before`.
   - Req: 30, 38, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"un-haunt leaves the page byte-identical and clears the curses"`.
 
-- [ ] 13.7 Clean page: on `clean.html` the popup shows `No curses. This page plays fair.`, the tile shows 0 and the HUD count is 0.
+- [x] 13.7 Clean page: on `clean.html` the popup shows `No curses. This page plays fair.`, the tile shows 0 and the HUD count is 0.
   - Req: 55, 56, 68
   - Test: `e2e/dark-patterns.spec.ts` → `"a clean page shows the empty curse line"`.
 
-- [ ] 13.8 Reduced motion: with `reducedMotion: "reduce"`, the badges and an open card have no running animations.
+- [x] 13.8 Reduced motion: with `reducedMotion: "reduce"`, the badges and an open card have no running animations.
   - Req: 46, 61
   - Test: `e2e/dark-patterns.spec.ts` → `"under reduced motion badges and the card do not animate"`.
 
 ## 14. Docs and checks
 
-- [ ] 14.1 Update `README.md`: describe dark-pattern curses in "What it does", list `dark-patterns.html` in the fixtures table, and change the "still to come" sentence so it names only neighborhoods and Kiro hooks. Update `test/readme.test.ts` (the test `"does not claim dark patterns, neighborhoods or Kiro hooks work"`) so that the lines about dark patterns and curses are allowed to describe working behaviour, and neighborhoods and hooks still must say "still to come". Add the specs list entry (`dark-patterns`) to the "How Kiro was used" paragraph.
+- [x] 14.1 Update `README.md`: describe dark-pattern curses in "What it does", list `dark-patterns.html` in the fixtures table, and change the "still to come" sentence so it names only neighborhoods and Kiro hooks. Update `test/readme.test.ts` (the test `"does not claim dark patterns, neighborhoods or Kiro hooks work"`) so that the lines about dark patterns and curses are allowed to describe working behaviour, and neighborhoods and hooks still must say "still to come". Add the specs list entry (`dark-patterns`) to the "How Kiro was used" paragraph.
   - Req: 62, 68
   - Test: `test/readme.test.ts` (updated), `bun run test`.
 
-- [ ] 14.2 Run `bun run typecheck`, `bun run test`, `bun run test:e2e` and `bun run docker:test`; fix any failure before closing the spec.
+- [x] 14.2 Run `bun run typecheck`, `bun run test`, `bun run test:e2e` and `bun run docker:test`; fix any failure before closing the spec.
   - Req: 65-68
   - Test: all four commands exit 0.
 
-- [ ] 14.3 Confirm no new permission or dependency: `test/manifest.test.ts` passes unchanged and `package.json` has no new entry.
+- [x] 14.3 Confirm no new permission or dependency: `test/manifest.test.ts` passes unchanged and `package.json` has no new entry.
   - Req: Overview and `tech.md` (no new permission, no new dependency)
   - Test: `test/manifest.test.ts` passes unchanged; `package.json` has no new entry.
