@@ -6,93 +6,93 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 1. Types and keys
 
-- [ ] 1.1 In `src/data/types.ts`, add `DARK_PATTERN_KINDS` (`scarcity`, `countdown`, `timer`, `confirmshaming`, `prechecked`), `DarkPatternKind` and `Curse { kind; snippet }`.
+- [x] 1.1 In `src/data/types.ts`, add `DARK_PATTERN_KINDS` (`scarcity`, `countdown`, `timer`, `confirmshaming`, `prechecked`), `DarkPatternKind` and `Curse { kind; snippet }`.
   - Req: 1, 35
   - Test: `test/dark-patterns/router.test.ts` → `"DARK_PATTERN_KINDS lists the five kinds"`.
 
-- [ ] 1.2 Add `{ type: "CURSE_UPDATE"; curses: Curse[] }` to `ContentRequest`.
+- [x] 1.2 Add `{ type: "CURSE_UPDATE"; curses: Curse[] }` to `ContentRequest`.
   - Req: 35
   - Test: `test/dark-patterns/router.test.ts` → `"ContentRequest has a CURSE_UPDATE variant"` (a type-level check that compiles).
 
-- [ ] 1.3 Add `cursesKey = (tabId: number) => \`curses:${tabId}\`` next to `tombstonesKey`.
+- [x] 1.3 Add `cursesKey = (tabId: number) => \`curses:${tabId}\`` next to `tombstonesKey`.
   - Req: 37
   - Test: `test/dark-patterns/router.test.ts` → `"cursesKey is curses:<tabId>"`.
 
-- [ ] 1.4 Add `curses: Curse[]` to `TabState`. Update every `TabState` literal so `bun run typecheck` passes: `src/popup/app.ts` (`NO_TAB`), `test/background.test.ts`, `test/popup.test.ts`, `test/costume.test.ts`, `test/tombstones/router.test.ts`, `test/tombstones/popup.test.ts`, `test/vampire/popup.test.ts`, `test/vampire/spec-gaps.test.ts` (find them with `grep -rn "tombstones: \[\]"`).
+- [x] 1.4 Add `curses: Curse[]` to `TabState`. Update every `TabState` literal so `bun run typecheck` passes: `src/popup/app.ts` (`NO_TAB`), `test/background.test.ts`, `test/popup.test.ts`, `test/costume.test.ts`, `test/tombstones/router.test.ts`, `test/tombstones/popup.test.ts`, `test/vampire/popup.test.ts`, `test/vampire/spec-gaps.test.ts` (find them with `grep -rn "tombstones: \[\]"`).
   - Req: 39, 58
   - Test: `bun run typecheck`; `test/dark-patterns/router.test.ts` → `"TabState has a curses field"`.
 
 ## 2. Detector module (`src/content/dark-patterns.ts`)
 
-- [ ] 2.1 Create the module with `DarkPattern`, `detectDarkPatterns(root, costumeHost)`, and the shared helpers `blockOf`, `flowOf`, `locate`, `inSkipped`, `snippet`, `snippetOf`, `collapse`, `PRECEDENCE`. No Chrome API import.
+- [x] 2.1 Create the module with `DarkPattern`, `detectDarkPatterns(root, costumeHost)`, and the shared helpers `blockOf`, `flowOf`, `locate`, `inSkipped`, `snippet`, `snippetOf`, `collapse`, `PRECEDENCE`. No Chrome API import.
   - Req: 1, 2
   - Test: `test/dark-patterns/detect.test.ts` → `"module imports with no chrome global"`, `"returns [] for a page with no patterns"`.
 
-- [ ] 2.2 Implement the skip rules: prune `script`, `style`, `noscript`, `template`, `head`, the costume host (by tag name), `hidden`, `aria-hidden="true"`, `input[type=hidden]` and computed `display: none` (a `TreeWalker` filter returning `FILTER_REJECT`); ignore text under computed `visibility: hidden|collapse`; `inSkipped` for the two `querySelectorAll` passes.
+- [x] 2.2 Implement the skip rules: prune `script`, `style`, `noscript`, `template`, `head`, the costume host (by tag name), `hidden`, `aria-hidden="true"`, `input[type=hidden]` and computed `display: none` (a `TreeWalker` filter returning `FILTER_REJECT`); ignore text under computed `visibility: hidden|collapse`; `inSkipped` for the two `querySelectorAll` passes.
   - Req: 6
   - Test: `test/dark-patterns/detect.test.ts` → `"skips the costume host"`, `"skips script, style, noscript, template and head text"`, `"skips hidden, aria-hidden and display:none subtrees"`, `"skips text under visibility:hidden but keeps a visible child"`, `"skips a checked newsletter box inside a skipped node"`.
 
-- [ ] 2.3 Implement flows: group text nodes by `blockOf`, join their data (a `<br>` between nodes adds a space), keep per-node offsets. Implement `locate` returning the lowest common ancestor of the first and last text node of the match, never above the block.
+- [x] 2.3 Implement flows: group text nodes by `blockOf`, join their data (a `<br>` between nodes adds a space), keep per-node offsets. Implement `locate` returning the lowest common ancestor of the first and last text node of the match, never above the block.
   - Req: 10, 11, 12, 13
   - Test: `test/dark-patterns/detect.test.ts` → `"Only <b>2</b> left matches on the <p>"`, `"matches when em and strong split the words"`, `"reports the b when the whole phrase is inside it"`, `"reports the p for nested spans"`, `"a phrase split across two p elements does not match"`, `"a br between words counts as a space"`, `"one match per kind per block"`.
 
-- [ ] 2.4 Implement `scarcity` (three patterns).
+- [x] 2.4 Implement `scarcity` (three patterns).
   - Req: 7, 9, 14
   - Test: `test/dark-patterns/detect.test.ts` → `"scarcity: Only 2 left, just 3 items remaining, 12 people are viewing, Low stock"`, `"scarcity ignores case and extra whitespace"`, `"scarcity: Only the best coffee, Just 2 minutes from the station and Left-handed mugs do not match"`.
 
-- [ ] 2.5 Implement `countdown` (four patterns).
+- [x] 2.5 Implement `countdown` (four patterns).
   - Req: 8, 9, 14
   - Test: `test/dark-patterns/detect.test.ts` → `"countdown: Offer ends in 3 hours, Ends in 15 min, Limited-time offer, 2 hours left"`, `"countdown: Our road ends in a cul-de-sac and Open daily 09:00 to 17:30 do not match"`.
 
-- [ ] 2.6 Implement `confirmshaming` over `a`, `button`, `[role=button]`, `input[type=button|submit]` (value), text ≤ 80 characters, built from `LEAD`, `THANKS`, `SEP`, `I` and `SHAME`.
+- [x] 2.6 Implement `confirmshaming` over `a`, `button`, `[role=button]`, `input[type=button|submit]` (value), text ≤ 80 characters, built from `LEAD`, `THANKS`, `SEP`, `I` and `SHAME`.
   - Req: 15, 16
   - Test: `test/dark-patterns/detect.test.ts` → `"confirmshaming: No thanks, I hate saving money"`, `"confirmshaming: No, I prefer paying full price"`, `"confirmshaming: Maybe later, I don't like deals"`, `"confirmshaming: No thanks, I'll pay full price"`, `"confirmshaming on an input[type=submit] value"`, `"plain declines do not match: No thanks, No, thanks, Not now, Maybe later, Skip, Close, No thanks, I'm good"`, `"a long paragraph starting with No is not a decline control"`.
 
-- [ ] 2.7 Implement `prechecked`: `input[type=checkbox]` with the `checked` attribute; label from the wrapping `label`, else `label[for]` found by comparing `htmlFor` (no selector built from the id), else `aria-label`; match `OPT_IN_WORDS`; report the label element, else the input.
+- [x] 2.7 Implement `prechecked`: `input[type=checkbox]` with the `checked` attribute; label from the wrapping `label`, else `label[for]` found by comparing `htmlFor` (no selector built from the id), else `aria-label`; match `OPT_IN_WORDS`; report the label element, else the input.
   - Req: 17, 18, 19, 20
   - Test: `test/dark-patterns/detect.test.ts` → `"prechecked: wrapping label with newsletter"`, `"prechecked: label for= with partners"`, `"prechecked: aria-label with subscribe"`, `"prechecked reports the label element"`, `"prechecked reads the attribute, not the property"`, `"no match: Remember my cart (checked), Email me when it is back (unchecked), checked box with no label text"`.
 
-- [ ] 2.8 Implement the snippet rule (`collapse`, `snippet`, `snippetOf`), one pattern per element by `PRECEDENCE`, document order and the 30 cap.
+- [x] 2.8 Implement the snippet rule (`collapse`, `snippet`, `snippetOf`), one pattern per element by `PRECEDENCE`, document order and the 30 cap.
   - Req: 3, 4, 5
   - Test: `test/dark-patterns/detect.test.ts` → `"snippet is the collapsed element text"`, `"snippet is at most 60 characters and ends in … when cut"`, `"a cut scarcity snippet starts at the match"`, `"a cut confirmshaming snippet starts at the text start"`, `"scarcity wins over countdown on the same element"`, `"prechecked wins over scarcity on the same label"`, `"returns at most 30 patterns in document order"`.
 
-- [ ] 2.9 Implement `mergeCurses(statics, timers)`: a timer replaces a countdown on the same element or on an ancestor or descendant element; one per element by `PRECEDENCE`; document order; cap 30.
+- [x] 2.9 Implement `mergeCurses(statics, timers)`: a timer replaces a countdown on the same element or on an ancestor or descendant element; one per element by `PRECEDENCE`; document order; cap 30.
   - Req: 4, 5, 26
   - Test: `test/dark-patterns/merge.test.ts` → `"timer replaces a countdown on the same element"`, `"timer replaces a countdown on an ancestor"`, `"timer replaces a countdown on a descendant"`, `"a timer does not replace a scarcity on the same element"`, `"result is in document order"`, `"result is capped at 30"`.
 
-- [ ] 2.10 Add `KIND_INFO` (`name`, `title`, `trick` per kind).
+- [x] 2.10 Add `KIND_INFO` (`name`, `title`, `trick` per kind).
   - Req: 49, 50, 54
   - Test: `test/dark-patterns/card.test.ts` → `"KIND_INFO titles match DESIGN.md plus Ticking timer"`, `"every trick is one sentence"`.
 
-- [ ] 2.11 Prove the detector is read-only.
+- [x] 2.11 Prove the detector is read-only.
   - Req: 2, 27
   - Test: `test/dark-patterns/detect.test.ts` → `"outerHTML is identical before and after detectDarkPatterns"`, `"calling it twice returns equal results"`, `"a checked box is still checked, attribute and property"`.
 
 ## 3. Timer watcher (`src/content/timers.ts`)
 
-- [ ] 3.1 Implement `createTickTracker({ changes = 3, windowMs = 10_000 })` with `note(block, clock, now)`.
+- [x] 3.1 Implement `createTickTracker({ changes = 3, windowMs = 10_000 })` with `note(block, clock, now)`.
   - Req: 22
   - Test: `test/dark-patterns/timers.test.ts` → `"first value is not a tick"`, `"the same value repeated is not a tick"`, `"two changes are not enough"`, `"the third change reports once"`, `"it does not report twice"`, `"changes older than 10 s do not count"`.
 
-- [ ] 3.2 Implement `watchTimers(doc, costumeHost, onTimer, opts)`: one `MutationObserver` on `doc.body` with `{ subtree: true, childList: true, characterData: true }`, at most 200 records per callback, target blocks collected in a `Set`, `locate(flow, CLOCK)`, element chosen when the tracker fires, a `stop()` that disconnects.
+- [x] 3.2 Implement `watchTimers(doc, costumeHost, onTimer, opts)`: one `MutationObserver` on `doc.body` with `{ subtree: true, childList: true, characterData: true }`, at most 200 records per callback, target blocks collected in a `Set`, `locate(flow, CLOCK)`, element chosen when the tracker fires, a `stop()` that disconnects.
   - Req: 21, 23, 24, 25
   - Test: `test/dark-patterns/timers.test.ts` → `"a ticking clock is reported once with kind timer"`, `"a static clock (17:30 repeated) is never reported"`, `"a split clock reports the element holding both spans"`, `"a page that replaces the clock element each tick is still reported"`, `"mutations inside the costume host are ignored"`, `"at most 200 records are processed per callback"`, `"observe is called with subtree, childList and characterData only"`, `"stop disconnects"`.
 
-- [ ] 3.3 Prove the watcher is read-only.
+- [x] 3.3 Prove the watcher is read-only.
   - Req: 24, 27
   - Test: `test/dark-patterns/timers.test.ts` → `"outerHTML is unchanged by a watcher run"`.
 
 ## 4. Background
 
-- [ ] 4.1 In `src/background/router.ts`, add `"CURSE_UPDATE"` to `TYPES`, add it to the `tabOf` list that takes `sender.tab.id`, and add the `isCurse` guard.
+- [x] 4.1 In `src/background/router.ts`, add `"CURSE_UPDATE"` to `TYPES`, add it to the `tabOf` list that takes `sender.tab.id`, and add the `isCurse` guard.
   - Req: 35
   - Test: `test/dark-patterns/router.test.ts` → `"CURSE_UPDATE takes the tab from sender.tab.id, not from the body"`.
 
-- [ ] 4.2 Handle `CURSE_UPDATE`: drop it unless `haunt:<tabId>` is set; filter with `isCurse`, keep the first 30, cut each snippet to 60 characters, store under `cursesKey(tabId)`.
+- [x] 4.2 Handle `CURSE_UPDATE`: drop it unless `haunt:<tabId>` is set; filter with `isCurse`, keep the first 30, cut each snippet to 60 characters, store under `cursesKey(tabId)`.
   - Req: 36, 37
   - Test: `test/dark-patterns/router.test.ts` → `"CURSE_UPDATE from a haunted tab is stored under curses:<tabId>"`, `"CURSE_UPDATE from a tab that is not haunted is dropped"`, `"entries with an unknown kind or a non-string snippet are dropped"`, `"snippets are cut to 60 characters and the list to 30"`, `"a non-array curses field is ignored"`.
 
-- [ ] 4.3 Return `curses` from `getState` (`[]` when none), add `curses: []` to the error answer in `register`, and remove `cursesKey` in `clearTab`.
+- [x] 4.3 Return `curses` from `getState` (`[]` when none), add `curses: []` to the error answer in `register`, and remove `cursesKey` in `clearTab`.
   - Req: 38, 39
   - Test: `test/dark-patterns/router.test.ts` → `"getState returns the stored curses"`, `"getState returns [] when nothing is stored"`, `"every answer includes curses, including the error answer"`, `"UNHAUNT removes curses:<tabId>"`, `"tab close removes curses:<tabId>"`, `"navigation removes curses:<tabId>"`.
 
@@ -192,25 +192,25 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 
 ## 10. Fixture
 
-- [ ] 10.1 Create `fixtures/dark-patterns.html` exactly as specified in `design.md` (the Lantern Moth Coffee shop: six curses, the innocent controls, the hidden decoys, the ticking clock script).
+- [x] 10.1 Create `fixtures/dark-patterns.html` exactly as specified in `design.md` (the Lantern Moth Coffee shop: six curses, the innocent controls, the hidden decoys, the ticking clock script).
   - Req: 62, 63, 64
   - Test: `test/dark-patterns/fixture.test.ts` → `"detectDarkPatterns on the fixture returns exactly the six curses, in order"`, `"each curse has the expected kind, element id and snippet"`, `"the innocent controls are not curses"`, `"the hidden decoys are not curses"`.
 
-- [ ] 10.2 Check the fixture's layout contract.
+- [x] 10.2 Check the fixture's layout contract.
   - Req: 64
   - Test: `test/dark-patterns/fixture.test.ts` → `"every cursed element has the gap class"`, `"the page loads no external resource"`.
 
 ## 11. Property-based test
 
-- [ ] 11.1 Write `test/dark-patterns/properties.test.ts` with the local `prng` (mulberry32), `int`, `pick`, `SEED` and `CASES = 300`, and the `forAll` wrapper that reports the seed and the case, copied from `test/tracker/properties.test.ts`. No new dependency. Write the generator (random phrase, random cuts, random inline wrapping, random case and whitespace) and the model's expected smallest element.
+- [x] 11.1 Write `test/dark-patterns/properties.test.ts` with the local `prng` (mulberry32), `int`, `pick`, `SEED` and `CASES = 300`, and the `forAll` wrapper that reports the seed and the case, copied from `test/tracker/properties.test.ts`. No new dependency. Write the generator (random phrase, random cuts, random inline wrapping, random case and whitespace) and the model's expected smallest element.
   - Req: 66
   - Test: `test/dark-patterns/properties.test.ts` → `"generator output is deterministic for a seed"`.
 
-- [ ] 11.2 Properties: found once on the smallest element; snippet ≤ 60 and equal to the collapsed element text from the match; tree unchanged.
+- [x] 11.2 Properties: found once on the smallest element; snippet ≤ 60 and equal to the collapsed element text from the match; tree unchanged.
   - Req: 10, 12, 66
   - Test: `test/dark-patterns/properties.test.ts` → `"a split scarcity phrase is found once on the smallest element"`, `"a split countdown phrase is found once on the smallest element"`, `"snippets are at most 60 characters"`, `"detection leaves the tree unchanged"`.
 
-- [ ] 11.3 Negative properties: cross-block split, look-alikes, and one pattern per element.
+- [x] 11.3 Negative properties: cross-block split, look-alikes, and one pattern per element.
   - Req: 4, 11, 14, 66
   - Test: `test/dark-patterns/properties.test.ts` → `"a phrase split across blocks is never found"`, `"look-alike text split at random is never found"`, `"two kinds in one block give one pattern, the higher precedence"`.
 
