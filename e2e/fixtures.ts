@@ -23,7 +23,13 @@ export const trackerUrl = (host: string, n: number | string) => `http://${host}:
  * only a runtime catch can make it a vampire) and a host that is in no tracker list.
  */
 export const VAMPIRE_HOSTS = { tracker: "adentifi.com", unlisted: "nightowl-metrics.test" } as const;
-const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
+/**
+ * Two more real tracker domains with fingerprinting score 0 (so they stay ghosts) whose companies
+ * share Criteo's base hem tint: e2e/neighborhoods.spec.ts requests them to get three neighbouring
+ * ghosts that would all wear one colour without assignTints.
+ */
+export const TINT_HOSTS = { Chartbeat: "chartbeat.net", Quantcast: "quantcount.com" } as const;
+const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
 
 type Fixtures = { context: BrowserContext; sw: Worker; extensionId: string; consoleErrors: string[] };
 
