@@ -1,4 +1,4 @@
-import { byCountThenName, categoryOf, hemTint } from "../content/costume/ghosts";
+import { assignTints, byCountThenName, categoryOf } from "../content/costume/ghosts";
 import { appendPath } from "../content/costume/tombstones";
 import type { CompanyHit, Curse, DeadLink, TabState } from "../data/types";
 import { h } from "./dom";
@@ -40,7 +40,7 @@ export interface ScreenProps {
   error?: string;
 }
 
-function ghostRow(doc: Document, g: CompanyHit, exorcised: boolean, onExorcise: ScreenProps["onExorcise"]): HTMLElement {
+function ghostRow(doc: Document, g: CompanyHit, tint: string, exorcised: boolean, onExorcise: ScreenProps["onExorcise"]): HTMLElement {
   const n = g.domains.length;
   const button = h(doc, "button", { type: "button", class: exorcised ? "quiet" : "secondary", "data-company": g.company }, exorcised ? "Let it back" : "Exorcise");
   button.setAttribute("aria-label", `${exorcised ? "Let it back" : "Exorcise"}: ${g.company}`);
@@ -49,7 +49,7 @@ function ghostRow(doc: Document, g: CompanyHit, exorcised: boolean, onExorcise: 
     doc,
     "li",
     { class: exorcised ? "ghost-row exorcised" : "ghost-row" },
-    h(doc, "span", { class: "icon-tile" }, tintedGhost(doc, hemTint(g.company))),
+    h(doc, "span", { class: "icon-tile" }, tintedGhost(doc, tint)),
     h(
       doc,
       "span",
@@ -224,10 +224,12 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
     const vampires = state.ghosts.filter((g) => g.vampire).sort((a, b) => (a.company < b.company ? -1 : a.company > b.company ? 1 : 0));
     tiles.querySelector('[data-count="ghosts"] .num')!.textContent = String(ghosts.length);
     tiles.querySelector('[data-count="vampires"] .num')!.textContent = String(vampires.length);
+    // The lanes' tints for the same order, so a company wears one hem colour everywhere.
+    const tints = assignTints(ghosts.map((g) => g.company));
     const ghostList = ghosts.length
       ? [
           h(doc, "h2", { class: "list-head" }, "Ghosts ", h(doc, "span", { class: "list-count" }, String(ghosts.length))),
-          h(doc, "ul", { class: "rows" }, ...ghosts.map((g) => ghostRow(doc, g, state.exorcised.includes(g.company), onExorcise))),
+          h(doc, "ul", { class: "rows" }, ...ghosts.map((g, i) => ghostRow(doc, g, tints[i]!, state.exorcised.includes(g.company), onExorcise))),
         ]
       : vampires.length
         ? []

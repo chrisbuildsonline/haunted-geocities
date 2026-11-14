@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
 import { GHOST, ghostLegend } from "../../src/content/costume/art";
 import { closeCard, openCard, setCardExorcised } from "../../src/content/costume/card";
-import { hemTint, planSlots, updateGhosts } from "../../src/content/costume/ghosts";
+import { assignTints, hemTint, planSlots, updateGhosts } from "../../src/content/costume/ghosts";
 import { renderCostume, leaveCostume } from "../../src/content/costume/render";
 import { HEM_TINTS, PALETTE } from "../../src/content/costume/tokens";
 import type { CompanyHit } from "../../src/data/types";
@@ -84,7 +84,8 @@ describe("updateGhosts", () => {
     expect(ghosts[0]!.querySelector(".tag")!.textContent).toBe("Criteo");
     expect(ghosts[0]!.style.top).toBe("8px");
     expect(ghosts[1]!.style.top).toBe("80px");
-    expect(ghosts[0]!.querySelector("svg")!.innerHTML).toContain(hemTint("Criteo"));
+    const tints = assignTints(["Criteo", "Hotjar", "Taboola"]);
+    ghosts.forEach((g, i) => expect(g.querySelector("svg")!.innerHTML).toContain(tints[i]!));
   });
   test("no slots, no sprites", () => {
     const { doc } = page();

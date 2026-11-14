@@ -21,7 +21,22 @@ export function hemTint(company: string): string {
   return HEM_TINTS[h % HEM_TINTS.length]!;
 }
 
-export const ghostSvg = (company: string) => svgMarkup(mapToPx(GHOST, ghostLegend(hemTint(company)), PIXEL.spriteScale), 48, 48);
+/**
+ * One tint per company, for companies in ghost order: the base tint, moved to the next tint until
+ * it differs from the two before (the neighbour beside it and the one above it in the same lane).
+ */
+export function assignTints(companies: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const company of companies) {
+    const recent = out.slice(-2);
+    let i = HEM_TINTS.indexOf(hemTint(company) as (typeof HEM_TINTS)[number]);
+    while (recent.includes(HEM_TINTS[i]!)) i = (i + 1) % HEM_TINTS.length;
+    out.push(HEM_TINTS[i]!);
+  }
+  return out;
+}
+
+export const ghostSvg = (tint: string) => svgMarkup(mapToPx(GHOST, ghostLegend(tint), PIXEL.spriteScale), 48, 48);
 export const vampireSvg = () => svgMarkup(mapToPx(VAMPIRE, VAMPIRE_LEGEND, PIXEL.spriteScale), 48, 54);
 
 /** Most requests first, then by name: the order of the lanes and the popup list. */
@@ -91,13 +106,18 @@ function label(hit: CompanyHit): string {
 /** Put the companies into the lanes, ghosts by count then vampires by name, reusing each one's element across updates. */
 export function updateGhosts(lanes: HTMLElement, companies: readonly CompanyHit[], slots: readonly Slot[], opts: GhostOptions): void {
   const doc = lanes.ownerDocument;
-  const sorted = [...companies.filter((c) => !c.vampire).sort(byCountThenName), ...companies.filter((c) => c.vampire).sort(byName)];
+  const ghosts = companies.filter((c) => !c.vampire).sort(byCountThenName);
+  const sorted = [...ghosts, ...companies.filter((c) => c.vampire).sort(byName)];
+  // Over every ghost, slotted or not, so a tint never depends on the number of slots.
+  const tintList = assignTints(ghosts.map((g) => g.company));
+  const tints = new Map(ghosts.map((g, i) => [g.company, tintList[i]!]));
   const overflow = sorted.length > slots.length && slots.length > 0;
   const shown = sorted.slice(0, overflow ? slots.length - 1 : slots.length);
   const old = new Map([...lanes.querySelectorAll<HTMLElement>(".ghost, .vampire")].map((g) => [`${g.classList.contains("vampire") ? "vampire" : "ghost"}:${g.dataset.company}`, g]));
 
   const keep = shown.map((hit, i) => {
     const kind = kindOf(hit);
+    const tint = tints.get(hit.company);
     let el = old.get(`${kind}:${hit.company}`);
     old.delete(`${kind}:${hit.company}`);
     if (!el) {
@@ -105,15 +125,20 @@ export function updateGhosts(lanes: HTMLElement, companies: readonly CompanyHit[
       el.setAttribute("type", "button");
       el.className = kind;
       el.dataset.company = hit.company;
+      if (tint) el.dataset.tint = tint;
       el.innerHTML =
         kind === "ghost"
-          ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(hit.company)}</span></span></span><span class="tag"></span>`
+          ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(tint!)}</span></span></span><span class="tag"></span>`
           : `<span class="bob"><span class="sprite">${vampireSvg()}</span></span><span class="tag"></span>`;
       el.querySelector(".tag")!.textContent = hit.company;
       const button = el;
       el.addEventListener("click", () => opts.onOpen(hit.company, button));
       el.classList.toggle("known", !!hit.vampire?.knownOnly);
       if (opts.rise) kind === "ghost" ? riseIn(el) : vampireIn(el);
+    } else if (tint && el.dataset.tint !== tint) {
+      // The order changed under it: redraw only the sprite; the button, its focus and label stay.
+      el.dataset.tint = tint;
+      el.querySelector(".sprite")!.innerHTML = ghostSvg(tint);
     }
     el.classList.toggle("known", !!hit.vampire?.knownOnly);
     place(el, slots[i]!);
