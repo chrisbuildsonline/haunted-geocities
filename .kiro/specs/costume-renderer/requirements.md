@@ -83,7 +83,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 47. At 2300–2500ms, any markers (none in this spec) shall fade in over 200ms linear.
 48. The FX layer (vignette div, ghost sprite, dither strip) shall be removed at 2500ms.
 49. Every change in the haunt moment shall be monotonic; no value toggles back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
-50. Audio shall be muted by default; if the user has turned sound on, the wipe shall play a 900ms band-passed noise whoosh synced to 200–1100ms. Audio is out of scope for this spec's tests.
+50. Audio shall be muted by default; if the user has turned sound on, the 900ms band-passed noise whoosh that goes with the wipe (200–1100ms) shall be played by the popup on the Haunt click, not by the content script, and the haunt moment itself shall make no sound. Audio is specified in `.kiro/specs/sound-effects/` (R9) and is out of scope for this spec's tests.
 
 ### Un-haunt (Reverse)
 
