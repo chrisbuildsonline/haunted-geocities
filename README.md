@@ -17,6 +17,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - Every site gets a GeoCities neighborhood address, such as `SiliconValley/Heights/2049`, worked out from its host name. The bar at the top shows it with the neighborhood's tagline, and the popup shows it under the site title.
 - The popup lists the ghosts, vampires, tombstones and curses found on the page.
 - While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
+- Sound is off by default. Turn on **Sound effects** in the popup and the Haunt click plays a short whoosh, and opening a card plays a short sound for its kind: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and an organ stab for a vampire. The sounds are made in code with the Web Audio API (`src/audio/sound.ts`), with no audio files, and nothing plays until you click.
 
 ![The popup on a haunted page: one ghost, two vampires, the Exorcise buttons](docs/screenshots/popup.png)
 
@@ -77,7 +78,7 @@ From `src/manifest.ts`:
 - `activeTab`: lets the popup act on the tab you clicked in, and only that tab.
 - `scripting`: injects the costume script into that tab when you click Haunt.
 - `declarativeNetRequest`: Exorcise, which blocks a tracker company's domains for one tab.
-- `storage`: keeps per-tab state for the session and the sound setting.
+- `storage`: keeps per-tab state for the session and the Sound effects setting (off by default).
 - Optional `http://*/*` and `https://*/*`: asked for only if you switch on "Check links to other sites" in the popup. That opens a small extension page, `permissions.html`, in a new tab, and you allow it there, because Chrome's permission prompt would close the popup. Without it, only links on the same site are checked. You can turn it off again in the popup, which removes the permission.
 
 There are no host permissions at install.
@@ -139,6 +140,6 @@ To turn a hook off, set `"enabled": false` in its file, or switch it off in the 
 
 ## How Kiro was used
 
-The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires, dark-pattern curses (`dark-patterns`) and neighborhoods. Each spec has requirements, a design and a task list.
+The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires, dark-pattern curses (`dark-patterns`), neighborhoods and sound effects (`sound-effects`). Each spec has requirements, a design and a task list.
 
 The three hooks in `.kiro/hooks/` were also written by kiro-cli, together with their spec in `.kiro/specs/kiro-hooks/` (`kiro-hooks`), which covers the hook files, `lint:manifest`, `test:visual` and the test that checks the hooks.
