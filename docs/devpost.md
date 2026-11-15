@@ -37,7 +37,7 @@ TypeScript, built with Vite into an MV3 extension: a service worker, a content s
 
 ### How Kiro was used
 
-The `.kiro/` folder holds what kiro-cli generated for the project.
+The `.kiro/` folder holds what kiro-cli generated for the project. No MCP servers, custom agents or Kiro powers were used: Kiro was used through kiro-cli to write the steering, the specs and the hooks.
 
 - **6 steering files**, all included on every request: product, structure, tech, era accuracy (216 web-safe colours, two fonts, original pixel art, nothing a 1998 page would not have had), accessibility and motion, and non-destructive DOM.
 - **9 specs**, each with requirements, a design and a task list: `scaffold`, `tracker-detector`, `costume-renderer`, `tombstones`, `runtime-vampires`, `dark-patterns`, `neighborhoods`, `sound-effects` and `kiro-hooks`.
