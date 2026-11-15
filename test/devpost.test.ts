@@ -108,6 +108,18 @@ describe("docs/devpost.md", () => {
     expect(section).toContain("Web Audio API");
   });
 
+  test("How Kiro was used says no MCP servers, custom agents or powers were used", () => {
+    const section = doc.split(/^### How Kiro was used\s*$/m)[1]?.split(/^##+ /m)[0] ?? "";
+    expect(section).toMatch(/\bno MCP servers, custom agents or Kiro powers\b/i);
+    expect(section).toContain("kiro-cli");
+  });
+
+  test("says the code is MIT and the bundled tracker data is CC BY-NC-SA 4.0, as the README does", () => {
+    expect(readme).toMatch(/code is MIT/);
+    expect(doc).toMatch(/code is MIT/);
+    expect(doc).toMatch(/`src\/data\/trackers\.json`[^.]*CC BY-NC-SA 4\.0/);
+  });
+
   test("keeps a plain tone", () => {
     expect(doc).not.toMatch(/\b(revolutionary|seamless(ly)?|cutting-edge|game-?chang\w*|blazing(ly)?|supercharg\w*|unleash\w*|next-level|leverag\w*|delight\w*|magic(al)?)\b/i);
     expect(doc).not.toMatch(/!{2,}/);
