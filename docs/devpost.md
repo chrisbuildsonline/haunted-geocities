@@ -24,6 +24,8 @@ The old GeoCities pages were loud, but you could see everything they did. A mode
 
 There are no host permissions at install. The tracker data is bundled and matched locally, and link checks are sent without cookies.
 
+The code is MIT. The bundled tracker data, `src/data/trackers.json`, comes from the DuckDuckGo Tracker Radar and is CC BY-NC-SA 4.0, separate from the code.
+
 ## How we built it
 
 TypeScript, built with Vite into an MV3 extension: a service worker, a content script injected with `chrome.scripting` when you click Haunt, and a popup.
