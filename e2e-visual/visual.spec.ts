@@ -1,13 +1,14 @@
 // Screenshot comparisons for the costume and the popup, at 1280 and 375 wide, with reduced motion,
 // a fixed clock and disabled animations. Baselines live in __screenshots__/ and come from the
 // Playwright Docker image: `bun run test:visual:update`, then review the PNGs before committing.
-import { expect, test } from "../e2e/fixtures";
+import { expect, shadowOf, test } from "../e2e/fixtures";
 import { hauntThroughPopup, hudCount, openPreparedPopup, prepare, tickUntil, visualUrl, waitForHaunted, waitForPopupSettled } from "./helpers";
 
 const WIDTHS = [1280, 375] as const;
 
-// article: the restyle, tint and guestbook frame on a white page (full-overlay at 375); dark: no tint, light-blue links.
-const FIXTURES = ["index", "trackers", "links", "dark-patterns", "column", "article", "dark"] as const;
+// article: the restyle, tint and guestbook frame on a white page (full-overlay at 375); dark: no tint, light-blue links;
+// wide: a full-width page with trackers, so the graveyard strip is docked above the HUD at both widths.
+const FIXTURES = ["index", "trackers", "links", "dark-patterns", "column", "article", "dark", "wide"] as const;
 
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
@@ -57,4 +58,25 @@ for (const width of WIDTHS) {
     await page.mouse.move(0, 0);
     await expect(page).toHaveScreenshot(`permissions-${width}.png`);
   });
+
+  if (width === 375) {
+    test(`graveyard exorcised with a card @${width}`, async ({ context, sw, extensionId }) => {
+      // trackers.html: Criteo exorcised from its docked card, then Hotjar's card open above the strip.
+      const page = await context.newPage();
+      await prepare(page, width);
+      await page.goto(visualUrl("trackers.html"));
+      await hauntThroughPopup(context, sw, extensionId, page);
+      await page.bringToFront();
+      await waitForHaunted(page);
+      const inShadow = await shadowOf(page);
+      const press = (company: string) => inShadow(function (c: string) { this.querySelector<HTMLElement>(`#graveyard button[data-company="${c}"]`)!.click(); }, company);
+      await press("Criteo");
+      await inShadow(function () { this.querySelector<HTMLElement>("#cards .act")!.click(); });
+      await expect.poll(() => inShadow(function () { return !!this.querySelector('#graveyard button[data-company="Criteo"] .stamp'); })).toBe(true);
+      await press("Hotjar");
+      await waitForHaunted(page);
+      await page.mouse.move(0, 0);
+      await expect(page).toHaveScreenshot(`graveyard-card-${width}.png`);
+    });
+  }
 }

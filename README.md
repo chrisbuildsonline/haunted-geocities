@@ -9,7 +9,8 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 ## What it does
 
 - Haunt and un-haunt any page from the toolbar popup. The page is restyled (fonts, link colours, a parchment tint and a guestbook frame around the content column) by one adopted stylesheet, and the starfield, HUD and marquee sit in a closed shadow root over it. On a phone or a full-width page the whole page is tinted inside a 12px starfield edge. Un-haunting removes it all and the page is byte for byte as it was.
-- Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card.
+- Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card. On a phone or a full-width page, where there is no room beside the text, the ghosts and vampires stand in a graveyard strip just above the HUD instead, and scroll sideways when there are many.
+- The HUD hit counter is labelled `Souls counted`: the number of tracker requests blocked or seen on the page.
 - Exorcise blocks a company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - Scripts caught fingerprinting at runtime (canvas, audio or font probing) become vampires. Companies that Tracker Radar already rates as fingerprinters are listed as known vampires.
 - Dead links get a tombstone beside them. The extension sends a HEAD request, and a 404 or 410 answer makes a tombstone. Clicking one opens a stone card with the path and the status.
@@ -59,7 +60,8 @@ It serves them on `http://127.0.0.1:4321` (`scripts/fixture-server.ts`, an optio
 | `column.html` | A long article, good for seeing the costume around a page. |
 | `article.html` | A plain white article with code, an icon and a form: the restyle, the tint and the guestbook frame. |
 | `dark.html` | A dark page: no tint, light-blue links. |
-| `trackers.html` | Ghosts (Criteo), plus Hotjar and Taboola as known vampires. Try Exorcise on the card or in the popup. |
+| `trackers.html` | Ghosts (Criteo), plus Hotjar and Taboola as known vampires. Try Exorcise on the card or in the popup. At a phone width they stand in the graveyard strip above the HUD. |
+| `wide.html` | A full-width page with trackers: no room beside the text at any width, so the ghosts and vampires stand in the graveyard strip. |
 | `vampires.html` | Two scripts that fingerprint the visitor when you click into the email field. After that they show up as caught vampires. |
 | `links.html` | Three dead links (404, 410 and a long path) that get tombstones. |
 | `dark-patterns.html` | A fake coffee shop cart with low-stock lines, an offer countdown, a ticking clock, a pre-checked newsletter box and a shaming decline link. Haunt it for six curses. |

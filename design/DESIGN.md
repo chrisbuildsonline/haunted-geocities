@@ -41,7 +41,7 @@ Layers, bottom to top:
 | 2 | Lanes: ghosts, vampires | sprites `auto`, lane `none` | Left/right gutter lanes, 64px wide |
 | 3 | Markers: tombstones, curse badges | marker `auto` | Pinned beside page elements |
 | 4 | Top bands: neighborhood bar + marquee | bar links `auto` | 24px + 24px |
-| 5 | HUD | `auto` | Bottom control strip |
+| 5 | HUD, and the graveyard strip above it | `auto` on their own boxes | Bottom control strip; the graveyard is drawn only in full-overlay mode, 4px above the HUD |
 | 6 | Cards | `auto` | One open at a time |
 | 7 | Haunt-moment FX | none | Exists only during the transition |
 
@@ -73,7 +73,7 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
   1. Start from the bounding box of `main`/`article`. If neither exists, use the widest block holding more than 50% of the page's text.
   2. Widen it to cover every text node rect grown by 12px on each side, so no text sits closer than 16px to the guestbook frame's inner edge (the 12px plus its 4px gap). Text the box already pads by 12px or more widens nothing; text wider than the box, such as a site header above the article, pushes the column out.
 - **Gutters:** the gutters are everything left and right of the column. Fill them with the tile at opacity 0.92. A 16px edge toward the column is 2×2-checker dithered (1998 dithering, no gradients). The gutters stop 11px short of the column, where the guestbook frame's line is.
-- **Narrow pages (full-overlay mode):** with no gutter of 64px or more (phones, full-width pages), there are no gutters. The starfield appears inside the top bands, the HUD and a 12px edge frame fixed inside the viewport edges, whose inner 4px is 2×2-checker dithered. The whole page width is tinted and restyled, and the page sheet adds 12px to the body's inline padding so no text sits under the edge frame. The page body stays fully visible and clickable.
+- **Narrow pages (full-overlay mode):** with no gutter of 64px or more (phones, full-width pages), there are no gutters. The starfield appears inside the top bands, the HUD and a 12px edge frame fixed inside the viewport edges, whose inner 4px is 2×2-checker dithered. The whole page width is tinted and restyled, and the page sheet adds 12px to the body's inline padding so no text sits under the edge frame. The ghosts and vampires stand in the docked graveyard strip above the HUD (see "Docked graveyard"), not in the HUD count alone. The page body stays fully visible and clickable.
 
 ### Content column costume
 
@@ -114,7 +114,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 - **Order (controls first, DOM order = visual order):**
   1. `[Hide]` Win95 button.
   2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`.
-  3. Hit counter: label `Souls counted:` + 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen.
+  3. Hit counter: the label `Souls counted` (11px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (11px `#9999cc`, 7.2:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter has `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
   4. Web ring: `« prev | Haunted WebRing | next »`. It moves focus to the previous/next sprite on the page.
 - **Hide/Show:** Hide fades every costume layer out (200ms) and leaves a 40×40 `[Show]` tab bottom-right with the ghost icon. Haunt state is kept.
 - **At 375px:**
@@ -122,7 +122,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - Row 1 holds Hide + counts. Row 2 holds the hit counter + web ring.
   - Never more than 2 rows (88px) and never horizontal scroll.
 - **Body padding:**
-  - The page sheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
+  - The page sheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift, plus the graveyard strip's height + 4px while the strip is drawn. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
   - They are computed at haunt and again when the HUD wraps, the lift changes or the mode changes.
   - The sheet is removed on Un-haunt, so page content is never trapped under the costume.
 - **Empty state:** when nothing is found, the counts are replaced by `No ghosts here. Suspiciously clean.`
@@ -133,7 +133,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - A lane exists on a side only if that gutter is 64px or wider. Slots run at a 72px pitch (48 sprite + 24 label), between the top bands and the HUD.
   - IntersectionObserver re-checks each slot. Any slot intersecting a text rect is skipped.
   - When slots run out, the last slot becomes a `+N` stack token.
-  - With no lane at all (most phones), ghosts live only in the HUD count and the popup list. Ghosts are never drawn over page text.
+  - With no lane at all (phones, full-width pages: full-overlay mode), the lanes stay empty and every ghost and vampire docks in the graveyard strip above the HUD instead (see "Docked graveyard"). A company is never in a lane and the strip at once; widening the page moves them back into the lanes. Ghosts are never drawn over page text.
 - **Glow:** `filter: drop-shadow(0 0 6px #6633cc) drop-shadow(0 0 2px #ccffff)`. This is the cool spectral backlight (ref 07).
 - **Label:** under the sprite. Comic Sans 11px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis.
 - **Card** (click or Enter):
@@ -142,6 +142,19 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - Then the `[Exorcise]` default button.
   - Footnote: `Blocked on this tab until you un-haunt or leave the page.` (the block is a session rule for this tab; it goes on Un-haunt, reload, navigation or tab close).
   - After Exorcise, the sprite fades to 40% opacity with an `EXORCISED` stamp, and the button becomes `[Let it back]`.
+
+### Docked graveyard
+
+On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires stand in a strip docked above the HUD, so a phone shows them too.
+
+- **Place:** `#graveyard`, a direct child of `#crypt-root` after `#hud`, layer 5 with the HUD (under the cards). Fixed, with the HUD's insets, max-width (720px) and centring, its bottom 4px (`LAYOUT.graveyardGap`) above the HUD's top: `bottom: calc(8px + var(--hg-lift) + var(--hg-hud-h) + 4px)`. `--hg-hud-h` is the HUD's measured height, so the strip follows the lift and the HUD's two-row wrap. Hidden in lane mode.
+- **Frame:** the HUD's: `#000033` ground (flat, no starfield, so the silhouettes read), 2px bevel `#9999cc`/`#333366`, 1px `#000000` line, hard shadow `4px 4px 0 #000000`. No radius, no blur.
+- **Label bar:** 16px tall: the 16px tombstone icon and `Graveyard` in Comic Sans MS 11px `#ffffcc`, a 1px `#333366` line under it.
+- **Stones row:** one 48px `<button>` per company in the lane order (ghosts by requests then name, then vampires by name), 12px apart, 6px/18px padding, over a strip of `#336633` moss pixels along the base. No name tag under a docked sprite: its accessible name and its card name it. When they do not fit, the row scrolls sideways (`overflow-x: auto`, `overscroll-behavior-x: contain`, never smooth), never the page, and Tab scrolls the focused sprite into view. No `+N` stack.
+- **Sprites:** the lane sprites, labels, cards and exorcised look (40% opacity and the `EXORCISED` stamp). A card opened from a docked sprite stands above the strip, 8px inside the viewport, and focus returns to the sprite on close.
+- **Empty state:** with no tracker found the strip is not drawn (zero height, no padding): the HUD's `No ghosts here. Suspiciously clean.` already says it, and a tracker-free phone page keeps its room. The strip still carries `No graves yet.` (Comic Sans MS 13px `#ffffcc`) for the moment its last company leaves.
+- **Region:** `role="region"`, `aria-label="Graveyard of trackers"`; DOM order is the visual order. Only the strip's own box takes pointer events.
+- **Motion:** the lane float (bob, sway, drift), all under 3 Hz. In the haunt moment the strip slides up with the HUD (same delay, duration and easing) and slides down with it on un-haunt; it has no phase of its own and its sprites do not rise then. Under reduced motion nothing in it moves. Hide fades it with the HUD.
 
 ### Vampires (runtime fingerprinting scripts)
 
