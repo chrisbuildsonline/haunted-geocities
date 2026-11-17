@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>How to Keep a Lighthouse Lamp Burning</title>
+    <style>
+      body { margin: 0; font: 17px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; color: #000; background: #fff; }
+      .site { display: flex; justify-content: space-between; align-items: center; max-width: 720px; margin: 0 auto; padding: 16px 20px; }
+      .site b { font-size: 18px; letter-spacing: -0.02em; }
+      .site nav a { margin-left: 16px; color: #333; text-decoration: none; font-size: 15px; }
+      article { max-width: 680px; margin: 0 auto; padding: 8px 20px 48px; }
+      h1 { font-size: 2.4rem; line-height: 1.15; letter-spacing: -0.03em; margin: 0.5rem 0 0.75rem; }
+      h2 { font-size: 1.5rem; margin: 2rem 0 0.5rem; }
+      h3 { font-size: 1.15rem; margin: 1.5rem 0 0.25rem; }
+      .byline { color: #555; font-size: 15px; }
+      a { color: #0a66c2; text-decoration: none; }
+      pre { background: #f4f4f4; padding: 12px; overflow-x: auto; font-size: 14px; }
+      code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+      form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 24px; }
+      input { flex: 1; min-width: 0; font: inherit; padding: 6px 10px; }
+      .icon-clock { font-family: "Segoe UI Symbol", monospace; }
+      .icon { width: 16px; height: 16px; vertical-align: -2px; }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <b>The Keeper's Log</b>
+      <nav><a href="index.html">Home</a><a href="clean.html">Archive</a></nav>
+    </header>
+    <article>
+      <h1>How to Keep a Lighthouse Lamp Burning</h1>
+      <p class="byline">By the keeper of North Point, <span class="icon-clock" aria-hidden="true">&#9719;</span> 12 minutes to read</p>
+      <p>A lamp that goes out at two in the morning is a lamp nobody trimmed at dusk. The wick wants cutting square, the chimney wants a wipe, and the oil wants checking before the light is lit, not after.</p>
+      <h2>The nightly round</h2>
+      <p>Climb at sunset with a full can and a clean rag. Read the <a id="manual" href="clean.html">keeper's manual</a> once a season; it is short, and it is right about the wick.</p>
+      <h3>Trimming the wick</h3>
+      <p>Cut straight across with the brass scissors. A ragged wick smokes, and smoke on the lens costs you a mile of light.</p>
+      <pre><code>wick: trim square
+chimney: wipe
+oil: top up to the line</code></pre>
+      <h3>Logging the night</h3>
+      <p>Write the weather, the hours lit and anything that passed. The <code>log book</code> is kept in the watch room.</p>
+      <h2>Ask the keeper</h2>
+      <form action="thanks.html" method="get">
+        <label for="q"><svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="#000" stroke-width="2" /><path d="M11 11l4 4" stroke="#000" stroke-width="2" /></svg> Question</label>
+        <input id="q" name="q" type="text" />
+        <button type="submit">Send</button>
+      </form>
+    </article>
+  </body>
+</html>
