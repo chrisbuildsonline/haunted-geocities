@@ -70,6 +70,7 @@ export const LAYOUT = {
   edgeDither: 4,
   darkLuminance: 0.4,
   minContrast: 4.5,
+  graveyardGap: 4,
 } as const;
 
 export const HARD_SHADOW = "4px 4px 0 #000000";

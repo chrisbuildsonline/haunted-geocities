@@ -21,6 +21,7 @@ import { createVampireBridge, type Api } from "../hooks-bridge";
 import { markKnownVampires, mergeVampire } from "../vampire";
 import { closeCard, openCard, openCurseCard, openTombstoneCard, setCardCount, setCardExorcised } from "./card";
 import { planSlots, updateGhosts, type Slot } from "./ghosts";
+import { buildGraveyard, updateDocked } from "./graveyard";
 import { mountTombstones } from "./tombstones";
 import { mountCurses } from "./curses";
 import { detectDarkPatterns, mergeCurses, type DarkPattern } from "../dark-patterns";
@@ -96,12 +97,19 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const lanes = el(doc, "lanes");
   const cards = el(doc, "cards");
   const markers = el(doc, "markers");
-  croot.append(starfield, lanes, markers, bands, hud, cards, tab);
+  // The graveyard strip: where the ghosts and vampires dock when there is no gutter lane.
+  const graveyard = buildGraveyard(doc);
+  croot.append(starfield, lanes, markers, bands, hud, graveyard, cards, tab);
 
   root.append(croot);
   const page = addPageSheet(doc);
   let lift = 0;
-  const pad = () => page.update(Math.ceil(hud.offsetHeight), lift);
+  // The strip sits on the HUD's measured height (--hg-hud-h), and the page is padded clear of both.
+  const pad = () => {
+    const h = Math.ceil(hud.offsetHeight);
+    croot.style.setProperty("--hg-hud-h", `${h}px`);
+    page.update(h + (graveyard.hidden ? 0 : Math.ceil(graveyard.offsetHeight) + LAYOUT.graveyardGap), lift);
+  };
 
   // Measure with the page sheet on: the restyle changes the page's fonts, so it moves the text.
   // Full-overlay mode (no gutter of 64px) adds 12px inline padding, which narrows the column, so
@@ -166,12 +174,18 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   };
   let exorcised = new Set<string>();
   let settled = false;
-  const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: hud.offsetTop || win.innerHeight });
+  const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: (graveyard.hidden ? hud.offsetTop : graveyard.offsetTop) || win.innerHeight });
   let slots: Slot[] = [];
+  // Lane mode fills the lanes and hides the strip; full-overlay mode (no lane) empties the lanes and
+  // docks every company in the strip. A company is never in both.
   const placeGhosts = () => {
+    const opts = { exorcised, onOpen, rise: settled && !motion.matches };
+    graveyard.hidden = !overlay;
+    updateDocked(graveyard, overlay ? scan.companies : [], opts);
     const b = bounds();
     slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));
-    updateGhosts(lanes, scan.companies, slots, { exorcised, onOpen, rise: settled && !motion.matches });
+    updateGhosts(lanes, overlay ? [] : scan.companies, slots, opts);
+    pad();
   };
   // Tombstone markers: beside their links, or in those same gutter lanes at the link's y.
   const tombs = mountTombstones(markers, {
@@ -297,6 +311,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   doc.fonts?.addEventListener?.("loadingdone", relayout);
   const ro = typeof win.ResizeObserver === "function" ? new win.ResizeObserver(pad) : undefined;
   ro?.observe(hud);
+  ro?.observe(graveyard);
 
   // Tracker requests, read-only from Resource Timing: counts, hit counter, ghosts, popup list.
   const scanner = startScanner({
@@ -309,6 +324,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
       refresh();
     },
   });
+  placeGhosts(); // the strip (or its empty state) shows even when nothing is found
 
   // Runtime vampires: catches reported by the MAIN-world hooks are merged over every scan result.
   const bridge = createVampireBridge();

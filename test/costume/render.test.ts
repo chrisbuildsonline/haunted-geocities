@@ -1,6 +1,104 @@
 import { expect, test } from "bun:test";
 import { renderCostume } from "../../src/content/costume/render";
-import { byId, pageCss, setup, stubMain } from "./helpers";
+import { costumeCss } from "../../src/content/costume/styles";
+import { byId, domRect, fakeLayout, flush, LANE_ORDER, pageCss, setup, stubMain, withTrackers, type Rect } from "./helpers";
+
+const docked = (root: ShadowRoot) => [...root.querySelectorAll<HTMLElement>("#graveyard .stones > button")].map((b) => b.dataset.company);
+const laned = (root: ShadowRoot) => [...root.querySelectorAll<HTMLElement>("#lanes .ghost, #lanes .vampire")].map((b) => b.dataset.company);
+const paddingBottom = (doc: Document) => pageCss(doc).match(/padding-bottom:\s*calc\((.*?)\)\s*!important/)?.[1] ?? "";
+const NARROW: Rect = { left: 0, right: 375, top: 60, bottom: 700 };
+const WIDE: Rect = { left: 300, right: 980, top: 60, bottom: 700 };
+
+/** A haunted page with trackers whose `main` box can be moved, and a resize that waits for the relayout. */
+function haunted(width: number, main: Rect, sizes = { hud: 40, graveyard: 80 }) {
+  const s = setup({ width });
+  let box = main;
+  stubMain(s.win, () => box);
+  withTrackers(s.win);
+  const layout = fakeLayout(s.win as never, sizes);
+  // happy-dom never runs animation frames on a document.write() page: the relayout waits a task instead
+  (s.win as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (cb: () => void) => setTimeout(cb, 0);
+  const root = renderCostume(s.doc);
+  const resize = async (w: number, next: Rect) => {
+    box = next;
+    s.win.happyDOM.setViewport({ width: w, height: 800 });
+    s.win.dispatchEvent(new s.win.Event("resize"));
+    await flush();
+    await new Promise((r) => setTimeout(r, 20));
+  };
+  return { ...s, root, layout, resize, sizes };
+}
+
+test("375px page: strip shown above the HUD with 4px gap, lanes empty", () => {
+  const { root } = haunted(375, NARROW);
+  const croot = byId(root, "crypt-root")!;
+  const strip = byId(root, "graveyard")!;
+  // a direct child of #crypt-root right after the HUD, so Hide (a child selector) reaches it
+  expect(strip.parentElement).toBe(croot);
+  expect(byId(root, "hud")!.nextElementSibling).toBe(strip);
+  expect(strip.hidden).toBe(false);
+  expect(docked(root)).toEqual(LANE_ORDER);
+  expect(laned(root)).toEqual([]);
+  // it sits on the HUD's measured height plus the 4px gap
+  expect(croot.style.getPropertyValue("--hg-hud-h")).toBe("40px");
+  const rule = costumeCss({ stars: "a", twinkle: "b" }).match(/#graveyard\s*\{([^}]*)\}/)![1]!;
+  expect(rule).toContain("bottom: calc(8px + var(--hg-lift, 0px) + var(--hg-hud-h, 40px) + 4px)");
+});
+
+test("lane page: strip hidden, lanes filled", () => {
+  const { root } = haunted(1280, WIDE);
+  expect(byId(root, "graveyard")!.hidden).toBe(true);
+  expect(docked(root)).toEqual([]);
+  expect(laned(root)).toEqual(LANE_ORDER);
+});
+
+test("resize across the 64px gutter boundary moves companies, never both", async () => {
+  const { root, resize } = haunted(1280, WIDE);
+  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, []]);
+  await resize(375, NARROW);
+  expect([laned(root), docked(root)]).toEqual([[], LANE_ORDER]);
+  expect(byId(root, "graveyard")!.hidden).toBe(false);
+  await resize(1280, WIDE);
+  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, []]);
+  expect(byId(root, "graveyard")!.hidden).toBe(true);
+});
+
+test("padding-bottom includes strip height + 4px, and drops it when hidden", async () => {
+  const { doc, resize } = haunted(375, NARROW);
+  expect(paddingBottom(doc)).toBe("7px + 124px + 16px + var(--hg-lift)"); // 40 HUD + 80 strip + 4 gap
+  await resize(1280, WIDE);
+  expect(paddingBottom(doc)).toBe("7px + 40px + 16px + var(--hg-lift)");
+});
+
+test("strip follows --hg-lift and the HUD's two-row wrap at 400px", async () => {
+  const { root, doc, resize, sizes } = haunted(375, NARROW);
+  const css = costumeCss({ stars: "a", twinkle: "b" });
+  const narrow = css.slice(css.indexOf("@media (max-width: 400px)"));
+  expect(narrow).toMatch(/#graveyard\s*\{[^}]*left:\s*4px;[^}]*right:\s*4px;[^}]*bottom:\s*calc\(4px \+ var\(--hg-lift, 0px\) \+ var\(--hg-hud-h, 40px\) \+ 4px\)/);
+  // the HUD wraps to two rows: the strip's offset and the padding follow its new height
+  sizes.hud = 80;
+  await resize(375, NARROW);
+  expect(byId(root, "crypt-root")!.style.getPropertyValue("--hg-hud-h")).toBe("80px");
+  expect(paddingBottom(doc)).toBe("7px + 164px + 16px + var(--hg-lift)");
+});
+
+test("card opened from a docked sprite stays above the strip and 8px inside the viewport", () => {
+  const { root, layout } = haunted(375, NARROW);
+  const sprites = [...root.querySelectorAll<HTMLElement>("#graveyard .stones > button")];
+  const top = layout.stripTop() + 24;
+  for (const [i, sprite] of [[0, sprites[0]!], [sprites.length - 1, sprites.at(-1)!]] as const) {
+    const left = i === 0 ? 18 : 375 - 18 - 48;
+    sprite.getBoundingClientRect = () => domRect({ left, right: left + 48, top, bottom: top + 54 });
+    sprite.click();
+    const card = root.querySelector<HTMLElement>("#cards .card")!;
+    const x = parseFloat(card.style.left);
+    const y = parseFloat(card.style.top);
+    expect(y + 200).toBeLessThanOrEqual(layout.stripTop() - 8);
+    expect(x).toBeGreaterThanOrEqual(8);
+    expect(x + 248 + 4).toBeLessThanOrEqual(375 - 8);
+    expect(card.querySelector("h2")!.textContent).toBe(i === 0 ? "Criteo" : "Vampire identified");
+  }
+});
 
 const rule = (css: string, sel: string) => css.match(new RegExp(`${sel}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 

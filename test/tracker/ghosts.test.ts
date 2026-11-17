@@ -189,7 +189,7 @@ describe("render wiring", () => {
     const hud = root.getElementById("hud")!;
     expect(hud.querySelector(".count.ghosts .n")!.textContent).toBe("1");
     expect((hud.querySelector(".empty") as HTMLElement).hidden).toBe(true);
-    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 000002");
+    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 000002, tracker requests blocked or seen");
     expect(sent[0]).toMatchObject({ type: "TRACKER_UPDATE", total: 2, companies: [{ company: "Criteo", count: 2, domains: ["criteo.com"] }] });
     expect(JSON.stringify(sent[0])).not.toContain("tabId");
     await leaveCostume(doc);

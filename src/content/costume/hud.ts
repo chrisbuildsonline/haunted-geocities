@@ -9,6 +9,9 @@ const KINDS = [
   ["ghosts", "ghost"], ["vampires", "vampire"], ["tombstones", "tomb"], ["curses", "curse"],
 ] as const;
 
+/** What the odometer counts: one number, so Exorcise (blocking) never lowers it. */
+export const ODOMETER_SAYS = "tracker requests blocked or seen";
+
 export const icon = (name: keyof typeof ICONS) => svgMarkup(mapToPx(ICONS[name], ICON_LEGEND, PIXEL.iconScale), 16, 16);
 
 export function buildHud(doc: Document): HTMLElement {
@@ -23,7 +26,8 @@ export function buildHud(doc: Document): HTMLElement {
     `<button class="hide win95" type="button">Hide</button>` +
     `<ul class="counts" hidden aria-label="Found on this page">${counts}</ul>` +
     `<p class="empty">No ghosts here. Suspiciously clean.</p><div class="hud-break" aria-hidden="true"></div>` +
-    `<div class="hits" role="img"><span class="label" aria-hidden="true">Souls counted:</span>` +
+    `<div class="hits" role="img" title="${ODOMETER_SAYS}"><span class="hits-label" aria-hidden="true"><span class="label">Souls counted</span>` +
+    `<span class="sub">${ODOMETER_SAYS}</span></span>` +
     `<span class="odo" aria-hidden="true">${`<span class="cell"><span class="strip"></span></span>`.repeat(6)}</span></div>` +
     `<nav class="ring" aria-label="Haunted WebRing"><button class="prev" type="button">« prev</button> | ` +
     `<span class="ring-name">Haunted WebRing</span> | <button class="next" type="button">next »</button></nav>`;
@@ -46,7 +50,7 @@ export const odometerDigits = (value: number) => [...String(Math.max(0, Math.flo
 export function setOdometer(hud: HTMLElement, value: number): void {
   const digits = odometerDigits(value);
   hud.querySelectorAll<HTMLElement>(".strip").forEach((s, i) => (s.style.transform = `translateY(${-16 * digits[i]!}px)`));
-  hud.querySelector(".hits")!.setAttribute("aria-label", `Souls counted: ${digits.join("")}`);
+  hud.querySelector(".hits")!.setAttribute("aria-label", `Souls counted: ${digits.join("")}, ${ODOMETER_SAYS}`);
 }
 
 /** Height of page UI fixed to the bottom (sampled along the bottom 80px), else 0. */

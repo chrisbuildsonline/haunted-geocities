@@ -1,5 +1,5 @@
-// One ghost per tracker company, in the gutter lanes only: never over page text, never on a page
-// without a 64px gutter (those ghosts live in the HUD count and the popup list).
+// One ghost per tracker company, in the gutter lanes: never over page text. On a page without a 64px
+// gutter the same sprites dock in the graveyard strip above the HUD instead (graveyard.ts).
 import type { CompanyHit } from "../../data/types";
 import { caughtLine } from "../vampire";
 import { GHOST, ghostLegend, mapToPx, svgMarkup, VAMPIRE, VAMPIRE_LEGEND } from "./art";
@@ -103,52 +103,80 @@ function label(hit: CompanyHit): string {
   return hit.vampire.caught.length ? `${hit.company}, vampire, caught doing ${caughtLine(hit.vampire.caught)}` : `${hit.company}, vampire, known to fingerprint`;
 }
 
+/** Ghosts by count then name, then vampires by name: the order of the lanes and of the graveyard strip. */
+export function orderCompanies(companies: readonly CompanyHit[]): CompanyHit[] {
+  return [...companies.filter((c) => !c.vampire).sort(byCountThenName), ...companies.filter((c) => c.vampire).sort(byName)];
+}
+
+/** Hem tints over every ghost in `sorted` (slotted or not, so a tint never depends on the number of slots). */
+export function tintsOf(sorted: readonly CompanyHit[]): Map<string, string> {
+  const ghosts = sorted.filter((c) => !c.vampire).map((g) => g.company);
+  const list = assignTints(ghosts);
+  return new Map(ghosts.map((g, i) => [g, list[i]!]));
+}
+
+const keyOf = (el: HTMLElement) => `${el.classList.contains("vampire") ? "vampire" : "ghost"}:${el.dataset.company}`;
+
+/** The company sprites under `parent`, by `kind:company`, for reuse across updates. */
+export const spritesByKey = (parent: Element) => new Map([...parent.querySelectorAll<HTMLElement>(".ghost, .vampire")].map((g) => [keyOf(g), g]));
+
+/** A new company sprite: a button holding the floating sprite and its name tag; a click opens its card. */
+export function makeSprite(doc: Document, hit: CompanyHit, tint: string | undefined, opts: GhostOptions): HTMLElement {
+  const kind = kindOf(hit);
+  const el = doc.createElement("button");
+  el.setAttribute("type", "button");
+  el.className = kind;
+  el.dataset.company = hit.company;
+  if (tint) el.dataset.tint = tint;
+  el.innerHTML =
+    kind === "ghost"
+      ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(tint!)}</span></span></span><span class="tag"></span>`
+      : `<span class="bob"><span class="sprite">${vampireSvg()}</span></span><span class="tag"></span>`;
+  el.querySelector(".tag")!.textContent = hit.company;
+  el.addEventListener("click", () => opts.onOpen(hit.company, el));
+  el.classList.toggle("known", !!hit.vampire?.knownOnly);
+  if (opts.rise) kind === "ghost" ? riseIn(el) : vampireIn(el);
+  return el;
+}
+
+/** The sprite's label, `known` look, and the exorcised class and stamp. */
+export function applyState(el: HTMLElement, hit: CompanyHit, exorcised: boolean): void {
+  el.classList.toggle("known", !!hit.vampire?.knownOnly);
+  el.setAttribute("aria-label", label(hit));
+  el.classList.toggle("exorcised", exorcised);
+  const stamp = el.querySelector(".stamp");
+  if (exorcised && !stamp) el.insertAdjacentHTML("beforeend", `<span class="stamp" aria-hidden="true">EXORCISED</span>`);
+  if (!exorcised) stamp?.remove();
+}
+
+/** The company's sprite from `old` (taken out of it), else a new one, up to date. */
+export function spriteFor(doc: Document, old: Map<string, HTMLElement>, hit: CompanyHit, tint: string | undefined, opts: GhostOptions): HTMLElement {
+  const key = `${kindOf(hit)}:${hit.company}`;
+  let el = old.get(key);
+  old.delete(key);
+  if (!el) el = makeSprite(doc, hit, tint, opts);
+  else if (tint && el.dataset.tint !== tint) {
+    // The order changed under it: redraw only the sprite; the button, its focus and label stay.
+    el.dataset.tint = tint;
+    el.querySelector(".sprite")!.innerHTML = ghostSvg(tint);
+  }
+  applyState(el, hit, opts.exorcised.has(hit.company));
+  return el;
+}
+
 /** Put the companies into the lanes, ghosts by count then vampires by name, reusing each one's element across updates. */
 export function updateGhosts(lanes: HTMLElement, companies: readonly CompanyHit[], slots: readonly Slot[], opts: GhostOptions): void {
   const doc = lanes.ownerDocument;
-  const ghosts = companies.filter((c) => !c.vampire).sort(byCountThenName);
-  const sorted = [...ghosts, ...companies.filter((c) => c.vampire).sort(byName)];
-  // Over every ghost, slotted or not, so a tint never depends on the number of slots.
-  const tintList = assignTints(ghosts.map((g) => g.company));
-  const tints = new Map(ghosts.map((g, i) => [g.company, tintList[i]!]));
+  const sorted = orderCompanies(companies);
+  const tints = tintsOf(sorted);
   const overflow = sorted.length > slots.length && slots.length > 0;
   const shown = sorted.slice(0, overflow ? slots.length - 1 : slots.length);
-  const old = new Map([...lanes.querySelectorAll<HTMLElement>(".ghost, .vampire")].map((g) => [`${g.classList.contains("vampire") ? "vampire" : "ghost"}:${g.dataset.company}`, g]));
+  const old = spritesByKey(lanes);
 
   const keep = shown.map((hit, i) => {
-    const kind = kindOf(hit);
-    const tint = tints.get(hit.company);
-    let el = old.get(`${kind}:${hit.company}`);
-    old.delete(`${kind}:${hit.company}`);
-    if (!el) {
-      el = doc.createElement("button");
-      el.setAttribute("type", "button");
-      el.className = kind;
-      el.dataset.company = hit.company;
-      if (tint) el.dataset.tint = tint;
-      el.innerHTML =
-        kind === "ghost"
-          ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(tint!)}</span></span></span><span class="tag"></span>`
-          : `<span class="bob"><span class="sprite">${vampireSvg()}</span></span><span class="tag"></span>`;
-      el.querySelector(".tag")!.textContent = hit.company;
-      const button = el;
-      el.addEventListener("click", () => opts.onOpen(hit.company, button));
-      el.classList.toggle("known", !!hit.vampire?.knownOnly);
-      if (opts.rise) kind === "ghost" ? riseIn(el) : vampireIn(el);
-    } else if (tint && el.dataset.tint !== tint) {
-      // The order changed under it: redraw only the sprite; the button, its focus and label stay.
-      el.dataset.tint = tint;
-      el.querySelector(".sprite")!.innerHTML = ghostSvg(tint);
-    }
-    el.classList.toggle("known", !!hit.vampire?.knownOnly);
+    const el = spriteFor(doc, old, hit, tints.get(hit.company), opts);
     place(el, slots[i]!);
     el.style.setProperty("--phase", `${-i * 700}ms`);
-    el.setAttribute("aria-label", label(hit));
-    const exorcised = opts.exorcised.has(hit.company);
-    el.classList.toggle("exorcised", exorcised);
-    const stamp = el.querySelector(".stamp");
-    if (exorcised && !stamp) el.insertAdjacentHTML("beforeend", `<span class="stamp" aria-hidden="true">EXORCISED</span>`);
-    if (!exorcised) stamp?.remove();
     return el;
   });
 

@@ -16,3 +16,8 @@ test("page tokens match DESIGN.md costume.page", () => {
   expect(LAYOUT).toEqual(t.costume.layout);
   expect(LAYOUT).toMatchObject({ frameBevel: 6, edgeFrame: 12, edgeDither: 4, darkLuminance: 0.4, minContrast: 4.5 });
 });
+
+test("graveyardGap is 4 and matches DESIGN.md", () => {
+  expect(LAYOUT.graveyardGap).toBe(4);
+  expect(designTokens().costume.layout.graveyardGap).toBe(4);
+});

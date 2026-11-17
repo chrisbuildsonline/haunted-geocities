@@ -73,6 +73,48 @@ export function stubMain(win: { Element: { prototype: object } }, rect: () => Re
   };
 }
 
+/**
+ * Requests to real tracker hosts (src/data/trackers.json) in Resource Timing: Criteo ×3 and comScore ×2
+ * (ghosts), Hotjar ×2 and Taboola ×1 (fingerprinting score 2, so known vampires).
+ */
+export const TRACKER_ENTRIES = [
+  ...["criteo.com/a", "criteo.com/b", "criteo.com/c", "scorecardresearch.com/a", "scorecardresearch.com/b", "hotjar.com/a", "hotjar.com/b", "taboola.com/a"].map(
+    (p, i) => ({ name: `https://${p}.js`, startTime: i + 1 }),
+  ),
+];
+export const LANE_ORDER = ["Criteo", "comScore", "Hotjar", "Taboola"];
+
+export function withTrackers(win: object, entries: { name: string; startTime: number }[] = TRACKER_ENTRIES) {
+  Object.defineProperty(win, "performance", { value: { getEntriesByType: () => entries }, configurable: true });
+}
+
+/**
+ * A fake layout for the fixed costume boxes (happy-dom has none): `#hud` and `#graveyard` heights,
+ * cards 200px tall, a hidden box 0. The HUD sits 8px above the viewport bottom (plus `--hg-lift`, 0
+ * here) and the strip 4px above the HUD. Restored after the test.
+ */
+export function fakeLayout(win: { HTMLElement: { prototype: object }; innerHeight: number }, sizes: { hud: number; graveyard: number }) {
+  const proto = win.HTMLElement.prototype;
+  const own = ["offsetHeight", "offsetTop"].map((k) => [k, Object.getOwnPropertyDescriptor(proto, k)] as const);
+  restores.push(() => own.forEach(([k, d]) => (d ? Object.defineProperty(proto, k, d) : delete (proto as Record<string, unknown>)[k])));
+  const height = (el: HTMLElement): number => (el.hidden ? 0 : el.classList.contains("card") ? 200 : ((sizes as Record<string, number>)[el.id] ?? 0));
+  const hudTop = () => win.innerHeight - 8 - sizes.hud;
+  Object.defineProperty(proto, "offsetHeight", { configurable: true, get(this: HTMLElement) { return height(this); } });
+  Object.defineProperty(proto, "offsetTop", {
+    configurable: true,
+    get(this: HTMLElement) {
+      if (this.id === "hud") return hudTop();
+      if (this.id === "graveyard") return this.hidden ? 0 : hudTop() - 4 - sizes.graveyard;
+      return 0;
+    },
+  });
+  return { hudTop, stripTop: () => hudTop() - 4 - sizes.graveyard };
+}
+const restores: (() => void)[] = [];
+afterEach(() => {
+  for (const r of restores.splice(0)) r();
+});
+
 export const flush =() => new Promise((r) => setTimeout(r, 0));
 /** The text of every sheet the page adopted, joined. */
 export const pageCss = (doc: Document) => doc.adoptedStyleSheets.map((s) => sheetText.get(s) ?? "").join("\n");

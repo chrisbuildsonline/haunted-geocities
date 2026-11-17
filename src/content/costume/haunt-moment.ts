@@ -21,7 +21,10 @@ function buildFx(croot: HTMLElement): HTMLElement {
 
 const layer = (croot: HTMLElement, id: string) => croot.querySelector(`#${id}`) as HTMLElement;
 
-/** How far the HUD must drop to leave the viewport entirely. */
+/** The HUD, and the graveyard strip docked above it when it is drawn: they slide in and out together. */
+const bottomBoxes = (croot: HTMLElement) => [layer(croot, "hud"), layer(croot, "graveyard")].filter((el): el is HTMLElement => !!el && !el.hidden);
+
+/** How far the HUD (or the strip above it) must drop to leave the viewport entirely. */
 function hudDrop(hud: HTMLElement): number {
   const vh = hud.ownerDocument.defaultView!.innerHeight;
   return Math.max(hud.offsetHeight, Math.ceil(vh - hud.getBoundingClientRect().top)) + 8;
@@ -68,7 +71,7 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   croot.querySelectorAll("#lanes > :not(.vampire)").forEach((g, i) => anims.push(riseIn(g, 1400 + Math.min(i, 7) * 60)));
   // Vampires fade in at 1800ms, then the caught ones swell into their hot glow once.
   croot.querySelectorAll<HTMLElement>("#lanes > .vampire").forEach((v) => anims.push(...vampireIn(v, 1800)));
-  run(hud, [{ transform: `translateY(${hudDrop(hud)}px)` }, { transform: "translateY(0px)" }], { delay: 1400, duration: M.slow, easing: M.easeOut });
+  for (const box of bottomBoxes(croot)) run(box, [{ transform: `translateY(${hudDrop(box)}px)` }, { transform: "translateY(0px)" }], { delay: 1400, duration: M.slow, easing: M.easeOut });
   // Odometer: each strip rolls from 0 to its digit, the right-hand digit first, all landing at 2300ms.
   const strips = [...hud.querySelectorAll<HTMLElement>(".strip")];
   strips.forEach((s, i) => {
@@ -87,7 +90,6 @@ export function playUnhaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal
   croot.classList.add("leaving");
   const fx = buildFx(croot);
   fx.querySelector(".vignette")!.remove();
-  const hud = layer(croot, "hud");
   const back = { delay: 500, duration: 600, easing: M.easeInOut };
   // The page-sheet layers shrink away too; their held end state is dropped in the same task as the
   // sheet (no frame is drawn in between), so no finished animation is left on the page's <html>.
@@ -98,7 +100,7 @@ export function playUnhaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal
     ...pseudo,
     run(layer(croot, "markers"), [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "linear" }),
     run(layer(croot, "lanes"), [{ transform: "translateY(0px)", opacity: 1 }, { transform: "translateY(16px)", opacity: 0 }], { delay: 200, duration: 300, easing: M.easeOut }),
-    run(hud, [{ transform: "translateY(0px)" }, { transform: `translateY(${hudDrop(hud)}px)` }], { delay: 300, duration: 300, easing: M.easeOut }),
+    ...bottomBoxes(croot).map((box) => run(box, [{ transform: "translateY(0px)" }, { transform: `translateY(${hudDrop(box)}px)` }], { delay: 300, duration: 300, easing: M.easeOut })),
     run(layer(croot, "show-tab"), [{ opacity: 1 }, { opacity: 0 }], { delay: 300, duration: 300, easing: "linear" }),
     run(fx.querySelector(".sweep")!, [{ transform: "translateX(100vw)" }, { transform: "translateX(-96px)" }], { ...back, fill: "both" }),
     ...["starfield", "top-bands"].map((id) =>

@@ -523,7 +523,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "edgeFrame": 12,
       "edgeDither": 4,
       "darkLuminance": 0.4,
-      "minContrast": 4.5
+      "minContrast": 4.5,
+      "graveyardGap": 4
     },
     "hardShadow": "4px 4px 0 #000000",
     "focusRing": "2px dotted #ffff66, halo 0 0 0 5px #000000"

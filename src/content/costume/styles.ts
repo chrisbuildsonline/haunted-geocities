@@ -33,6 +33,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 #markers { position: absolute; inset: 0; z-index: 3; }
 #top-bands { position: absolute; top: 0; left: 0; right: 0; z-index: 4; }
 #hud { position: fixed; bottom: calc(8px + var(--hg-lift, 0px)); left: 8px; right: 8px; max-width: ${L.hudMaxWidth}px; margin: 0 auto; min-height: ${L.hudMinHeight}px; z-index: 5; box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 12px; padding: 6px 10px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; isolation: isolate; pointer-events: auto; }
+#graveyard { position: fixed; bottom: calc(8px + var(--hg-lift, 0px) + var(--hg-hud-h, ${L.hudMinHeight}px) + ${L.graveyardGap}px); left: 8px; right: 8px; max-width: ${L.hudMaxWidth}px; margin: 0 auto; z-index: 5; box-sizing: border-box; display: flex; flex-direction: column; padding: 2px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; pointer-events: auto; }
 #cards { position: absolute; inset: 0; z-index: 6; }
 #fx { position: absolute; inset: 0; z-index: 7; overflow: hidden; }
 
@@ -83,8 +84,11 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .empty { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hud-break { display: none; }
-.hits { display: flex; align-items: center; gap: 6px; flex: none; margin-left: auto; font-size: 11px; white-space: nowrap; }
-.odo { display: flex; gap: 2px; padding: 2px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; }
+.hits { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; margin-left: auto; font-size: 11px; white-space: nowrap; }
+.hits-label { display: flex; flex-direction: column; min-width: 0; overflow: hidden; line-height: 13px; }
+.hits .label, .hits .sub { overflow: hidden; text-overflow: ellipsis; }
+.hits .sub { color: ${P.hudBevelLight}; font-size: 11px; }
+.odo { display: flex; flex: none; gap: 2px; padding: 2px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; }
 .cell { display: block; width: 10px; height: 16px; overflow: hidden; background: ${P.ink}; }
 .strip { display: block; width: 10px; height: 160px; background-image: ${digitsUrl()}; }
 .ring { display: flex; align-items: center; gap: 4px; flex: none; min-width: 0; font: 13px ${TIMES}; white-space: nowrap; }
@@ -121,6 +125,14 @@ button:focus-visible { ${ring} }
 .vampire.known .bob { animation: none; }
 @keyframes hg-drift { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
 .vampire:focus-visible { ${ring} }
+
+#graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 16px; padding: 0 6px 0 4px; color: ${P.bone}; font: 11px/16px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
+#graveyard .gy-icon svg { display: block; image-rendering: pixelated; }
+#graveyard .stones { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 14px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
+#graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: 48px; height: 54px; justify-content: flex-end; }
+#graveyard .tag { display: none; }
+#graveyard .stamp { top: 14px; }
+#graveyard .gy-empty { margin: 0; padding: 4px 10px; color: ${P.bone}; font: 13px/18px ${COMIC}; }
 
 .card { position: absolute; display: flex; flex-direction: column; box-sizing: border-box; width: ${L.cardWidth}px; max-height: 320px; background: ${P.crypt}; border: 2px solid; border-color: ${P.bevelLight} ${P.bevelDark} ${P.bevelDark} ${P.bevelLight}; box-shadow: ${HARD_SHADOW}; pointer-events: auto; transform-origin: top left; }
 .card .bar { display: flex; flex: none; align-items: center; gap: 6px; height: 22px; padding: 0 3px 0 6px; background: ${P.cryptViolet}; color: ${P.bone}; font: bold 14px ${TIMES}; }
@@ -175,6 +187,8 @@ button:focus-visible { ${ring} }
   .empty { flex-basis: 0; }
   .hud-break { display: block; flex-basis: 100%; height: 0; }
   .hits { margin-left: 0; }
+  .hits .sub { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #graveyard { left: 4px; right: 4px; bottom: calc(4px + var(--hg-lift, 0px) + var(--hg-hud-h, ${L.hudMinHeight}px) + ${L.graveyardGap}px); }
   .ring { flex: 1 0 0; }
   #show-tab { right: 4px; bottom: calc(4px + var(--hg-lift, 0px)); }
 }

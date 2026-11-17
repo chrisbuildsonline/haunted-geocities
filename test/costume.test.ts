@@ -314,7 +314,7 @@ describe("HUD", () => {
     const empty = hud.querySelector(".empty") as HTMLElement;
     expect(empty.hasAttribute("hidden")).toBe(false);
     expect(empty.textContent).toBe("No ghosts here. Suspiciously clean.");
-    expect(hud.querySelector(".hits")!.textContent).toContain("Souls counted:");
+    expect(hud.querySelector(".hits .label")!.textContent).toBe("Souls counted");
     expect(hud.querySelectorAll(".hits .cell")).toHaveLength(6);
     expect(hud.querySelector(".ring")!.textContent!.replace(/\s+/g, " ").trim()).toBe("« prev | Haunted WebRing | next »");
     const ringButtons = [...hud.querySelectorAll(".ring button")].map((b) => b.textContent);
@@ -339,10 +339,10 @@ describe("HUD", () => {
     const hud = byId(renderCostume(doc), "hud")!;
     const strips = () => [...hud.querySelectorAll(".cell .strip")].map((s) => (s as HTMLElement).style.transform);
     expect(strips()).toEqual(Array(6).fill("translateY(0px)"));
-    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 000000");
+    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 000000, tracker requests blocked or seen");
     setOdometer(hud, 1234);
     expect(strips()).toEqual(["translateY(0px)", "translateY(0px)", "translateY(-16px)", "translateY(-32px)", "translateY(-48px)", "translateY(-64px)"]);
-    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 001234");
+    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 001234, tracker requests blocked or seen");
   });
 
   test("HUD CSS: fixed bottom with lift, 8px insets, max 720, min 40, bevel, hard shadow, 2-row wrap at ≤400px", () => {
@@ -388,7 +388,7 @@ describe("renderCostume", () => {
     const root = renderCostume(doc);
     expect(root.mode).toBe("closed");
     const ids = [...byId(root, "crypt-root")!.children].map((c) => c.id);
-    expect(ids.slice(0, 6)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "cards"]);
+    expect(ids.slice(0, 7)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "graveyard", "cards"]);
     expect(ids).toContain("show-tab");
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const z = (id: string) => Number(css.match(new RegExp(`#${id}\\s*\\{[^}]*z-index:\\s*(\\d+)`))![1]);
@@ -396,10 +396,10 @@ describe("renderCostume", () => {
     expect(root.adoptedStyleSheets).toHaveLength(2);
   });
 
-  test("only the HUD, the Show tab, ghost sprites, tombstone markers and cards take pointer events", () => {
+  test("only the HUD, the graveyard strip, the Show tab, ghost sprites, tombstone markers and cards take pointer events", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const autos = [...css.matchAll(/([^{}]+)\{[^}]*pointer-events:\s*auto/g)].map((m) => m[1]!.trim());
-    expect(autos.sort()).toEqual(["#hud", "#show-tab", ".card", ".curse-badge", ".ghost, .vampire", ".tomb-marker"]);
+    expect(autos.sort()).toEqual(["#graveyard", "#hud", "#show-tab", ".card", ".curse-badge", ".ghost, .vampire", ".tomb-marker"]);
     expect(css).toMatch(/#crypt-root\s*\{[^}]*pointer-events:\s*none/);
   });
 
