@@ -408,7 +408,7 @@ Requirements 71-90. Do 17.1 first: its result can change requirement 77.
     - `"375px: links and form still clickable, form submits"`,
     - `"unhaunt: outerHTML and document.adoptedStyleSheets equal pre-haunt, body font and link colour restored"`.
 
-- [ ] 17.14 Docker visual baselines: add the 375px full-overlay shot and a dark-page shot to `e2e-visual/`, then regenerate the baselines in the Playwright image and look at the new PNGs before committing.
+- [x] 17.14 Docker visual baselines: add the 375px full-overlay shot and a dark-page shot to `e2e-visual/`, then regenerate the baselines in the Playwright image and look at the new PNGs before committing.
   - Req: 71-81
   - Test: `bun run visual:baselines`, then `bun run docker:test` passes `test:visual` against the committed PNGs.
 
