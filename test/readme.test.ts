@@ -65,6 +65,16 @@ describe("README.md", () => {
     for (const s of named) expect({ s, exists: existsSync(join(root, s)) }).toEqual({ s, exists: true });
   });
 
+  test("README popup screenshot exists and is referenced", () => {
+    const shot = join(root, "docs", "screenshots", "popup.png");
+    expect(existsSync(shot)).toBe(true);
+    expect(readme).toMatch(/!\[[^\]]*Windows 95[^\]]*\]\(docs\/screenshots\/popup\.png\)/);
+    // The shot is a 360px popup at device scale 1, retaken with the costume.
+    const png = readFileSync(shot);
+    expect(png.readUInt32BE(16)).toBe(360);
+    expect(readFileSync(join(root, "e2e", "readme.shots.ts"), "utf8")).toContain("docs/screenshots");
+  });
+
   test("says Exorcise ends with the page or tab, not the browser session", () => {
     expect(readme).not.toMatch(/until you close the browser/i);
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");

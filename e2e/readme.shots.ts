@@ -29,9 +29,9 @@ test("haunted page with ghosts, the stone card and the popup", async ({ context,
   await page.waitForTimeout(2600); // the haunt moment settles
   await page.screenshot({ path: `${OUT}/haunted.png` });
 
-  // Popup: the same page, listing the ghosts.
+  // Popup: the same page, listing the ghosts. Just the 360px Win95 window, not the tab around it.
   await popup.mouse.move(0, 0);
-  await popup.screenshot({ path: `${OUT}/popup.png`, fullPage: true, caret: "initial" });
+  await popup.locator("#app").screenshot({ path: `${OUT}/popup.png`, caret: "initial" });
 
   // Tombstone: fixtures/links.html, the stone card of the dead link with the long path.
   const links = await context.newPage();
