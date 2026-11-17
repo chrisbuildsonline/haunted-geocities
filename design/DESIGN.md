@@ -114,7 +114,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 - **Order (controls first, DOM order = visual order):**
   1. `[Hide]` Win95 button.
   2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`.
-  3. Hit counter: the label `Souls counted` (11px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (11px `#9999cc`, 7.2:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter has `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
+  3. Hit counter: the label `Souls counted` (12px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (12px `#ccccff`, 13:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter has `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
   4. Web ring: `« prev | Haunted WebRing | next »`. It moves focus to the previous/next sprite on the page.
 - **Hide/Show:** Hide fades every costume layer out (200ms) and leaves a 40×40 `[Show]` tab bottom-right with the ghost icon. Haunt state is kept.
 - **At 375px:**
@@ -135,7 +135,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - When slots run out, the last slot becomes a `+N` stack token.
   - With no lane at all (phones, full-width pages: full-overlay mode), the lanes stay empty and every ghost and vampire docks in the graveyard strip above the HUD instead (see "Docked graveyard"). A company is never in a lane and the strip at once; widening the page moves them back into the lanes. Ghosts are never drawn over page text.
 - **Glow:** `filter: drop-shadow(0 0 6px #6633cc) drop-shadow(0 0 2px #ccffff)`. This is the cool spectral backlight (ref 07).
-- **Label:** under the sprite. Comic Sans 11px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis.
+- **Label:** under the sprite. Comic Sans 12px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis. Exorcised, the label text is `#ccccff`.
 - **Card** (click or Enter):
   - Title bar: company name.
   - Body: category, `Haunts these domains:` (Times New Roman 13px list), `Seen 12 times on this page`.
@@ -149,8 +149,8 @@ On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires sta
 
 - **Place:** `#graveyard`, a direct child of `#crypt-root` after `#hud`, layer 5 with the HUD (under the cards). Fixed, with the HUD's insets, max-width (720px) and centring, its bottom 4px (`LAYOUT.graveyardGap`) above the HUD's top: `bottom: calc(8px + var(--hg-lift) + var(--hg-hud-h) + 4px)`. `--hg-hud-h` is the HUD's measured height, so the strip follows the lift and the HUD's two-row wrap. Hidden in lane mode.
 - **Frame:** the HUD's: `#000033` ground (flat, no starfield, so the silhouettes read), 2px bevel `#9999cc`/`#333366`, 1px `#000000` line, hard shadow `4px 4px 0 #000000`. No radius, no blur.
-- **Label bar:** 16px tall: the 16px tombstone icon and `Graveyard` in Comic Sans MS 11px `#ffffcc`, a 1px `#333366` line under it.
-- **Stones row:** one 48px `<button>` per company in the lane order (ghosts by requests then name, then vampires by name), 12px apart, 6px/18px padding, over a strip of `#336633` moss pixels along the base. No name tag under a docked sprite: its accessible name and its card name it. When they do not fit, the row scrolls sideways (`overflow-x: auto`, `overscroll-behavior-x: contain`, never smooth), never the page, and Tab scrolls the focused sprite into view. No `+N` stack.
+- **Label bar:** 16px tall: the 16px tombstone icon and `Graveyard` in Comic Sans MS 12px `#ffffcc`, a 1px `#333366` line under it.
+- **Stones row:** one `<button>` per company in the lane order (ghosts by requests then name, then vampires by name), 12px apart, 6px/18px padding, over a strip of `#336633` moss pixels along the base. Each docked sprite wears its name tag under it (the lane label, 4px below the sprite), and its button is as wide as the wider of the 48px sprite and the tag (at most 12ch, then an ellipsis), so neighbouring tags never touch: the 12px gap is always between them. Tags sit bottom-aligned on the moss and the row is one sprite and one tag tall, so no tag is clipped. When they do not fit, the row scrolls sideways (`overflow-x: auto`, `overscroll-behavior-x: contain`, never smooth), never the page, and Tab scrolls the focused sprite into view. No `+N` stack.
 - **Sprites:** the lane sprites, labels, cards and exorcised look (40% opacity and the `EXORCISED` stamp). A card opened from a docked sprite stands above the strip, 8px inside the viewport, and focus returns to the sprite on close.
 - **Empty state:** with no tracker found the strip is not drawn (zero height, no padding): the HUD's `No ghosts here. Suspiciously clean.` already says it, and a tracker-free phone page keeps its room. The strip still carries `No graves yet.` (Comic Sans MS 13px `#ffffcc`) for the moment its last company leaves.
 - **Region:** `role="region"`, `aria-label="Graveyard of trackers"`; DOM order is the visual order. Only the strip's own box takes pointer events.
@@ -170,16 +170,19 @@ On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires sta
 
 - **Marker:** a 16×20 stone placed just after the link's last line box (beside it, never over it). If there is no room there, it goes in the nearest gutter lane at the same y.
 - **Card is the stone:** a 176px-wide `#cccccc` slab with a 88px top radius (arched headstone, no blur), a 2px bevel `#ffffff`/`#666666`, and moss pixels `#336633` along the base. The inscription is pinned to the stone face (absolute, 16px inset) in Times New Roman `#000000`:
-  - `HERE LIES` (11px, letter-spacing 2px).
-  - The path, e.g. `/blog/2019/old-post.html`, at 13px. The minimum anywhere is 11px.
-  - `404 · Not Found` (11px).
+  - `HERE LIES` (12px, letter-spacing 2px).
+  - The path, e.g. `/blog/2019/old-post.html`, at 13px. The minimum anywhere is 12px.
+  - `404 · Not Found` (12px).
+  - The inscription starts 52px down the stone, under the 24×24 `[x]` close button (24px from the top, 32px from the right, inside the arch).
 - **Path wrapping:** the path clamps at 3 lines (`-webkit-line-clamp: 3`). Insert `<wbr>` after every `/`. Set `overflow-wrap: normal; word-break: keep-all`, so lines break only at `/` and never inside a filename. If one segment is too long, ellipsis the start of that segment.
 
 ### Cursed badges (dark patterns)
 
-- **Badge:** `CURSED!` with a 12px skull icon. Comic Sans 11px bold `#000000` on `#ff9900`, 1px `#000000` border, hard shadow `2px 2px 0 #000000`, 18px tall.
+- **Badge:** `CURSED!` with a 12px skull icon. Comic Sans 12px bold `#000000` on `#ff9900`, 1px `#000000` border, hard shadow `2px 2px 0 #000000`, 18px tall.
+- **Compact badge:** the same badge with the word visually hidden: the skull alone, 22px wide. The word stays in its accessible name (`Cursed: <kind>: <snippet>`).
 - **Placement:**
   - First choice: 4px right of the element's last line box.
+  - If the full badge would cross text or the viewport edge there, the compact badge in the same spot, so on a 375px page the badge stays on its sentence's last line instead of jumping above it.
   - If that would cross text or the viewport edge, 4px above-left in the element's margin.
   - Otherwise, in the gutter lane at the same y.
   - Never over the text.
@@ -191,8 +194,9 @@ On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires sta
   - 248px wide, max-height 320px, scroll inside.
   - Ground `#000033`, 2px outset bevel `#ccccff`/`#333366`, `4px 4px 0 #000000` hard shadow.
   - Radius 0, the era rule. Only the headstone arch is rounded.
-- **Title bar:** 22px tall, `#330066` (vampire `#660000`), Times New Roman bold 14px `#ffffcc`, and a 16×16 `[x]` Win95 close button on the right.
-- **Body:** 12px padding, Comic Sans 13px `#ffffcc`, links `#66ff99` underlined.
+- **Title bar:** 28px tall, `#330066` (vampire `#660000`), Times New Roman bold 14px `#ffffcc`, and a 24×24 `[x]` Win95 close button (bold 13px) on the right: a 24px hit target.
+- **Body:** 12px padding, Comic Sans 13px `#ffffcc`, links `#66ff99` underlined. The category tag is 12px; the footnote and the vampire's one line on fingerprinting are 12px `#ccccff` (13:1).
+- **Smallest text:** 12px anywhere in the costume and the popup (`minText`).
 - **Buttons:** Win95. Face `#cccccc`, text `#000000`, 2px bevel `#ffffff`/`#666666`. The default button gets an extra 1px `#000000` ring. 24px tall, 8px side padding.
 - **Placement:** anchored beside the sprite or marker, toward the page centre. Clamped to the viewport between the bands and the HUD.
 - **Keyboard:** focus moves into the card. Esc closes it, and focus returns to the opener.
@@ -243,7 +247,7 @@ A Windows 95 window, the same era as the crypt. It is 360px wide and at most 600
 - **Status bar:** two sunken status fields at the bottom of the window: the state (`Idle`, `Haunted` or `Can't haunt`) and the Tracker Radar attribution line. 12px.
 - **Accent: `#6633cc` spectral violet** is the focus ring (`outline: 2px solid #6633cc; outline-offset: 2px` on every control) and the toolbar badge ground. Nothing else in the popup uses it.
 - **Links:** `#0000ff`, visited `#800080`, underlined.
-- **Text colours:** `#000000` ink, `#333333` sub-lines and attribution.
+- **Text colours:** `#000000` ink, `#222222` sub-lines and attribution (8.7:1 on the face, so the 12px lines reach AAA).
 - **Fonts:** UI text in `'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, Geneva, sans-serif`. The site title in Times New Roman (`"Times New Roman", Times, serif`). The hit-counter digits in Courier New (`"Courier New", Courier, monospace`) with `font-variant-numeric: tabular-nums`. No web fonts.
 - **Type scale:**
 
@@ -300,13 +304,14 @@ A Windows 95 window, the same era as the crypt. It is 360px wide and at most 600
 ```
 
 - **Hit counters:** each count is a black `#000000` cell with `#33ff33` Courier New bold 24px digits, padded with zeros to four digits like a 1998 hit counter. The zeros are drawn by CSS (`content: attr(data-pad) / ""`), so a screen reader reads `7 Ghosts`, not `0007`. The 16px sprite and the kind label sit under each cell. Four in a row, a 2x2 grid under 340px.
-- **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 12px `#333333` line under the title, `.address` with `margin-top: -6px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
+- **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 12px `#222222` line under the title, `.address` with `margin-top: -6px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
 - **Lists:** a group box per kind (`Ghosts (7)`, `Vampires (1)`, `Tombstones (3)`, `Curses (2)`), each holding a sunken white list box that scrolls at 280px. Ghosts by request count, then vampires by name, then tombstones and curses in the order reported.
 - **Rows:** a 32px square sprite tile + the name in bold 13px + a 12px sub-line, the action on the right. Hover is a `#ccccff` ground. Exorcised rows keep full contrast: the `Exorcised` tag and the `Let it back` button already say the state.
 - **Ghost row tiles:** each ghost sprite wears the same hem tint as its lane ghost (see the hem tint rule under Pixel-art grid), so neighbouring rows never share a hem colour.
 - **Vampire rows:** a caught vampire has the `Caught` tag and what it read (`Canvas readback · font probing`). A known vampire (on the list, not caught here) has the `Known` tag and the line `On the Tracker Radar fingerprint list`.
-- **Tags:** square, a 1px `#000000` border, 11px bold. Ground / text: Caught `#ccccff`/`#330099`, Known `#cccccc`/`#000000`, 404 `#ffcccc`/`#660000`, 410 `#ffcc99`/`#663300`, Exorcised `#cccccc`/`#333333`.
-- **Empty states:** a kind with nothing found shows one line instead of its list box. Lines of neighbouring empty kinds share one `Nothing found` group box, so a clean page stays short: `No ghosts here. Suspiciously clean.` (13px ink) and `Trackers that load later will appear here.`, `No vampires. Your blood is safe.`, `No tombstones. Every link is alive.`, `No curses. This page plays fair.` (12px `#333333`).
+- **Tags:** square, a 1px `#000000` border, 12px bold. Ground / text: Caught `#ccccff`/`#330099`, Known `#cccccc`/`#000000`, 404 `#ffcccc`/`#660000`, 410 `#ffcc99`/`#663300`, Exorcised `#cccccc`/`#333333`.
+- **Empty states:** a kind with nothing found shows one line instead of its list box. The lines of every empty kind share one `Nothing found` group box at the head of the list, in kind order, before the group boxes of the kinds that were found. So a clean page stays short, and the lines are whole on screen as the popup opens however long the lists below them run: `No ghosts here. Suspiciously clean.` (13px ink) and `Trackers that load later will appear here.`, `No vampires. Your blood is safe.`, `No tombstones. Every link is alive.`, `No curses. This page plays fair.` (12px `#222222`).
+- **Scrolling:** the client area between the title bar and the status bar is the one scroller (`flex: 1 1 auto; min-height: 0; overflow-y: auto`); the status bar is `flex: none`, so the lists scroll above it and nothing ever runs under it.
 
 ### Screen: restricted page
 
@@ -364,9 +369,9 @@ A tab, not a popup: one Win95 dialog on an empty `#008080` desktop. The body is 
 | Text | Ground | Ratio |
 |------|--------|-------|
 | `#000000` body, labels, legends | `#c0c0c0` face | 11.5:1 |
-| `#333333` sub-lines, attribution | `#c0c0c0` face | 6.9:1 |
-| `#000000` / `#333333` | `#ffffff` list box, status field | 21:1 / 12.6:1 |
-| `#000000` / `#333333` | `#ccccff` row hover | 13.6:1 / 8.2:1 |
+| `#222222` sub-lines, attribution | `#c0c0c0` face | 8.7:1 |
+| `#000000` / `#222222` | `#ffffff` list box, status field | 21:1 / 15.9:1 |
+| `#000000` / `#222222` | `#ccccff` row hover | 13.6:1 / 10.4:1 |
 | `#ffffff` title bar text | `#000080` | 16.0:1 |
 | `#33ff33` counter digits | `#000000` | 15.5:1 |
 | `#0000ff` link / `#800080` visited | `#c0c0c0` | 4.7:1 / 5.2:1 |
@@ -537,7 +542,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "cardWidth": 248,
       "tombstoneWidth": 176,
       "starTile": 64,
-      "minText": 11,
+      "minText": 12,
       "frameBevel": 6,
       "frameGap": 4,
       "edgeFrame": 12,
@@ -561,7 +566,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
     "titleInk": "#ffffff",
     "field": "#ffffff",
     "ink": "#000000",
-    "sub": "#333333",
+    "sub": "#222222",
     "hover": "#ccccff",
     "counter": "#000000",
     "counterInk": "#33ff33",
