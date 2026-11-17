@@ -16,6 +16,8 @@ export function buildGraveyard(doc: Document): HTMLElement {
     `<div class="gy-bar" aria-hidden="true"><span class="gy-icon">${icon("tomb")}</span><span class="gy-title"></span></div>` +
     `<div class="stones"></div><p class="gy-empty">No graves yet.</p>`;
   strip.querySelector(".gy-title")!.textContent = "Graveyard";
+  // Chrome leaves a half-visible focused sprite where it is; bring the whole sprite and its tag in.
+  strip.addEventListener("focusin", (e) => (e.target as HTMLElement).scrollIntoView?.({ block: "nearest", inline: "nearest" }));
   return strip;
 }
 
