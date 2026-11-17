@@ -157,7 +157,7 @@ describe("starfield", () => {
   const rect = (left: number, right: number, top = 0, bottom = 20) =>
     ({ left, right, top, bottom, width: right - left, height: bottom - top, x: left, y: top }) as DOMRect;
 
-  test("the content column starts from main and widens to cover every text rect", () => {
+  test("the content column starts from main and widens to cover every text rect plus 12px", () => {
     const { win, doc } = setup();
     windows.push(win);
     const main = doc.querySelector("main")!;
@@ -167,7 +167,8 @@ describe("starfield", () => {
       textRects: (node) => (node === h1Text ? [rect(360, 700)] : [rect(420, 860)]),
       viewportWidth: 1280,
     });
-    expect(col).toEqual({ left: 360, right: 880 });
+    // the h1 pokes out of main: 12px more, so with the 4px frame gap it sits 16px clear of the frame
+    expect(col).toEqual({ left: 348, right: 880 });
   });
 
   test("with no main/article the column starts from the widest block holding over half the text", () => {

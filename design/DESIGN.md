@@ -71,7 +71,7 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
 - **Tile:** 64×64, painted once to a canvas and used as a tiled `background-image`. Ground is `#000033`. Add 6 single `#ffffff` pixels, 2 `#ffff66` 2×2 stars and one 5×5 `#ffffcc` 4-point twinkle.
 - **Content column:**
   1. Start from the bounding box of `main`/`article`. If neither exists, use the widest block holding more than 50% of the page's text.
-  2. Widen it to cover every text node rect.
+  2. Widen it to cover every text node rect grown by 12px on each side, so no text sits closer than 16px to the guestbook frame's inner edge (the 12px plus its 4px gap). Text the box already pads by 12px or more widens nothing; text wider than the box, such as a site header above the article, pushes the column out.
 - **Gutters:** the gutters are everything left and right of the column. Fill them with the tile at opacity 0.92. A 16px edge toward the column is 2×2-checker dithered (1998 dithering, no gradients). The gutters stop 11px short of the column, where the guestbook frame's line is.
 - **Narrow pages (full-overlay mode):** with no gutter of 64px or more (phones, full-width pages), there are no gutters. The starfield appears inside the top bands, the HUD and a 12px edge frame fixed inside the viewport edges, whose inner 4px is 2×2-checker dithered. The whole page width is tinted and restyled, and the page sheet adds 12px to the body's inline padding so no text sits under the edge frame. The page body stays fully visible and clickable.
 

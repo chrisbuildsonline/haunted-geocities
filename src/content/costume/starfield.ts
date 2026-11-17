@@ -60,9 +60,14 @@ function textNodes(doc: Document): Text[] {
   return out;
 }
 
+/** Least clear px between any text and the guestbook frame's inner edge (frameGap outside the column). */
+const TEXT_CLEAR = 16;
+const TEXT_PAD = TEXT_CLEAR - LAYOUT.frameGap;
+
 /**
  * The page's content column: the box of main/article (or else the widest block holding over
- * half the page's text), widened to cover every text rect.
+ * half the page's text), widened to cover every text rect plus TEXT_PAD on each side, so text
+ * wider than that box (a site header above the article) is never tight against the frame.
  */
 export function computeContentColumn(doc: Document, m: Measure = realMeasure(doc)): Column {
   const texts = textNodes(doc);
@@ -78,13 +83,13 @@ export function computeContentColumn(doc: Document, m: Measure = realMeasure(doc
   }
   let left = Infinity;
   let right = -Infinity;
-  const add = (r: DOMRect) => {
+  const add = (r: DOMRect, pad = 0) => {
     if (r.width <= 0) return;
-    left = Math.min(left, r.left);
-    right = Math.max(right, r.right);
+    left = Math.min(left, r.left - pad);
+    right = Math.max(right, r.right + pad);
   };
   if (start) add(m.box(start));
-  for (const t of texts) m.textRects(t).forEach(add);
+  for (const t of texts) for (const r of m.textRects(t)) add(r, TEXT_PAD);
   if (left === Infinity) return { left: m.viewportWidth / 2, right: m.viewportWidth / 2 };
   return { left: Math.max(0, Math.floor(left)), right: Math.min(m.viewportWidth, Math.ceil(right)) };
 }

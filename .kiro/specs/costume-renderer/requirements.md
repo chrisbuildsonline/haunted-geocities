@@ -25,7 +25,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 8. [Amended] The starfield tile shall be used as a tiled CSS `background-image` at opacity 0.92 in the gutters, everything left and right of the content column. The starfield tile shall never be drawn over the content column's text. The only layers allowed over the content column are the parchment tint (requirement 77) and the guestbook frame (requirement 75), both of which leave text readable, and, in full-overlay mode only, the 12px edge frame (requirement 80).
 9. A 16px edge of the starfield toward the content column shall use a 2×2 checker dither (no gradients).
 10. The content column shall start from the bounding box of `main` or `article`; if neither exists, from the widest block holding more than 50% of the page's text.
-11. The content column shall be widened to cover every text-node rect.
+11. The content column shall be widened to cover every text-node rect plus 12px on each side, so no text sits closer than 16px to the guestbook frame.
 12. [Amended] When no gutter is 64px or wider (phones, full-width pages), the renderer shall enter full-overlay mode (requirements 80-81) instead of drawing gutters. The starfield shall then appear inside the top bands, the HUD and the 12px edge frame, and nowhere else. The page body shall remain fully visible and clickable.
 
 ### Top Bands: Neighborhood Bar + Marquee

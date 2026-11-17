@@ -102,6 +102,51 @@ test("haunted body is Times New Roman, h1 is Comic Sans MS, a:link is rgb(0, 0, 
   await page.screenshot({ path: `${SHOTS}/article-375.png` });
 });
 
+// The frame's inner edges in viewport x: inside the guestbook frame's 6px ridge, or inside the
+// 12px edge frame in full-overlay mode. Then every text rect in the flow (not pinned page chrome)
+// that is nearer than 16px to either edge.
+const crowded = (page: Page) =>
+  page.evaluate(() => {
+    const html = document.documentElement;
+    const frame = getComputedStyle(html, "::after");
+    const vw = html.clientWidth;
+    const [left, right] =
+      frame.content === "none" ? [12, vw - 12] : [parseFloat(frame.left) + 6 - scrollX, parseFloat(frame.left) + parseFloat(frame.width) - 6 - scrollX];
+    const pinned = (el: Element | null): boolean => !!el && (getComputedStyle(el).position === "fixed" || pinned(el.parentElement));
+    const out: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const parent = n.parentElement;
+      if (!n.nodeValue?.trim() || !parent || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(parent.tagName) || pinned(parent)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      for (const r of range.getClientRects()) {
+        if (r.width > 0 && (r.left - left < 16 || right - r.right < 16)) {
+          out.push(`"${n.nodeValue.trim().slice(0, 24)}" ${Math.round(r.left - left)}px / ${Math.round(right - r.right)}px`);
+        }
+      }
+    }
+    return { mode: frame.content === "none" ? "overlay" : "frame", out };
+  });
+
+test("column text clears the frame by 16px on every fixture at 1280 and 375", async ({ context, sw }) => {
+  test.setTimeout(120_000);
+  for (const name of ["article", "index", "trackers", "links", "dark-patterns", "column", "dark"]) {
+    const page = await context.newPage();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(fixture(`${name}.html`));
+    await haunt(sw, page);
+    await page.waitForTimeout(600);
+    expect({ name, ...(await crowded(page)) }).toEqual({ name, mode: "frame", out: [] });
+    await page.setViewportSize({ width: 375, height: 740 });
+    await expect.poll(async () => (await crowded(page)).mode).toBe("overlay");
+    await page.waitForTimeout(200);
+    expect({ name, ...(await crowded(page)) }).toEqual({ name, mode: "overlay", out: [] });
+    await page.close();
+  }
+});
+
 test("dark page links are rgb(102, 204, 255)", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
