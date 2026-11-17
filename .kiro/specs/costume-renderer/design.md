@@ -4,6 +4,8 @@
 
 This spec renders the 1998 GeoCities crypt costume — the visual overlay that the scaffold's `haunt()` / `unhaunt()` lifecycle manages. It builds on the existing closed Shadow DOM host from `src/content/overlay.ts` and adds the structural layers, haunt-moment animation, body-padding stylesheet, and reduced-motion handling. Trackers, vampires, tombstones, and dark-pattern curse badges are out of scope; later specs populate the lane and marker layers established here.
 
+**Design change (judges' request).** The costume now also transforms the page's content column: a page restyle in the single adopted document sheet, a guestbook frame, a parchment tint, and a full-overlay mode for pages with no gutter. See "Content Column Costume" below. Where older sections say the starfield is "never over text", that stays true for the starfield tile; the tint, frame and full-overlay edge frame are the only other layers over the column.
+
 Steering references: `product.md` (costume overlay, scope boundaries), `tech.md` (Shadow DOM, adopted stylesheets, MutationObserver, IntersectionObserver, Web Audio), `structure.md` (directory layout, one responsibility per module), `non-destructive-dom.md` (shadow root isolation, adopted stylesheets, byte-identical un-haunt, no form changes), `accessibility-and-motion.md` (reduced motion, 3 Hz ceiling, keyboard, contrast, audio muted by default), `era-accuracy.md` (web-safe colours, Comic Sans MS / Times New Roman, tiled backgrounds, marquees, hit counters, web rings, original pixel art). Design reference: `design/DESIGN.md` Costume, Haunt moment, Motion, and Tokens sections.
 
 ## Architecture Overview
@@ -18,13 +20,14 @@ Steering references: `product.md` (costume overlay, scope boundaries), `tech.md`
 │             adoptedStyleSheets: [hostSheet, costumeSheet]                 │
 │             #crypt-root                                                   │
 │               ├── [z:1]  #starfield      (gutter tile, pointer-events:none)│
+│               │            ├─ gutters · #column-tint · #column-frame · #edge-frame│
 │               ├── [z:2]  #lanes         (empty in this spec)              │
 │               ├── [z:3]  #markers       (empty in this spec)              │
 │               ├── [z:4]  #top-bands     (neighborhood bar + marquee)      │
 │               ├── [z:5]  #hud           (Hide, counts, odometer, ring)   │
 │               ├── [z:6]  #cards         (empty in this spec)              │
 │               └── [z:7]  #fx            (haunt-moment only, removed after)│
-│    document.adoptedStyleSheets: [bodyPaddingSheet]  ← the one doc-level change│
+│    document.adoptedStyleSheets: [pageSheet]  ← the one doc-level change (padding, --hg-lift, restyle)│
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -44,7 +47,10 @@ src/content/
     hud.ts               # HUD frame, Hide/Show, counts, odometer, web ring
     haunt-moment.ts     # Web Animations API haunt + un-haunt sequences
     reduced-motion.ts   # matchMedia listener, apply/remove reduced-motion class
-    body-padding.ts     # adopted stylesheet for body padding, computed + updated
+    body-padding.ts     # the page sheet (addPageSheet): body padding, --hg-lift, and the restyle rules
+    page-theme.ts       # NEW: luminance, dark/light, contrast, nearest-web-safe fallback, restyle CSS text
+    column-layers.ts    # NEW: #column-tint and #column-frame, positioned from the column rect
+    (starfield.ts)      # extended: buildEdgeFrame() for full-overlay mode
 ```
 
 Shared types stay in `src/data/types.ts`. The costume modules import `haunt` / `unhaunt` only from `overlay.ts`; they never touch `document` directly except for the body-padding adopted sheet and `elementsFromPoint` sampling.
@@ -138,7 +144,7 @@ Each gutter has `background-image` set to the tile URL, `background-repeat: repe
 
 ### Narrow pages
 
-If `contentColumn.left < 64 && (viewport.width - contentColumn.right) < 64`, the gutters are not rendered. The starfield still appears inside the top bands and HUD (they carry their own background references to the same tile).
+[Amended] If `gutterWidths(column, viewportWidth)` returns null (`contentColumn.left < 64 && (viewport.width - contentColumn.right) < 64`), the gutters are not rendered and the renderer enters **full-overlay mode**: the starfield appears inside the top bands and HUD (as before) and in a 12px edge frame (see "Content Column Costume"). The page body stays fully visible and clickable.
 
 ## Top Bands (`bands.ts`)
 
@@ -249,6 +255,8 @@ function sampleBottomLift(doc: Document): number {
 
 ## Body Padding (`body-padding.ts`)
 
+[Amended] This module is the **page sheet**: the one adopted sheet on `document`. It holds the body padding, `--hg-lift` and, from the content-column change, the restyle rules and the full-overlay inline padding. The code is `addPageSheet(doc): PageSheet` with `update(hudHeight, lift)` and `remove()`; the sketch below is the original padding-only idea.
+
 ```ts
 export function applyBodyPadding(doc: Document, hudHeight: number, lift: number): CSSStyleSheet {
   const sheet = new (doc.defaultView ?? window).CSSStyleSheet();
@@ -267,6 +275,70 @@ export function removeBodyPadding(doc: Document, sheet: CSSStyleSheet): void {
 ```
 
 The sheet is stored alongside the overlay so `unhaunt()` can remove it. Recomputed when the HUD wraps (viewport ≤400px) or when `--hg-lift` changes.
+
+## Content Column Costume
+
+Requirements 71-90. The costume now reaches into the content column, using one more kind of rule in the page sheet and three more overlay sub-layers inside layer 1.
+
+### Page restyle (rules in the page sheet)
+
+`page-theme.ts` builds the CSS text; `addPageSheet` appends it. Shape for a light page:
+
+```css
+:root { --hg-lift: 0px; }
+body { padding-top: …; padding-bottom: …; }            /* existing */
+body, body :where(p, li, dd, dt, td, th, blockquote, figcaption, label, summary) {
+  font-family: "Times New Roman", Times, serif !important; }
+body :where(h1, h2, h3) { font-family: "Comic Sans MS", "Comic Sans", cursive !important; }
+a:link    { color: #0000ff !important; text-decoration: underline !important; }
+a:visited { color: #800080 !important; }
+a:link:hover, a:visited:hover { color: #cc0000 !important; }   /* #ff0000 fails 4.5:1, see below */
+```
+
+Dark pages swap in `#66ccff` and `#cc99ff`. Notes:
+
+- `!important` is needed to win against page rules, as the padding already does. `:where()` keeps specificity at zero for the selector lists, so the sheet never fights itself.
+- **Selector scope is an assumption.** The list above is text containers only. It excludes `input`, `textarea`, `select`, `button`, `code`, `pre`, `kbd`, `samp`, `svg` and elements that use icon fonts (`i`, `[aria-hidden="true"]`), so form controls look and behave as before and icon glyphs do not turn into letters. Confirm the list when implementing.
+- Contrast is computed against the effective background: the page background, multiplied by `#ffffcc` when the tint is on. `contrastRatio(a, b)` uses WCAG 2.x relative luminance. `ensureContrast(colour, bg)` returns the colour if it reaches 4.5:1, else the nearest of the 216 web-safe colours by RGB distance that does. Black or white always qualifies (one of them reaches at least 4.58:1 on any background), so a result always exists.
+- `#ff0000` hover is 4.0:1 on `#ffffff` and 3.9:1 on `#ffffcc`. `ensureContrast` turns it into `#cc0000` on light pages. On dark pages `#ff0000` passes on near-black but not on dark greys, so the fallback runs there too.
+- The 0.4 dark threshold is the requested number. Between luminance about 0.18 and 0.4 the "dark" link colours (`#66ccff`, `#cc99ff`) can miss 4.5:1, and `ensureContrast` then moves them. That is why the 4.5:1 rule, not the threshold, is the guarantee.
+- Dark detection reads `getComputedStyle(body).backgroundColor`, then `html`, then white. Background images are ignored. Recomputed on resize, `prefers-color-scheme` change and `class`/`style` attribute mutation on `html`/`body` (read-only `MutationObserver`). A change rebuilds the sheet text with `sheet.replaceSync`.
+- Changing fonts moves text, so the column is recomputed after the sheet lands and after `document.fonts` `loadingdone` (requirement 82). Order in `renderCostume`: add sheet, then `computeContentColumn`, then layout gutters/lanes/frame/tint.
+
+### Guestbook frame (`#column-frame`)
+
+- A `div` in `#starfield`, `position: fixed`, sized to the column rect plus the frame, `pointer-events: none`, `aria-hidden`.
+- Drawn outside the column rect. Two 3px bands make the 6px ridge: the outer band is `#9999cc` top/left and `#333366` bottom/right, the inner band is reversed. A 1px `#000000` line goes outside that. The glow is `box-shadow: 0 0 6px #6633cc`, the same radius as the ghost glow. The 3px split is an assumption about what "ridge" means in px.
+- Position comes from `column.top/left/width/height` in document coordinates minus `scrollX/scrollY`, applied with `transform: translate(...)`. A passive `scroll` listener plus `resize` update it through one `requestAnimationFrame` per frame. The frame is clipped by the viewport and never moves the column.
+- Room: the frame needs 6px + 1px outside the column. Where the gutter or viewport edge leaves less than that, the page sheet adds the missing amount to body `padding-left`/`padding-right` so the frame never covers text.
+- Not drawn in full-overlay mode (assumption: the 12px edge frame is the border there, and a full-width column has no room outside it).
+
+### Parchment tint (`#column-tint`)
+
+- A `div` in `#starfield`, below the frame, same rect and tracking as the frame, `background: #ffffcc; mix-blend-mode: multiply; pointer-events: none`. Light pages only.
+- White becomes `#ffffcc`. Black text stays black. Mid-greys darken slightly, which is why contrast is measured against the multiplied background.
+- **Risk: blending is limited to the host's stacking context.** `<hg-crypt>` is `position: fixed` with `z-index: 2147483647`, so it forms its own stacking context and isolated group. A `mix-blend-mode` on a child blends only with other content in that group, which is transparent, so the multiply may do nothing to the page. Do not assume it works. Task 17.1 is a spike with a pixel test. Options if it fails, in order:
+  1. A second host element only for the tint (a second shadow root appended to `documentElement`, still outside the page DOM). This breaks "one shadow host" and needs the requirement text amended.
+  2. Draw the tint as a rule in the page sheet (a `html::before` fixed overlay sized by CSS variables, `mix-blend-mode: multiply`, `pointer-events: none`). This stays one stylesheet and no DOM change, but the tint is no longer in the shadow root, so requirement 77 changes.
+  Pick after the spike and update requirement 77 and this section. Requirement 79 forbids shipping a plain alpha overlay as a substitute.
+
+### Full-overlay mode (`#edge-frame`)
+
+- Entered when `gutterWidths(...)` is null. Left/right lanes do not exist in this mode (as today).
+- `buildEdgeFrame(doc)` in `starfield.ts` returns a `div` with four 12px strips (top, right, bottom, left) inside the viewport, `position: fixed; inset: 0`, `pointer-events: none`, painted with the starfield tile. The inner 4px of each strip is a 2×2 `#000033`/transparent checker, the same technique as the gutter dither (the 4px depth is an assumption; the brief only says "2×2 checker dither edge").
+- The top strip sits under the top bands (z-order inside layer 1 already puts bands above). The bottom strip sits under the HUD.
+- The page sheet adds `padding-left`/`padding-right: calc(<original> + 12px)` on `body` so no text sits under the frame. The tint and the restyle still apply.
+- Everything is `pointer-events: none`, so clicks reach the page. The e2e test checks `elementFromPoint` on links, buttons and form controls at 375px wide.
+
+### Motion
+
+- None of the new layers animates. There is no `transition` on the frame, tint or edge frame, and link hover has no colour transition, so reduced motion needs no extra rule beyond keeping them out of any `animation`/`transition` selector (requirement 83). The existing `reduced-motion` class listener still toggles live.
+- Hide fades the new layers with the rest (opacity, 200ms). The restyle stays on while hidden, because it lives in the page sheet and Hide keeps haunt state. That can look odd (fonts changed, no frame). Confirm with the judges' intent; the alternative is to remove the restyle rules on Hide and re-add them on Show.
+- **Open question: haunt-moment sync.** The wipe reveals layer 1 and the bands behind the ghost with `clip-path`. A page restyle cannot be clipped. Plan: the page sheet is applied at t=0 as today (one reflow), and the frame and tint join the clip-path reveal. This means the page text changes before the ghost arrives. If that reads badly, apply the restyle at 200ms when the ghost enters.
+
+### Tokens
+
+`tokens.ts` gains `PAGE` (web-safe): `link #0000ff`, `visited #800080`, `hover #ff0000`, `hoverFallback #cc0000`, `darkLink #66ccff`, `darkVisited #cc99ff`, `parchment #ffffcc`, `frameLight #9999cc`, `frameDark #333366`, `frameLine #000000`, `glow #6633cc`, plus `LAYOUT.frameBevel = 6`, `LAYOUT.edgeFrame = 12`, `LAYOUT.edgeDither = 4`, `LAYOUT.darkLuminance = 0.4`, `LAYOUT.minContrast = 4.5`. `design/DESIGN.md` gets the same under `costume.page` (requirement 89).
 
 ## Haunt Moment (`haunt-moment.ts`)
 
@@ -400,7 +472,7 @@ The existing `haunt()` / `unhaunt()` functions remain as-is. The costume rendere
 
 ### Non-destructive guarantee
 
-- `renderCostume()` only appends to `root` (shadow DOM) and adds one sheet to `doc.adoptedStyleSheets`.
+- `renderCostume()` only appends to `root` (shadow DOM) and adds one sheet (the page sheet) to `doc.adoptedStyleSheets`. The restyle is rules in that sheet, never inline styles or attributes.
 - No page node is mutated. `elementsFromPoint` is read-only.
 - `body-padding.ts` uses `!important` to override page padding, but the original computed values are captured and restored on removal.
 - Un-haunt removes the host (dropping all shadow content) and filters the body-padding sheet out of `document.adoptedStyleSheets`.
@@ -432,6 +504,17 @@ Using `happy-dom` for DOM, same pattern as `test/content.test.ts`:
 - **Non-destructive**: `document.documentElement.outerHTML` unchanged after haunt (only host added) and after un-haunt (byte-identical).
 - **Focus rings**: costume focus ring CSS present in stylesheet.
 
+Content column costume (requirements 71-90):
+
+- **Page theme**: `isDark` threshold at luminance 0.4 (0.39 dark, 0.41 light); body transparent falls back to `html`, then white; `contrastRatio` against known pairs (`#ff0000`/`#ffffff` = 4.0, `#cc0000`/`#ffffcc` ≥ 5.7); `ensureContrast` returns a web-safe colour at ≥ 4.5 for every background in a sweep of 0 to 255 grey levels.
+- **Restyle text**: the sheet text has Times New Roman on body, Comic Sans MS on `h1`-`h3`, `#0000ff`/`#800080`/`#cc0000` on light, `#66ccff`/`#cc99ff` on dark, and excludes form controls.
+- **Page sheet**: still the only added entry in `document.adoptedStyleSheets`; `remove()` restores the original array; full-overlay adds 12px inline padding.
+- **Frame**: 6px, correct four edge colours, 1px `#000000` line, `#6633cc` glow; follows a simulated scroll and resize; `pointer-events: none`.
+- **Tint**: present with `multiply` and `#ffffcc` on a light page, absent on a dark page, `pointer-events: none`.
+- **Full-overlay**: viewport 375px gives the 12px edge frame with 2×2 dither, no guestbook frame, tint and restyle present.
+- **Reduced motion**: the new layers have no `animation` or `transition` in either state.
+- **Un-haunt**: host and page sheet gone together; `outerHTML` and `adoptedStyleSheets` equal their pre-haunt values.
+
 ### E2E tests (`e2e/costume.spec.ts`)
 
 Using existing `e2e/fixtures.ts`:
@@ -443,3 +526,12 @@ Using existing `e2e/fixtures.ts`:
 - Assert page remains interactive (form submission works while haunted).
 - Un-haunt → `document.documentElement.outerHTML` byte-identical.
 - Reduced motion (via `--force-prefers-reduced-motion` emulation) → cross-fade, no ghost.
+
+Content column costume (`e2e/costume.spec.ts`, plus visual baselines in `e2e-visual/`):
+
+- On `column.html`, `getComputedStyle(body).fontFamily` starts with Times New Roman, an `h1` with Comic Sans MS, an `a:link` colour is `rgb(0, 0, 255)`; the page is costumed, not only framed.
+- On a dark fixture, links are `rgb(102, 204, 255)`.
+- A screenshot pixel on a white area inside the column is `#ffffcc`, and a text pixel stays `#000000` (the multiply spike's proof, requirement 79).
+- At 375px wide, `elementFromPoint` on each link and form control returns the page element, and the page's form still submits.
+- Un-haunt: `outerHTML` and `document.adoptedStyleSheets` match their pre-haunt values, body font and link colour are back to the originals.
+- Reduced motion: the frame, tint and edge frame have `animation-name: none` and no transitions.

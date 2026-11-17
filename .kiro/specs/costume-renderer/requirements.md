@@ -4,27 +4,29 @@
 
 This spec covers the **costume renderer**: the visual costume that draws the 1998 GeoCities crypt overlay inside the existing closed Shadow DOM host from `src/content/overlay.ts`. It renders the static structural layers — gutter starfield, neighborhood bar + marquee bands, bottom HUD with Hide/Show, hit-counter odometer, and web ring — plus the Webmaster's Ghost haunt-moment animation and the un-haunt reverse. It does **not** render tracker ghosts, vampires, tombstones, or dark-pattern curse badges; those are later specs that render sprites and markers into the layers established here.
 
-The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`. Colours are web-safe only, fonts are Comic Sans MS and Times New Roman, and every pixel-art asset is original. The costume lives entirely inside the shadow root; the only document-level change is the body-padding adopted stylesheet, which is removed on un-haunt so the page returns byte-identical to its pre-haunt state.
+The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`. Colours are web-safe only, fonts are Comic Sans MS and Times New Roman, and every pixel-art asset is original. The costume lives inside the shadow root, plus one document-level change: a single adopted stylesheet (the "page sheet", `addPageSheet` in `body-padding.ts`). The page sheet holds the body padding, the `--hg-lift` variable and the content-column restyle (see "Content Column Costume"). It is removed together with the shadow host on un-haunt, so the page returns byte-identical to its pre-haunt state.
+
+**Design change (judges' request).** The costume must transform the page's content column itself, not only frame it with gutter starfield. Requirements 71-90 ("Content Column Costume") add that. Requirements 2, 3, 4, 8, 12, 52 and 53 were amended so they no longer contradict it. Amended lines are marked `[Amended]`.
 
 ## EARS Acceptance Criteria
 
 ### Overlay Structure
 
 1. The costume renderer shall render all layers inside the closed Shadow DOM root returned by `haunt()` from `src/content/overlay.ts`, never touching any page DOM node.
-2. The costume shall establish layers with the z-index order: starfield (1), lanes (2), markers (3), top bands (4), HUD (5), cards (6), haunt-moment FX (7), matching `design/DESIGN.md`.
-3. The only document-level change outside the shadow root shall be one `CSSStyleSheet` appended to `document.adoptedStyleSheets` holding body `padding-top` and `padding-bottom`; no page `<style>` or `<link>` element shall be modified.
-4. The adopted body-padding stylesheet shall set `padding-top` to the page's original computed value plus 48px, and `padding-bottom` to the original value plus HUD height + 16px + `--hg-lift`.
-5. The body-padding values shall be recomputed when the HUD wraps (below 400px viewport width) and when the HUD lift changes.
-6. Un-haunt shall remove the shadow host and the adopted body-padding stylesheet together, so body padding changes in one reflow.
+2. [Amended] The costume shall establish layers with the z-index order: starfield (1), lanes (2), markers (3), top bands (4), HUD (5), cards (6), haunt-moment FX (7), matching `design/DESIGN.md`. The content-column tint, guestbook frame and full-overlay frame (requirements 71-90) are sub-layers of layer 1, drawn in that order (tint, then frame), so lanes, markers, bands, HUD and cards always sit above them.
+3. [Amended] The only document-level change outside the shadow root shall be one `CSSStyleSheet` appended to `document.adoptedStyleSheets` (the page sheet). It holds the `--hg-lift` variable, body `padding-top` and `padding-bottom`, body inline padding in full-overlay mode, and the content-column restyle rules of requirement 71. No page `<style>` or `<link>` element, attribute or inline style shall be modified.
+4. The page sheet shall set `padding-top` to the page's original computed value plus 48px, and `padding-bottom` to the original value plus HUD height + 16px + `--hg-lift`.
+5. The page-sheet values shall be recomputed when the HUD wraps (below 400px viewport width) and when the HUD lift changes.
+6. Un-haunt shall remove the shadow host and the page sheet together, so body padding and the restyle change in one reflow.
 
 ### Starfield
 
 7. The renderer shall paint a 64×64 starfield tile to a canvas with ground `#000033`, six single `#ffffff` pixels, two `#ffff66` 2×2 stars, and one 5×5 `#ffffcc` 4-point twinkle.
-8. The starfield tile shall be used as a tiled CSS `background-image` at opacity 0.92 in the gutters — everything left and right of the content column — never over the content column itself.
+8. [Amended] The starfield tile shall be used as a tiled CSS `background-image` at opacity 0.92 in the gutters, everything left and right of the content column. The starfield tile shall never be drawn over the content column's text. The only layers allowed over the content column are the parchment tint (requirement 77) and the guestbook frame (requirement 75), both of which leave text readable, and, in full-overlay mode only, the 12px edge frame (requirement 80).
 9. A 16px edge of the starfield toward the content column shall use a 2×2 checker dither (no gradients).
 10. The content column shall start from the bounding box of `main` or `article`; if neither exists, from the widest block holding more than 50% of the page's text.
 11. The content column shall be widened to cover every text-node rect.
-12. When no gutter is 64px or wider (narrow pages), the starfield shall appear only inside the top bands and the HUD, and the page body shall remain fully visible.
+12. [Amended] When no gutter is 64px or wider (phones, full-width pages), the renderer shall enter full-overlay mode (requirements 80-81) instead of drawing gutters. The starfield shall then appear inside the top bands, the HUD and the 12px edge frame, and nowhere else. The page body shall remain fully visible and clickable.
 
 ### Top Bands: Neighborhood Bar + Marquee
 
@@ -88,8 +90,8 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 ### Un-haunt (Reverse)
 
 51. Un-haunt shall be an 1100ms reverse sequence: markers fade out (0–200ms), sprites sink 16px and fade (200–500ms), HUD slides down (300–600ms), then the Webmaster's Ghost crosses right → left (500–1100ms) with the clip shrinking behind it.
-52. At 1100ms, the shadow host and the adopted body-padding stylesheet shall be removed together, so the body padding changes in one reflow.
-53. After un-haunt, page markup shall be byte-identical to its pre-haunt state.
+52. [Amended] At 1100ms, the shadow host and the page sheet (padding and restyle) shall be removed together, so the body padding and the page's fonts and link colours change in one reflow.
+53. After un-haunt, page markup shall be byte-identical to its pre-haunt state, and `document.adoptedStyleSheets` shall hold exactly the sheets it held before haunt, in the same order (see requirement 87).
 
 ### Reduced Motion
 
@@ -102,7 +104,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 
 ### Colour Tokens
 
-60. Every costume colour shall come from the `## Tokens` JSON in `design/DESIGN.md` — the `costume.palette` object and `costume.hemTints` array. No hard-coded colour outside these tokens shall appear in the costume CSS.
+60. [Amended] Every costume colour shall come from the `## Tokens` JSON in `design/DESIGN.md` (the `costume.palette` object, the `costume.hemTints` array and the `costume.page` object added by requirement 89). No hard-coded colour outside these tokens shall appear in the costume CSS.
 61. All costume palette colours shall be web-safe (each channel value in `{00, 33, 66, 99, cc, ff}`).
 
 ### Accessibility
@@ -119,3 +121,28 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 68. Page scripts shall never be edited, blocked, or reordered.
 69. Never change form behaviour — no adding, removing, or modifying form elements, handlers, or submission logic.
 70. After un-haunt, `document.documentElement.outerHTML` shall be byte-identical to its pre-haunt value.
+
+### Content Column Costume
+
+These requirements make the costume transform the page's content column itself. "Content column" is the rect from `computeContentColumn` (requirements 10-11). "Light page" and "dark page" are defined by requirement 73. All colours below are web-safe and are added to the tokens by requirement 89.
+
+71. The page sheet (the existing single adopted `CSSStyleSheet`, which stays the only document-level change) shall, while the page is haunted, restyle the page so that body text is set in `Times New Roman`, `h1`, `h2` and `h3` are set in `Comic Sans MS`, unvisited links are `#0000ff` and underlined, visited links are `#800080`, and hovered links are `#ff0000`.
+72. Where the page is a dark page, the page sheet shall instead set unvisited links to `#66ccff` and visited links to `#cc99ff`; links shall stay underlined, and hovered links shall follow requirement 71.
+73. The renderer shall classify the page as dark when the relative luminance (WCAG 2.x definition) of the computed background colour of `body` is below 0.4, taking the background of `html` when the body background is transparent and white when both are transparent; otherwise the page is light. The classification shall be recomputed on viewport resize, on `prefers-color-scheme` change, and when a read-only `MutationObserver` sees `class` or `style` attribute changes on `html` or `body`.
+74. Every text and link colour the page sheet sets shall have a WCAG contrast ratio of at least 4.5:1 against the page's effective background (the page background multiplied by `#ffffcc` where the tint of requirement 77 is drawn). If a colour named in requirement 71 or 72 falls below 4.5:1 against that background, the renderer shall use the nearest web-safe colour (by RGB distance) that reaches 4.5:1 instead. Known case: hover `#ff0000` is 4.0:1 on `#ffffff` and 3.9:1 on `#ffffcc`, so on light pages hover resolves to `#cc0000` (5.9:1 and 5.7:1).
+75. While the page is haunted, the renderer shall draw a guestbook frame in the shadow root around the content column rect: a 6px ridge bevel with `#9999cc` on the top and left edges and `#333366` on the bottom and right edges, a 1px `#000000` outer line, and a `#6633cc` glow.
+76. The guestbook frame shall track the content column rect through page scroll and viewport resize, shall be clipped to the viewport rather than moving the column, and shall have `pointer-events: none`.
+77. Where the page is a light page, the renderer shall draw a parchment tint layer in the shadow root over the content column rect, with `background: #ffffcc` and `mix-blend-mode: multiply`, so that white reads as old paper and dark text keeps its contrast. The tint shall have `pointer-events: none` and shall track scroll and resize like the frame.
+78. Where the page is a dark page, the renderer shall not draw the tint layer.
+79. If the tint layer does not multiply with the page (browser stacking-context isolation of the overlay host can prevent it), the renderer shall not ship a normal-blend `#ffffcc` overlay. The spike in task 17.1 shall decide the mechanism, and an e2e test shall prove that a `#ffffff` page pixel inside the column renders as `#ffffcc` while a `#000000` text pixel stays `#000000`.
+80. Where no gutter is 64px or wider (`gutterWidths` returns null), the renderer shall draw a 12px starfield frame fixed inside the viewport edges, using the starfield tile, with its inner 4px edge dithered as a 2×2 checker (no gradients). The frame shall have `pointer-events: none`.
+81. In full-overlay mode, the tint (on light pages) and the restyle of requirements 71-74 shall still apply, and the guestbook frame shall not be drawn (the 12px edge frame takes its place). The page sheet shall add body `padding-left` and `padding-right` equal to the original value plus 12px so no text sits under the edge frame. The page body shall stay fully readable and clickable: `elementFromPoint` at the viewport centre and at every link, button and form control of the page shall return the page's own element, never the costume host.
+82. After the page sheet is applied, and whenever the restyle changes text metrics (fonts load, viewport resize), the renderer shall recompute the content column, and gutters, lanes, frame and tint shall use the recomputed rect.
+83. When `prefers-reduced-motion: reduce` is active, none of the layers in this section (restyle, guestbook frame, parchment tint, 12px edge frame) shall animate or transition; the link hover colour shall change instantly.
+84. The renderer shall apply requirement 83 live through the existing `matchMedia` change listener (requirement 56), so toggling the preference while haunted takes effect without a reload.
+85. When Hide is activated, the frame, tint and edge frame shall fade out with the other costume layers (requirement 28). The page sheet, including the restyle, shall remain applied while hidden, because Hide preserves haunt state (requirement 30).
+86. On un-haunt, the shadow host (with the frame, tint and edge frame in it) and the page sheet (with the restyle) shall be removed together in one reflow.
+87. After un-haunt, `document.documentElement.outerHTML` shall be byte-identical to its pre-haunt value, and `document.adoptedStyleSheets` shall equal its pre-haunt contents in the same order.
+88. The restyle shall be expressed only as rules in the page sheet. The renderer shall not add, remove or change any page element, attribute, class, inline style or event handler to apply it.
+89. The colours of requirements 71-80 shall be added to `design/DESIGN.md` under `## Tokens` as `costume.page` (links `#0000ff`, visited `#800080`, hover `#ff0000`, hover fallback `#cc0000`, dark links `#66ccff`, dark visited `#cc99ff`, parchment `#ffffcc`, frame `#9999cc`, `#333366`, `#000000`, glow `#6633cc`), each web-safe, and mirrored in `tokens.ts`.
+90. Every layer in this section shall have `pointer-events: none` and `aria-hidden="true"`, and shall not take focus.

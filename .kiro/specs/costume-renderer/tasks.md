@@ -36,7 +36,7 @@ Tests live under `test/costume/` (Bun unit tests) and `e2e/` (Playwright end-to-
   - Req: 9
   - Test: `test/costume/starfield.test.ts` → `"16px dither edge uses 2×2 checker, no gradients"`.
 
-- [x] 2.5 When no gutter is ≥64px wide, do not render gutters — starfield appears only in top bands and HUD.
+- [x] 2.5 [Amended for full-overlay mode, see 17.7-17.8] When no gutter is ≥64px wide, do not render gutters. The starfield appears in the top bands, the HUD and the 12px edge frame.
   - Req: 12
   - Test: `test/costume/starfield.test.ts` → `"narrow page: no gutter divs rendered"`.
 
@@ -347,3 +347,75 @@ Tests live under `test/costume/` (Bun unit tests) and `e2e/` (Playwright end-to-
 - [x] 16.7 Reduced motion (emulated) → cross-fade, no ghost sprite in FX layer.
   - Req: 54
   - Test: `e2e/costume.spec.ts` → `"reduced motion: cross-fade, no ghost sprite"`.
+
+## 17. Content Column Costume (design change)
+
+Requirements 71-90. Do 17.1 first: its result can change requirement 77.
+
+- [ ] 17.1 Spike: prove a `mix-blend-mode: multiply` child of `<hg-crypt>` darkens page pixels. If it does not, choose a fallback from design.md ("Parchment tint") and update requirement 77 and the design before continuing.
+  - Req: 77, 79
+  - Test: `e2e/column-costume.spec.ts` → `"tint: white page pixel inside the column renders #ffffcc, black text stays #000000"`.
+
+- [ ] 17.2 Add `PAGE` and the new `LAYOUT` values to `src/content/costume/tokens.ts`.
+  - Req: 60, 61, 89
+  - Test: `test/costume/tokens.test.ts` → `"page tokens are web-safe"` and `"page tokens match DESIGN.md costume.page"`.
+
+- [ ] 17.3 Create `src/content/costume/page-theme.ts`: `relativeLuminance`, `contrastRatio`, `isDarkPage(doc)`, `ensureContrast(colour, bg)` (nearest web-safe colour reaching 4.5:1), and `restyleCss(theme)`.
+  - Req: 71, 72, 73, 74
+  - Test: `test/costume/page-theme.test.ts` → `"luminance 0.39 is dark and 0.41 is light"`, `"transparent body falls back to html then white"`, `"#ff0000 on #ffffff is 4.0:1 and resolves to #cc0000"`, `"every restyled colour is at least 4.5:1 for a sweep of grey backgrounds, light and dark"`, `"restyle css has Times New Roman body, Comic Sans MS h1-h3, link colours"`.
+
+- [ ] 17.4 Extend `addPageSheet` in `body-padding.ts` to carry the restyle, rebuild it with `replaceSync` when the theme changes (resize, `prefers-color-scheme`, `class`/`style` mutation on `html`/`body`), and add body inline padding in full-overlay mode. `remove()` restores `document.adoptedStyleSheets` exactly.
+  - Req: 3, 5, 6, 71, 72, 73, 81, 87, 88
+  - Test: `test/costume/body-padding.test.ts` → `"page sheet carries restyle rules and is the only sheet added"`, `"theme change rebuilds the sheet"`, `"full-overlay adds 12px inline padding"`, `"remove restores adoptedStyleSheets in order"`.
+
+- [ ] 17.5 Create `src/content/costume/column-layers.ts`: `#column-frame` (6px ridge, 1px line, glow) and `#column-tint` (light pages only), positioned from the column rect, updated on scroll and resize through one `requestAnimationFrame`, `pointer-events: none`, `aria-hidden`. Add them to `#starfield` in the order tint, frame.
+  - Req: 2, 75, 76, 77, 78, 90
+  - Test: `test/costume/column-layers.test.ts` → `"frame has 6px ridge colours, 1px #000000 line and #6633cc glow"`, `"frame and tint follow scroll and resize"`, `"tint present on light page, absent on dark page"`, `"both layers have pointer-events none"`.
+
+- [ ] 17.6 Recompute the content column after the page sheet is applied and after `document.fonts` `loadingdone`; gutters, lanes, frame and tint use the new rect.
+  - Req: 82
+  - Test: `test/costume/render.test.ts` → `"column is recomputed after restyle"`.
+
+- [ ] 17.7 Add `buildEdgeFrame(doc)` to `starfield.ts`: 12px fixed strips with the starfield tile and a 2×2 dithered inner edge.
+  - Req: 80, 90
+  - Test: `test/costume/starfield.test.ts` → `"edge frame is 12px with 2×2 checker inner edge and pointer-events none"`.
+
+- [ ] 17.8 Wire full-overlay mode in `render.ts`: when `gutterWidths` is null, show the edge frame, hide the guestbook frame and lanes, keep tint and restyle.
+  - Req: 12, 80, 81
+  - Test: `test/costume/render.test.ts` → `"375px page: edge frame shown, guestbook frame hidden, tint and restyle applied"`.
+
+- [ ] 17.9 Reduced motion: the new layers have no `animation` or `transition`; a live `matchMedia` toggle changes nothing for them. Hide fades them, Show restores them, and the restyle stays on while hidden.
+  - Req: 83, 84, 85
+  - Test: `test/costume/reduced-motion.test.ts` → `"column layers never animate or transition"`; `test/costume/hide-show.test.ts` → `"Hide fades frame and tint, restyle stays"`.
+
+- [ ] 17.10 Haunt moment: include the tint, frame and edge frame in the clip-path reveal. Settle the open question in design.md (restyle at t=0 or at 200ms) and note the choice there.
+  - Req: 42, 86
+  - Test: `test/costume/haunt-moment.test.ts` → `"clip-path reveal covers frame and tint"`.
+
+- [ ] 17.11 Un-haunt: host and page sheet removed together; `outerHTML` and `adoptedStyleSheets` match their pre-haunt values.
+  - Req: 6, 52, 53, 86, 87
+  - Test: `test/costume/unhaunt.test.ts` → `"restyle gone and adoptedStyleSheets equal pre-haunt after unhaunt"`.
+
+- [ ] 17.12 Unit tests for hit-testing: in a 375px page, every link, button and form control resolves through `elementFromPoint` to the page element.
+  - Req: 81, 90
+  - Test: `test/costume/render.test.ts` → `"costume host never intercepts pointer hits"`.
+
+- [ ] 17.13 E2E: the body is costumed, not only framed, and un-haunt is byte-identical.
+  - Req: 71, 72, 75, 77, 81, 86, 87
+  - Test: `e2e/column-costume.spec.ts` →
+    - `"haunted body is Times New Roman, h1 is Comic Sans MS, a:link is rgb(0, 0, 255)"` on `column.html`,
+    - `"dark page links are rgb(102, 204, 255)"`,
+    - `"375px: links and form still clickable, form submits"`,
+    - `"unhaunt: outerHTML and document.adoptedStyleSheets equal pre-haunt, body font and link colour restored"`.
+
+- [ ] 17.14 Docker visual baselines: add the 375px full-overlay shot and a dark-page shot to `e2e-visual/`, then regenerate the baselines in the Playwright image and look at the new PNGs before committing.
+  - Req: 71-81
+  - Test: `bun run visual:baselines`, then `bun run docker:test` passes `test:visual` against the committed PNGs.
+
+- [ ] 17.15 README hero shot: retake `docs/screenshots/haunted.png` with `bun run screenshots` so it shows the costumed column (restyled text, frame, tint). Update the README "What it does" lines that describe the costume as a frame only.
+  - Req: 71, 75, 77
+  - Test: the new PNG shows the frame and tinted column; `bun run typecheck` and `bun run test` still pass.
+
+- [ ] 17.16 Update `design/DESIGN.md`: the "Overlay layers" paragraph (document-level change now also holds the restyle), the layer table (tint, frame and edge frame in layer 1), "Starfield" (narrow pages become full-overlay mode), "Body padding", a new "Content column costume" subsection, and `costume.page` in `## Tokens` (requirement 89).
+  - Req: 2, 3, 8, 12, 89
+  - Test: `test/costume/tokens.test.ts` → `"page tokens match DESIGN.md costume.page"`; manual read-through that no sentence in DESIGN.md says the starfield or the page sheet is padding-only.
