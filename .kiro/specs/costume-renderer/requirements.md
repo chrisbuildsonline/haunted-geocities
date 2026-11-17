@@ -191,3 +191,57 @@ Today `gutterWidths` returns null on 375px pages and full-width pages (full-over
 111. The strip shall take pointer events (`pointer-events: auto`) only on its own box. The rest of the viewport shall stay clickable, and `elementFromPoint` on every page link, button and form control outside the strip and the HUD shall still return the page's own element (requirement 81).
 112. Un-haunt shall remove the strip with the shadow host in the same step (requirements 52 and 86), including its listeners and the extra `padding-bottom` in the page sheet. After un-haunt, `document.documentElement.outerHTML` and `document.adoptedStyleSheets` shall equal their pre-haunt values (requirements 53, 70 and 87).
 113. The strip shall make no change to any page node, script or form (requirements 67-69), and the ghost-card, exorcise and `TRACKER_UPDATE` message flows shall be unchanged.
+
+
+### Hero Haunt Moment
+
+The jury said the current haunt reads as "a calm column with three small sprites". These requirements replace the haunt-moment timeline of requirements 39-48 with a 3000ms sequence in which the page visibly dies into 1998 (a CRT switching off) and the tracker ghosts then rise one by one, each with its company name tag, so the moment reads as spectacle in a 3-second screen clip. Requirements 39-48 are not edited or renumbered; where their timings differ from requirements 114-135, **requirements 114-135 apply**. Requirements 49-50 and 54 still hold. The un-haunt (requirements 51-53), the reduced-motion un-haunt (55) and the content-column requirements (71-90) are unchanged. "FX root" means the `#fx` element in the shadow root.
+
+**Timeline**
+
+114. The haunt moment shall be a sequence of about 3000ms, driven only by the Web Animations API on `transform`, `opacity` and `clip-path`, with every element it adds inside the closed shadow root. It shall not modify any page node (requirements 67-70).
+115. The sequence shall be: CRT death 0-800ms, Webmaster's Ghost wipe 700-1600ms, scanlines and vignette fade out 1600-1900ms, ghost rise from 1700ms, then the vampires, HUD slide, odometer roll and markers in the order of requirement 126, ending by 3000ms for up to four tracker ghost companies (requirement 125 gives the length for more).
+
+**CRT death (0-800ms)**
+
+116. At 0-150ms a full-viewport scanline layer in the FX root shall fade in (`opacity` 0 → 1). Its pattern shall be a repeating 1px `#000033` line every 3px (1px line, 2px clear), and it shall stay at full opacity until the fade-out of requirement 121.
+117. At 150-450ms two black (`#000000`) lids shall slide in with `transform`, one from the top edge and one from the bottom edge, each 50% of the viewport height, and meet at mid-height at 450ms, like a tube switching off. The lids shall cover the page, the scanlines and the page-sheet layers while closed.
+118. At 450ms, when the lids meet, a 2px `#ccffff` phosphor line shall appear across the full viewport width at mid-height. From 450 to 600ms it shall shrink horizontally (`scaleX` 1 → 0) to a dot, and it shall be gone at 600ms.
+119. At 600-800ms the lids shall slide open again (`transform` back to their off-screen positions), uncovering the page.
+120. The CRT death shall be one dark-then-light change only. Within each of its phases (scanlines in, lids closing, line shrinking, lids opening) every property shall change in one direction only, nothing shall toggle back, no element shall blink, and no change shall repeat above 3 Hz (extends requirements 49 and 66).
+
+**Wipe, scanlines and vignette**
+
+121. The Webmaster's Ghost wipe of requirements 41-43 shall run at 700-1600ms (same 900ms duration, same easing, same ghost, same 900ms bob and dither strip), and the same `clip-path` reveal shall drive the starfield (or edge frame), the parchment tint, the guestbook frame and the top bands. The marquee shall start scrolling at 1600ms, when the ghost leaves the right edge.
+122. The scanlines and the radial `#000033` vignette (requirement 40) shall both be at full opacity by 200ms, and shall fade out to 0 at 1600-1900ms, so both are gone by 1900ms.
+123. The restyle and the page padding shall keep landing at t=0 in one reflow, as today (see `design/DESIGN.md`, "Content column costume"). Its effect is hidden by the lids from 450 to 600ms and shown by the wipe.
+
+**Ghosts rise with name tags**
+
+124. From 1700ms, each tracker ghost shall rise from `translateY(48px)` with `opacity` 0 into its slot over 400ms (easing `cubic-bezier(.2,.8,.2,1)`), 250ms after the previous one, in lane order (requirement 92), so ghost *i* starts at 1700 + 250 × *i* ms. For the first 8 ghosts *i* is the ghost's index. The 9th ghost onward start with the 8th, at 3450ms.
+125. The haunt moment shall end, and the FX root shall be removed, at 3000ms or when the last ghost's tag pop has finished, whichever is later. With *n* ghost companies (up to 8) the last tag pop ends at 1700 + 250 × (*n* - 1) + 400ms, so *n* ≤ 4 ends at 3000ms and 8 ghosts end at 3850ms. The ghost rise is the only part of the sequence whose length depends on the page.
+126. Vampires, the HUD slide, the odometer roll and the markers shall keep their order from requirements 44-47 and shift later: vampires fade in (and the caught ones swell once) at 2300-2900ms, the HUD (and the graveyard strip with it) slides up at 1900-2200ms, the odometer rolls at 2200-2800ms (600ms, right digit first), and markers fade in at 2800-3000ms.
+127. Each ghost's name tag (the existing `.tag` holding the company name) shall be hidden until its ghost starts rising and shall pop in 200ms after its ghost starts rising: `opacity` 0 → 1 and `transform: scale(0.6)` → `scale(1)` over 200ms, in one monotonic step, with the tag's centre as its origin. The tag shall never be visible while its ghost is not.
+128. Ghosts that arrive after the haunt moment (a tracker found later) shall keep the current 300ms, 16px `riseIn` and show their tags at once. The 48px rise and the tag pop belong to the haunt moment only.
+129. Company sprites in the graveyard strip (requirements 91-113) shall not rise (requirement 108 stays in force); under the haunt moment they slide up with the HUD at the time of requirement 126, and their name labels are visible at once.
+
+**Phase attribute and clean-up**
+
+130. The FX root shall carry a `data-phase` attribute that moves `crt` (0-700ms), then `wipe` (700-1700ms), then `rise` (from 1700ms until the end), in that order and never back, so tests can observe the phases. The phases shall be driven by animation timing (finished animations), not by a chain of `setTimeout` calls.
+131. The FX root (scanlines, lids, phosphor line, vignette, ghost, dither strip) shall be removed at the end of the sequence, with its animations. No finished animation shall stay on a page element.
+
+**Era rules**
+
+132. Every colour in the new layers shall be web-safe and come from the tokens of `design/DESIGN.md` (requirements 60-61): `#000033` scanlines and vignette, `#000000` lids, `#ccffff` phosphor line. The new colours shall be added to `costume.palette` or the haunt tokens in `DESIGN.md` and mirrored in `tokens.ts`. No blurred modern shadows (`box-shadow` or `filter` blur) shall be used in the new layers, and nothing a 1998 page would not have had (no gradients beyond the existing vignette, no glow, no particles) shall be added.
+
+**Reduced motion**
+
+133. When `prefers-reduced-motion: reduce` is active, the haunt moment shall skip straight to its end state through the 300ms linear cross-fade of requirement 54. There shall be no FX root, no scanlines, no lids, no phosphor line, no wipe, no ghost rise and no stagger, and no `data-phase`. Every ghost name tag shall be visible at once, the odometer shall show its final value and the marquee shall be static.
+
+**Un-haunt, non-destructive**
+
+134. Un-haunt shall be unchanged (requirements 51-53, 55, 86-87). After the new haunt moment, with it finished or cut short, un-haunt shall restore `document.documentElement.outerHTML` byte for byte and `document.adoptedStyleSheets` to the same sheets in the same order. Un-haunt during the haunt moment shall finish the sequence at once, remove the FX root, and then run the un-haunt as usual.
+
+**Tests, fixture and docs**
+
+135. The moment shall be proved by: unit tests in `test/costume/haunt-moment.test.ts` (phase order, lid and phosphor timings, the 250ms stagger, the tag pop 200ms after the rise, flash safety, the reduced-motion path with no FX); a Playwright test `e2e/hero-haunt.spec.ts` on a new original news-style fixture `fixtures/news.html` (original content, no third-party trademarks, loading the tracker fixtures so at least three ghost companies appear); a README GIF `docs/screenshots/haunt.gif` made by `e2e/readme.shots.ts` and ffmpeg (at most 2 MB, 6 fps, 560px wide, 128 colours) and referenced in the README "What it does"; and the updated "Haunt moment" section of `design/DESIGN.md`. Docker visual baselines shall be regenerated only if a static shot changes.

@@ -621,3 +621,101 @@ Unit tests (`test/costume/graveyard.test.ts`, odometer tests extended): strip hi
 E2E (`e2e/graveyard.spec.ts`): at 375px on `trackers.html` (tracker hosts mapped as in the README) and on a full-width fixture, the strip shows one sprite per company in the right order, scrolls when there are more than fit, opens the card by keyboard and click, exorcise shows the stamp, `elementFromPoint` on page controls above the strip returns the page element, the last page line can be scrolled above the strip, Hide hides the strip, un-haunt is byte-identical.
 
 Visual: the existing 375px baselines for `trackers.html` change (strip now visible), and a 1280px shot is unchanged except the HUD's odometer label.
+
+
+## Hero Haunt Moment
+
+Requirements 114-135. The haunt moment grows from 2500ms to a 3000ms sequence: the page dies like a CRT, the Webmaster's Ghost wipe follows, then the tracker ghosts rise one by one with name tags. Everything stays in `src/content/costume/haunt-moment.ts` (`playHaunt`), with small hooks in `ghosts.ts`, `styles.ts` and `tokens.ts`. Un-haunt (`playUnhaunt`) is not touched.
+
+### Timeline
+
+| t (ms) | Layer in `#fx` | What happens | Easing |
+|--------|----------------|--------------|--------|
+| 0-150 | `.scan` | Scanlines fade in, `opacity` 0 → 1. Pattern: repeating 1px `#000033` line every 3px. | linear |
+| 0-200 | `.vignette` | Radial `#000033` vignette fades in to 40% (as today). | `cubic-bezier(.2,.8,.2,1)` |
+| 150-450 | `.lid.top`, `.lid.bottom` | Two `#000000` lids, each 50vh, slide in from the top and bottom edges (`translateY(-100%)` → 0 and `translateY(100%)` → 0) and meet at mid-height. | `cubic-bezier(.45,0,.2,1)` |
+| 450-600 | `.phosphor` | 2px `#ccffff` line at mid-height, full width, appears at 450ms and shrinks `scaleX(1)` → `scaleX(0)` to a dot. Gone at 600ms. | `cubic-bezier(.2,.8,.2,1)` |
+| 600-800 | lids | Lids slide open again (back to `translateY(∓100%)`). | `cubic-bezier(.45,0,.2,1)` |
+| 700-1600 | `.sweep`, layers 1 and 4, page-sheet layers | The Webmaster's Ghost wipe, unchanged except its start (was 200ms). | `cubic-bezier(.45,0,.2,1)` |
+| 1600-1900 | `.scan`, `.vignette` | Both fade out to 0. The marquee starts at 1600ms. | `cubic-bezier(.2,.8,.2,1)` |
+| 1700 + 250·i, i = 0..7 | tracker ghosts in `#lanes` | Ghost i rises `translateY(48px)` → 0 and `opacity` 0 → 1 over 400ms. Ghost 9 onward use i = 7. | `cubic-bezier(.2,.8,.2,1)` |
+| ghost start + 200, 200ms | the ghost's `.tag` | Tag pops: `opacity` 0 → 1, `scale(.6)` → `scale(1)`. | `cubic-bezier(.2,.8,.2,1)` |
+| 1900-2200 | `#hud`, `#graveyard` | HUD slide up (was 1400-1700). | `cubic-bezier(.2,.8,.2,1)` |
+| 2200-2800 | HUD odometer | Digits roll, right digit first, 600ms (was 1700-2300). Strips still stagger 40ms and all land at 2800. | `cubic-bezier(.2,.8,.2,1)` |
+| 2300-2600 | vampires | Fade in (was 1800). The caught ones then swell their glow once, 2600-2900. | `cubic-bezier(.2,.8,.2,1)` |
+| 2800-3000 | `#markers` | Fade in, 200ms (was 2300-2500). | linear |
+
+The FX root is removed at max(3000, last tag pop end). With *n* ghosts the last tag pop ends at `1700 + 250·(min(n,8) - 1) + 400`: 2850ms for 4 ghosts, 3100ms for 5, 3850ms for 8. The brief says "ends by about 3000ms", which holds for up to four ghost companies. For five or more, the rise keeps its 250ms stagger as required, and the vampires, HUD, odometer and markers do not wait for it (they are on fixed times), so the overrun is only the last ghost and its tag. If the jury clip needs a hard 3000ms for crowded pages, the stagger can shrink to `min(250, 1300 / (n - 1))`; this is an open choice, not part of the requirements.
+
+### CRT layers
+
+`buildFx` adds three elements beside the existing vignette and sweep, in this DOM order (lowest first): `.scan`, `.vignette`, `.sweep`, `.lid.top`, `.lid.bottom`, `.phosphor`. `#fx` stays at z-index 7 with `pointer-events: none` and `aria-hidden="true"`, so the lids never take a click, even while closed (the haunt button already fired and the page is only covered for 300ms).
+
+- `.scan`: `position: fixed; inset: 0;` `background: repeating-linear-gradient(to bottom, ${P.crypt} 0 1px, transparent 1px 3px)`. Hard stops, no soft gradient. Colour from `PALETTE.crypt` (`#000033`). It stays at opacity 1 from 150 to 1600ms.
+- `.lid`: `position: fixed; left: 0; right: 0; height: 50vh; background: ${P.ink}` (`#000000`), top lid at `top: 0`, bottom lid at `bottom: 0`. Resting (open) state `translateY(-100%)` / `translateY(100%)`. Two animations per lid, close and open, on the same element with `fill: "both"` on the first and `fill: "forwards"` on the second.
+- `.phosphor`: `position: fixed; left: 0; right: 0; top: calc(50vh - 1px); height: 2px; background: ${P.phosphor}` (`#ccffff`), `opacity: 0` at rest. One animation of 600ms with offsets: opacity 0 until 0.75 (450ms), then 1; `scaleX(1)` until 0.75, then `scaleX(0)` at 1. After the animation (`fill: forwards`) the element is at `scaleX(0)` and the FX root removal takes it away.
+
+New token: `PALETTE.phosphor = "#ccffff"` (web-safe), added to `costume.palette` in `design/DESIGN.md` and mirrored in `tokens.ts`; the stylesheet and `haunt-moment.ts` read it from `PALETTE`, so requirement 60 still holds. New `MOTION` values (also in DESIGN.md Tokens): `crtScanIn 150`, `crtLidsClose [150, 450]`, `crtLine [450, 600]`, `crtLidsOpen [600, 800]`, `wipeStart 700`, `fxFadeOut [1600, 1900]`, `riseStart 1700`, `riseStagger 250`, `riseDuration 400`, `riseDistance 48`, `tagDelay 200`, `tagDuration 200`, `tagScaleFrom 0.6`. `haunt` becomes 3000 (the test "motion durations match DESIGN.md" is updated with DESIGN.md in task 19.2; existing numbers in earlier tasks are left as they were).
+
+### Flash safety
+
+Brightness path: normal page → scanline overlay (a slight darkening, 150ms) → black as the lids close (150-450ms) → a thin bright line shrinking (450-600ms) → lids open on the page (600-800ms) → normal. That is one dark phase followed by one light phase, spread over 800ms, with every property monotonic inside each phase. Nothing repeats, so the highest rate is one change per phase, well under 3 Hz. The only periodic motion in the whole moment is still the 900ms ghost bob (1.1 Hz, position only). The phosphor line is the brightest element (`#ccffff` on `#000000`) but it is 2px high, visible for 150ms and does not blink.
+
+The unit test "flash safety" checks, for every animation `playHaunt` creates: `iterations` is 1, no keyframe sequence alternates a property back to a value it had earlier, other than the ghost bob, and no two overlapping opacity changes on full-viewport layers (`.scan`, lids) run in opposite directions at the same time except the lids' open and close which are sequential (close ends at 450, open starts at 600).
+
+### Ghost rise and tags
+
+`riseIn(el, delay)` in `ghosts.ts` gets two optional parameters: `riseIn(el, delay = 0, dy = 16, duration = M.slow)`. Existing callers keep the 16px and 300ms. The haunt moment calls `riseIn(g, 1700 + Math.min(i, 7) * 250, 48, 400)`.
+
+The tag pop is a second animation on the ghost's `.tag` child, with `fill: "backwards"` so the tag is at opacity 0 and `scale(.6)` until its delay is over:
+
+```ts
+const tag = g.querySelector<HTMLElement>(".tag");
+tag?.animate([{ opacity: 0, transform: "scale(0.6)" }, { opacity: 1, transform: "scale(1)" }],
+  { delay: start + 200, duration: 200, easing: M.easeOut, fill: "backwards" });
+```
+
+`.tag` gets `transform-origin: 50% 0` in `styles.ts` (it hangs below the sprite, so the pop grows from its top edge). The tag sits inside the ghost element, so it inherits the ghost's rise. Before the ghost starts, the ghost's own `fill: "backwards"` keeps both at opacity 0. The tag's opacity is therefore the product of both, and it cannot show before the ghost.
+
+Order of ghosts is `#lanes > :not(.vampire)` in DOM order, which is the lane order of requirement 92. In full-overlay mode the lanes are empty and the strip holds the sprites (requirement 129). The strip's sprites are not given `riseIn` or a tag pop; they slide with the HUD. This keeps requirement 108. The trade-off: on a phone the "ghosts rise one by one" part of the moment is missing and only the CRT and wipe remain. If the jury's clip will be taken at a phone width, relax requirement 108 for the haunt moment only; this is a decision for the owner, not made here.
+
+### Phase attribute
+
+`#fx` gets `data-phase="crt"` when it is built. To avoid a `setTimeout` chain (task 10.11), `playHaunt` creates two marker animations on `#fx` that animate no property: `fx.animate([], { duration: 700 })` and `fx.animate([], { duration: 1700 })`. The `finished` callback of the first sets `data-phase="wipe"` and the second sets `data-phase="rise"`. If the moment is finished early (`finish()`), the phase moves to `rise` and the FX root is removed in the same task.
+
+### Reduced motion
+
+`playHaunt(croot, reduced)` already returns the 300ms cross-fade before building the FX root. That path stays first, so none of the new elements exist under reduced motion. Tags need nothing, because without the rise animation `.tag` has no initial state. Test: with `reduced = true`, `#fx` does not exist and no animation targets a `.tag`.
+
+### Un-haunt
+
+`playUnhaunt` is unchanged. Requirement 134 adds one behaviour for a click during the sequence: `content/index.ts` calls the `Moment.finish()` from `playHaunt` before `playUnhaunt` (it already does this when a haunt is cut short; confirm in 19.7) so no lid or phase marker is left. After un-haunt the check is the same as today: `outerHTML` and `document.adoptedStyleSheets` equal their pre-haunt values.
+
+### Fixture
+
+`fixtures/news.html`: an original, news-style front page ("The Larkspur Ledger", original headlines and copy, an original inline SVG logo, no third-party marks) with a `<main>` column, a sidebar and a footer, to give the CRT death something worth looking at. It loads the tracker fixtures like `trackers.html` does (`<img>` and `<script>` tags pointing to the mapped tracker hosts on `:4321`) for at least three non-fingerprinting tracker companies, so three ghosts appear. `criteo.com` is already mapped; two more hosts that Tracker Radar lists as ghosts (not fingerprinters; `hotjar.com` and `taboola.com` are known vampires) are picked in task 19.8 and added to the README `--host-resolver-rules` line and the e2e launch args. No vampire is needed on this page.
+
+### README GIF
+
+`e2e/readme.shots.ts` gets one more shot: with the reduced-motion preference off and the page clock real, it takes a screenshot burst of `news.html` while the moment runs (for example every 160ms for 3.4s through `page.screenshot`), and `ffmpeg` turns the frames into `docs/screenshots/haunt.gif`: `fps=6`, `scale=560:-1:flags=lanczos`, a 128-colour palette (`palettegen=max_colors=128`, `paletteuse`), and `-loop 0`. The script fails if the file is larger than 2 MB (2 097 152 bytes). The GIF is referenced in README "What it does", under the first screenshot. `ffmpeg` is a dev tool for `bun run screenshots` only, not a build or test dependency; `test:e2e` does not call it.
+
+### Test strategy additions
+
+Unit (`test/costume/haunt-moment.test.ts`, with the existing fake-timeline helpers; times read from `animation.effect.getTiming()` and `getComputedTiming()`):
+
+- phase order: `data-phase` goes `crt`, `wipe`, `rise`, and never back;
+- lid timings: close 150-450, open 600-800, phosphor 450-600 with `scaleX` 1 → 0, scanlines fade in 0-150 and out 1600-1900;
+- wipe at 700 for 900ms with the same easing;
+- ghost i starts at 1700 + 250·i, 48px, 400ms; ghost 9 starts with ghost 8;
+- tag pop starts 200ms after its ghost, 200ms long, `scale(.6)` → `scale(1)`;
+- vampires, HUD, odometer, markers at the new times and in the old order;
+- flash safety (see above);
+- reduced motion: no `#fx`, no lids, no tag animation, 300ms cross-fade only;
+- `finish()` removes `#fx`;
+- colours of the new layers are web-safe and come from `PALETTE`.
+
+E2E (`e2e/hero-haunt.spec.ts`, `fixtures/news.html` with the host map): poll `#fx[data-phase]` through `crt`, `wipe`, `rise` (read from the closed shadow root through the test helper that already exists in `e2e/fixtures.ts`); at about 1200ms the lids are absent from the viewport and the wipe is mid-way; ghosts appear one after another (the first ghost visible before the third has started, through `getAnimations()` start times differing by about 250ms, with a ±100ms margin for CI); every ghost has a visible `.tag` with its company name at the end; no console errors; with `reducedMotion: "reduce"` there is no `#fx` and tags are visible at once; un-haunt restores `outerHTML` and `adoptedStyleSheets`.
+
+### Docs and baselines
+
+`design/DESIGN.md` "Haunt moment" gets the new table and the flash-safety note, and its un-haunt and reduced-motion text stays. The "Total: 2500ms" line and the "restyle lands at t=0" line in the Motion paragraph of the content column section are checked. Static visual baselines in `e2e-visual/` run with animations stopped and the clock fixed, so they should not change; regenerate them (`bun run visual:baselines`) only if a static shot differs.
