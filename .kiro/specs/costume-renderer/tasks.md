@@ -490,54 +490,54 @@ Requirements 91-113. Do 18.1 first: the other tasks share the sprite builder it 
 
 Requirements 114-135. The new timeline replaces the 2500ms timeline of group 10 (requirements 39-48 stay as written, 114-135 win where they differ). Do 19.1 first: the other tasks read the new `MOTION` values. Existing unchecked and checked tasks in groups 1-18 are not changed; where a group 10 test pins an old time, task 19.2 updates that test and says so.
 
-- [ ] 19.1 Tokens: add `PALETTE.phosphor = "#ccffff"`, the new `MOTION` values (`haunt 3000`, CRT, wipe, rise and tag timings from design.md "Hero Haunt Moment") to `tokens.ts` and to `## Tokens` in `design/DESIGN.md`.
+- [x] 19.1 Tokens: add `PALETTE.phosphor = "#ccffff"`, the new `MOTION` values (`haunt 3000`, CRT, wipe, rise and tag timings from design.md "Hero Haunt Moment") to `tokens.ts` and to `## Tokens` in `design/DESIGN.md`.
   - Req: 116, 118, 124, 127, 132
   - Test: `test/costume/tokens.test.ts` → `"phosphor is web-safe #ccffff"`, `"hero haunt motion values match DESIGN.md"`, and the existing `"motion durations match DESIGN.md"` updated to haunt 3000.
 
-- [ ] 19.2 Move the wipe, vignette and later layers to the new times in `playHaunt`: wipe 700-1600, vignette out 1600-1900, marquee start 1600, HUD slide 1900-2200, odometer 2200-2800, vampires 2300-2900, markers 2800-3000. Update the group 10 tests that pin the old times (10.2 to 10.8) to the new numbers.
+- [x] 19.2 Move the wipe, vignette and later layers to the new times in `playHaunt`: wipe 700-1600, vignette out 1600-1900, marquee start 1600, HUD slide 1900-2200, odometer 2200-2800, vampires 2300-2900, markers 2800-3000. Update the group 10 tests that pin the old times (10.2 to 10.8) to the new numbers.
   - Req: 115, 121, 122, 126
   - Test: `test/costume/haunt-moment.test.ts` → `"wipe runs 700-1600 with the same easing and clip-path reveal of starfield, bands, tint and frame"`, `"scanlines and vignette are gone by 1900"`, `"vampires, HUD, odometer and markers keep their order at the new times"`, `"graveyard slides with the HUD at 1900"`.
 
-- [ ] 19.3 CRT death: build `.scan`, `.lid.top`, `.lid.bottom` and `.phosphor` in `buildFx`, with their CSS in `styles.ts` from `PALETTE` only (no blur, no shadow), and animate scanlines in (0-150), lids closed (150-450), phosphor line shrinking (450-600) and lids open (600-800), on `transform` and `opacity` only.
+- [x] 19.3 CRT death: build `.scan`, `.lid.top`, `.lid.bottom` and `.phosphor` in `buildFx`, with their CSS in `styles.ts` from `PALETTE` only (no blur, no shadow), and animate scanlines in (0-150), lids closed (150-450), phosphor line shrinking (450-600) and lids open (600-800), on `transform` and `opacity` only.
   - Req: 114, 116, 117, 118, 119, 132
   - Test: `test/costume/haunt-moment.test.ts` → `"scanlines are a 1px #000033 line every 3px and fade in over 150ms"`, `"lids slide in 150-450 and meet at mid-height"`, `"phosphor line is 2px #ccffff, appears at 450 and shrinks to scaleX(0) by 600"`, `"lids open 600-800"`, `"new layers use only web-safe palette colours and no blur"`; `test/costume/stylesheet.test.ts` → `"no hard-coded hex outside PALETTE constants in CSS text"` (existing) still passes.
 
-- [ ] 19.4 Flash safety: confirm the CRT death is one dark-then-light change, every phase monotonic, every animation runs one iteration, nothing above 3 Hz.
+- [x] 19.4 Flash safety: confirm the CRT death is one dark-then-light change, every phase monotonic, every animation runs one iteration, nothing above 3 Hz.
   - Req: 120, 49, 66
   - Test: `test/costume/haunt-moment.test.ts` → `"flash safety: one dark-then-light change, every phase monotonic, only the 900ms bob repeats"`; `test/costume/accessibility.test.ts` → `"no animation has a period under 333ms (3 Hz)"` (existing) still passes.
 
-- [ ] 19.5 Ghost rise with name tags: extend `riseIn` with `dy` and `duration` (defaults 16px, 300ms, so later arrivals are unchanged); the haunt moment rises ghost i at `1700 + 250 · min(i, 7)` over 400ms from `translateY(48px)`; the `.tag` pops in 200ms after its ghost starts (opacity 0 → 1, scale 0.6 → 1, 200ms); add `transform-origin` to `.tag`. Docked sprites in the strip are left alone.
+- [x] 19.5 Ghost rise with name tags: extend `riseIn` with `dy` and `duration` (defaults 16px, 300ms, so later arrivals are unchanged); the haunt moment rises ghost i at `1700 + 250 · min(i, 7)` over 400ms from `translateY(48px)`; the `.tag` pops in 200ms after its ghost starts (opacity 0 → 1, scale 0.6 → 1, 200ms); add `transform-origin` to `.tag`. Docked sprites in the strip are left alone.
   - Req: 124, 125, 127, 128, 129
   - Test: `test/costume/haunt-moment.test.ts` → `"ghosts rise 48px over 400ms, 250ms apart"`, `"the 9th ghost onward start with the 8th"`, `"tag pops in 200ms after its ghost starts, opacity and scale 0.6 to 1 over 200ms"`, `"FX root removed at 3000 for 4 ghosts and after the last tag pop for 8"`, `"strip sprites do not rise"`; `test/costume/ghosts.test.ts` → `"riseIn defaults stay 16px and 300ms"`.
 
-- [ ] 19.6 Phase attribute and clean-up: `#fx[data-phase]` moves `crt` (0-700) → `wipe` (700-1700) → `rise` through two property-less marker animations, never back; `finish()` moves it to `rise` and removes `#fx`; the FX root and its animations are removed at the end.
+- [x] 19.6 Phase attribute and clean-up: `#fx[data-phase]` moves `crt` (0-700) → `wipe` (700-1700) → `rise` through two property-less marker animations, never back; `finish()` moves it to `rise` and removes `#fx`; the FX root and its animations are removed at the end.
   - Req: 130, 131
   - Test: `test/costume/haunt-moment.test.ts` → `"data-phase goes crt, wipe, rise in order and never back"`, `"FX root and all its animations are gone at the end"`, `"no setTimeout is used by playHaunt"`.
 
-- [ ] 19.7 Reduced motion and un-haunt: under `reduced`, `playHaunt` returns the 300ms cross-fade with no `#fx`, no tag animation and no phase; tags are visible at once. Un-haunt is unchanged; a click during the moment calls `finish()` first (check `content/index.ts`, change it only if it does not).
+- [x] 19.7 Reduced motion and un-haunt: under `reduced`, `playHaunt` returns the 300ms cross-fade with no `#fx`, no tag animation and no phase; tags are visible at once. Un-haunt is unchanged; a click during the moment calls `finish()` first (check `content/index.ts`, change it only if it does not).
   - Req: 133, 134, 54, 55
   - Test: `test/costume/haunt-moment.test.ts` → `"reduced motion: no FX root, no lids, no rise, no stagger, no phase, tags visible"`; `test/costume/reduced-motion.test.ts` → `"reduced haunt: 300ms opacity cross-fade, no ghost, marquee static"` (existing) still passes; `test/costume/unhaunt.test.ts` → `"unhaunt during the haunt moment finishes it, then outerHTML and adoptedStyleSheets equal pre-haunt"`.
 
-- [ ] 19.8 Fixture: create `fixtures/news.html`, an original news-style front page (original copy, an original inline SVG logo, no third-party trademarks, no external dependencies other than the tracker hosts), loading the tracker fixtures so at least three non-fingerprinting ghost companies appear (`criteo.com` plus two more Tracker Radar ghost hosts, added to the README `--host-resolver-rules` line and to the e2e launch args). Add it to the README fixtures table.
+- [x] 19.8 Fixture: create `fixtures/news.html`, an original news-style front page (original copy, an original inline SVG logo, no third-party trademarks, no external dependencies other than the tracker hosts), loading the tracker fixtures so at least three non-fingerprinting ghost companies appear (`criteo.com` plus two more Tracker Radar ghost hosts, added to the README `--host-resolver-rules` line and to the e2e launch args). Add it to the README fixtures table.
   - Req: 135
   - Test: `test/fixtures.test.ts` (or the existing fixture checks) → `"news.html has no third-party marks and no external assets other than the mapped tracker hosts"`; `e2e/hero-haunt.spec.ts` → `"news.html shows at least three ghost companies"`.
 
-- [ ] 19.9 Unit test pass: `bun run typecheck` and `bun run test` pass with all of the above.
+- [x] 19.9 Unit test pass: `bun run typecheck` and `bun run test` pass with all of the above.
   - Req: 114-134
   - Test: `bun run typecheck && bun run test`.
 
-- [ ] 19.10 E2E: create `e2e/hero-haunt.spec.ts` on `news.html`: the phases, the staggered ghosts, the name tags, console errors, reduced motion and un-haunt.
+- [x] 19.10 E2E: create `e2e/hero-haunt.spec.ts` on `news.html`: the phases, the staggered ghosts, the name tags, console errors, reduced motion and un-haunt.
   - Req: 115, 124, 127, 130, 133, 134, 135
   - Test: `e2e/hero-haunt.spec.ts` → `"phases go crt, wipe, rise"`, `"lids meet mid-height around 450ms and are gone by 800ms"`, `"ghosts appear staggered about 250ms apart"`, `"every ghost shows its company name tag at the end"`, `"no console errors during the haunt moment"`, `"reduced motion: no FX, tags visible at once"`, `"unhaunt: outerHTML and adoptedStyleSheets equal pre-haunt"`.
 
-- [ ] 19.11 README GIF: extend `e2e/readme.shots.ts` to capture the moment on `news.html`, and make `docs/screenshots/haunt.gif` with ffmpeg (6 fps, 560px wide, 128 colours, at most 2 MB; the script fails if it is larger). Reference it in README "What it does", and mention `ffmpeg` in the screenshots note.
+- [x] 19.11 README GIF: extend `e2e/readme.shots.ts` to capture the moment on `news.html`, and make `docs/screenshots/haunt.gif` with ffmpeg (6 fps, 560px wide, 128 colours, at most 2 MB; the script fails if it is larger). Reference it in README "What it does", and mention `ffmpeg` in the screenshots note.
   - Req: 135
   - Test: `bun run screenshots` writes the GIF; `test/readme.test.ts` (or a check in the shots script) → `"haunt.gif is at most 2 MB and referenced in the README"`; manual look at the GIF frames.
 
-- [ ] 19.12 Update `design/DESIGN.md`: the "Haunt moment" section (new idea line, total 3000ms, new table, flash-safety note, cost line, reduced-motion text), the Tokens (task 19.1), and any line that says the moment is 2500ms or that the wipe starts at 200ms (search `DESIGN.md`, README and `docs/`).
+- [x] 19.12 Update `design/DESIGN.md`: the "Haunt moment" section (new idea line, total 3000ms, new table, flash-safety note, cost line, reduced-motion text), the Tokens (task 19.1), and any line that says the moment is 2500ms or that the wipe starts at 200ms (search `DESIGN.md`, README and `docs/`).
   - Req: 114, 115, 135
   - Test: `grep -rn "2500" design/DESIGN.md README.md docs` returns only the un-haunt or history lines you checked by hand; `test/costume/tokens.test.ts` → `"hero haunt motion values match DESIGN.md"`.
 
-- [ ] 19.13 Docker visual baselines: run `bun run docker:test`. Regenerate the baselines (`bun run visual:baselines`) and look at the changed PNGs only if a static shot changed; otherwise leave them.
+- [x] 19.13 Docker visual baselines: run `bun run docker:test`. Regenerate the baselines (`bun run visual:baselines`) and look at the changed PNGs only if a static shot changed; otherwise leave them.
   - Req: 135
   - Test: `bun run docker:test` passes `test:visual` against the committed PNGs.
