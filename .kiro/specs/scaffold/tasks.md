@@ -311,3 +311,99 @@ Tests live under `test/` (Bun unit tests) and `e2e/` (Playwright end-to-end test
 - [x] 12.2 Ensure popup text meets 4.5:1 contrast ratio against its background (ink on surface, muted on surface, pillInk on pill).
   - Req: 56
   - Test: `test/design.test.ts` → `"tokens" > "ink on surface has WCAG contrast >= 4.5"` and `"muted on surface has WCAG contrast >= 4.5"` and `"pillInk on pill has WCAG contrast >= 4.5"`.
+
+## 13. Popup Costume (1998)
+
+Dresses the popup and `permissions.html` as Windows 95 windows (requirements 57-78, design section "Popup Costume (1998)"). Tasks 7.4-7.7, 7.18 and 12.2 describe the earlier pill look and stay as history. The tests named here replace their pill and colour checks. Existing behaviour tests (toggle permissions, sound storage, screens) must keep passing unchanged.
+
+- [ ] 13.1 Remove every `border-radius` other than `0` from `src/popup/styles.css` and `src/popup/permissions.css`, including the round dot on the permissions status.
+  - Req: 62
+  - Test: `test/popup-costume.test.ts` (new) → `"popup and permissions CSS have no border-radius other than 0"`.
+
+- [ ] 13.2 Remove every blurred `box-shadow` (blur above 0) from both stylesheets. Bevels use `0` blur only.
+  - Req: 57
+  - Test: `test/popup-costume.test.ts` → `"popup and permissions CSS have no blurred box-shadow"`.
+
+- [ ] 13.3 Replace the popup tokens in the `Tokens` JSON of `design/DESIGN.md` with the 1998 tokens, and read them in `src/popup/styles.css` as custom properties.
+  - Req: 57, 58, 71
+  - Test: `test/design.test.ts` → `"popup costume tokens are the Win95 palette"`.
+
+- [ ] 13.4 Check every text and ground pair of the contrast table in `design.md` against 4.5:1, and the focus ring against 3:1.
+  - Req: 72
+  - Test: `test/design.test.ts` → `"popup costume text pairs have WCAG contrast >= 4.5"`.
+
+- [ ] 13.5 Draw the window: `#c0c0c0` face and raised bevel, `#000080` title bar with the 16px ghost sprite and "Haunted GeoCities" in bold white 13px. The header status pill and the 24px header mark go.
+  - Req: 57, 58, 69
+  - Test: `test/popup.test.ts` → `"window has a navy title bar with the ghost sprite and Haunted GeoCities"` and `test/popup-costume.test.ts` → `"title bar is #000080 with bold white 13px text"`.
+
+- [ ] 13.6 Set the font stacks: UI stack on the popup, Times New Roman bold 24px on the site title, Courier New bold 24px on the hit-counter digits.
+  - Req: 59, 60, 64
+  - Test: `test/popup-costume.test.ts` → `"popup uses the MS Sans Serif stack, a 24px bold Times title and Courier counters"`.
+
+- [ ] 13.7 Group content in etched group boxes with legends and drop the white floating surfaces.
+  - Req: 61
+  - Test: `test/popup.test.ts` → `"content sits in group boxes with legends"` and `test/popup-costume.test.ts` → `"group box has a 2px etched #808080/#ffffff border"`.
+
+- [ ] 13.8 Draw the primary action as a full-width 40px default push button (`#c0c0c0`, raised bevel, 1px `#000000` frame, bold 13px `#000000` label, inverted bevel on `:active`). Rename the `.pill` class to `.primary`.
+  - Req: 26, 27, 29, 63
+  - Test: `test/popup.test.ts` → `"idle screen has one primary push button labelled Haunt this page"` and `"haunted screen has one primary push button labelled Un-haunt"`, plus `test/popup-costume.test.ts` → `"primary push button is 40px, full width, framed, and inverts when pressed"`.
+
+- [ ] 13.9 Show no primary push button on the restricted screen.
+  - Req: 28
+  - Test: `test/popup.test.ts` → `"restricted screen has no primary push button"`.
+
+- [ ] 13.10 Render the four counts as hit-counter cells (`#000000` ground, `#33ff33` Courier New bold 24px tabular digits) with the 16px sprite and kind label under each.
+  - Req: 64
+  - Test: `test/popup.test.ts` → `"counts render as hit-counter cells with a 16px sprite and a label"`.
+
+- [ ] 13.11 Set each list in a sunken white list box with 32px square sprite tiles and a `#ccccff` hover. Drop the 60% opacity on Exorcised rows.
+  - Req: 65
+  - Test: `test/popup.test.ts` → `"ghost, vampire, tombstone and curse lists sit in a sunken list box"` and `test/popup-costume.test.ts` → `"list rows hover #ccccff and keep square 32px tiles"`.
+
+- [ ] 13.12 Make Exorcise and Let it back 24px Win95 push buttons.
+  - Req: 66
+  - Test: `test/popup-costume.test.ts` → `"Exorcise and Let it back are 24px push buttons"`.
+
+- [ ] 13.13 Restyle the tags: square, 1px `#000000` border, the five colour pairs.
+  - Req: 67
+  - Test: `test/popup-costume.test.ts` → `"tags are square with a 1px black border and the Win95 colour pairs"`.
+
+- [ ] 13.14 Turn both settings switches into Win95 checkboxes (13px sunken white box, black pixel check), keeping labels, sub-lines, off-by-default and the permissions and storage behaviour.
+  - Req: 68, 31-37
+  - Test: `test/popup.test.ts` → `"settings controls are checkboxes that keep their toggle behaviour"`.
+
+- [ ] 13.15 Move the status (Idle, Haunted, Can't haunt) and the attribution line into a sunken status bar at the bottom of the window.
+  - Req: 69, 38
+  - Test: `test/popup.test.ts` → `"status bar shows the state and the attribution line"`.
+
+- [ ] 13.16 Colour links `#0000ff` (visited `#800080`, underlined) and limit `#6633cc` to the focus ring.
+  - Req: 70, 71
+  - Test: `test/popup-costume.test.ts` → `"links are blue and purple, and #6633cc appears only in the focus ring"`.
+
+- [ ] 13.17 Keep the 360px width, add the 600px height cap with a scrolling client area between a fixed title bar and status bar, and keep the reduced-motion block.
+  - Req: 73, 40, 55
+  - Test: `test/popup.test.ts` → `"popup is 360px wide and at most 600px tall"` and `"prefers-reduced-motion disables popup motion"`.
+
+- [ ] 13.18 Rebuild `permissions.html` as a `#008080` desktop with one centred Win95 dialog (title bar, 48px tombstone sprite, the exact explanation sentence, "Allow link checks" default push button, sunken status field), max 440px wide, nothing animated.
+  - Req: 74, 75, 76, 77, 78
+  - Test: `test/permissions.test.ts` (new) → `"permissions page is a teal desktop with one Win95 dialog"` and `"permissions page keeps the exact explanation sentence"`.
+
+- [ ] 13.19 Grey the "Allow link checks" label to `#808080` and disable the button once granted, and keep it enabled after a refusal.
+  - Req: 76
+  - Test: `test/permissions.test.ts` → `"Allow link checks greys out once granted and stays enabled after a refusal"`.
+
+- [ ] 13.20 Run the popup e2e flows against the new markup.
+  - Req: 49, 22-25
+  - Test: `e2e/popup.spec.ts` → `"popup shows idle screen then haunted screen after Haunt"`.
+
+- [ ] 13.21 Regenerate the visual baselines in Docker (`bun run visual:baselines`) for the popup at 1280 and 375 pixels, idle and haunted, and add a `permissions.html` shot at both widths.
+  - Req: 57-78
+  - Test: `e2e-visual/visual.spec.ts` → `"popup-idle-1280"`, `"popup-idle-375"`, `"popup-haunted-1280"`, `"popup-haunted-375"`, `"permissions-1280"` and `"permissions-375"` (the last two are new).
+
+- [ ] 13.22 Rewrite the Popup section of `design/DESIGN.md` to the Win95 look, matching `design.md`.
+  - Req: 57-78
+  - Test: `test/design.test.ts` → `"DESIGN.md popup section describes the Win95 costume and no longer the 2024 pill"`.
+
+- [ ] 13.23 Retake the README popup screenshot (`docs/screenshots/popup.png`) with `bun run screenshots` and update the README popup wording.
+  - Req: 57-78
+  - Test: `test/readme.test.ts` (new) → `"README popup screenshot exists and is referenced"`.

@@ -47,10 +47,10 @@ The scaffold establishes the extension shell, the Haunt/Un-haunt lifecycle, and 
 23. When the popup opens on a restricted page, the popup shall display the restricted screen.
 24. When the popup opens on an unrestricted page that is not haunted, the popup shall display the idle screen.
 25. When the popup opens on an unrestricted page that is haunted, the popup shall display the haunted screen.
-26. The idle screen shall show exactly one near-black pill labelled "Haunt this page".
-27. The haunted screen shall show exactly one near-black pill labelled "Un-haunt".
-28. The restricted screen shall not display a pill.
-29. The pill shall have ground `#111318`, text `#ffffff`, height 48px, full width, radius 999, font-size 15px, font-weight 600.
+26. The idle screen shall show exactly one primary push button labelled "Haunt this page", drawn as requirement 63 says.
+27. The haunted screen shall show exactly one primary push button labelled "Un-haunt", drawn as requirement 63 says.
+28. The restricted screen shall not display a primary push button.
+29. The primary push button shall be the Win95 default push button of the "Popup Costume (1998)" section (requirement 63): full width, 40px tall, `#c0c0c0` face, bold 13px `#000000` label.
 30. Where the popup is on the idle or haunted screen, the popup shall show a settings surface.
 31. The settings surface shall contain a "Check links to other sites" toggle, off by default.
 32. When the "Check links to other sites" toggle is turned on, the popup shall call `chrome.permissions.request` with `origins` set to `"http://*/*"` and `"https://*/*"`.
@@ -96,3 +96,47 @@ The scaffold establishes the extension shell, the Haunt/Un-haunt lifecycle, and 
 
 55. The popup shall honour `prefers-reduced-motion` by disabling non-essential popup motion.
 56. The popup text shall meet a 4.5:1 contrast ratio against its background.
+
+### Popup Costume (1998)
+
+The popup and `permissions.html` are dressed as Windows 95 windows, the same era as the crypt, and stay clean and scannable. This section changes how the popup looks. It does not change what it does: requirements 22-25 and 30-40 keep their behaviour. Where requirements 30, 31 and 35 say "surface" they now mean a group box (requirement 61), and where requirements 31-37 say "toggle" they now mean a checkbox (requirement 68). Values are in the `Popup Costume (1998)` section of `design.md`.
+
+Window and type
+
+57. The popup shall be drawn as a Windows 95 window with face `#c0c0c0` and a 2px raised bevel (top-left `#ffffff` outer and `#dfdfdf` inner, bottom-right `#000000` outer and `#808080` inner), and no popup or `permissions.html` CSS shall use a box-shadow with a blur radius above 0.
+58. The popup window shall have a `#000080` title bar holding the 16px pixel ghost sprite and the text "Haunted GeoCities" in bold white 13px.
+59. The popup shall set its text in the font stack `'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, Geneva, sans-serif`, except the site title (requirement 60) and the hit-counter digits (requirement 64).
+60. The popup shall set the site title in Times New Roman bold 24px.
+
+Grouping and shape
+
+61. The popup shall group its content in etched Win95 group boxes, each with a 2px etched `#808080`/`#ffffff` border and a legend text, and shall not draw floating cards.
+62. The popup and `permissions.html` CSS shall use `border-radius: 0` or no `border-radius` at all, so that no element has a rounded corner.
+
+Actions
+
+63. The popup shall show exactly one primary action on the idle and haunted screens (requirements 26-28), drawn as a full-width 40px Win95 default push button: `#c0c0c0` face, raised bevel, an extra 1px `#000000` outer frame and a bold 13px `#000000` label. While the button is pressed, the bevel shall invert.
+64. When the popup is on the haunted screen, the popup shall show the four counts as hit-counter cells with a `#000000` ground and `#33ff33` digits in Courier New bold 24px with tabular figures, and shall show the 16px sprite and the kind label under each cell.
+65. Where the popup lists ghosts, vampires, tombstones or curses, the popup shall set each list in a sunken white list box with a 2px inset bevel (`#808080`/`#ffffff`), and each row shall keep a 32px sprite tile with no radius and show a `#ccccff` ground on hover.
+66. The Exorcise and Let it back buttons shall be 24px Win95 push buttons.
+67. The tags shall be square with a 1px `#000000` border and these colours (ground/text): Caught `#ccccff`/`#330099`, Known `#cccccc`/`#000000`, 404 `#ffcccc`/`#660000`, 410 `#ffcc99`/`#663300`, Exorcised `#cccccc`/`#333333`.
+
+Settings, status and links
+
+68. The two settings controls shall be Win95 checkboxes, each a 13px sunken white box that shows a black pixel check when on, and shall keep their labels, sub-lines and behaviour (requirements 31-37).
+69. The popup shall show its status (Idle, Haunted or Can't haunt) in a sunken Win95 status bar at the bottom of the window, together with the Tracker Radar attribution line (requirement 38), and shall not show the status in the header.
+70. The popup shall draw links `#0000ff`, and visited links `#800080`, underlined.
+71. The accent `#6633cc` shall appear in the popup only as the focus ring (`outline: 2px solid #6633cc; outline-offset: 2px`, unchanged) and as the toolbar badge ground.
+
+Size, contrast and motion
+
+72. The popup text shall meet a 4.5:1 contrast ratio against its own ground, for every text and ground pair in the contrast table of `design.md`. Disabled controls are exempt, as WCAG 1.4.3 allows.
+73. The popup shall be 360px wide and at most 600px tall, and shall honour `prefers-reduced-motion` (requirement 55).
+
+Permissions page
+
+74. The `permissions.html` page shall show a `#008080` desktop with one centred Win95 dialog window at most 440px wide, and shall not be fixed at 360px.
+75. The dialog shall have a title bar reading "Check links to other sites", the 48px tombstone sprite and the explanation sentence, worded exactly as before: "Haunted GeoCities will send cookie-free requests to the sites a haunted page links to, to find dead links. Chrome words this as access to all websites."
+76. The dialog shall have an "Allow link checks" default push button (requirement 63), whose label shall turn `#808080` and whose control shall be disabled once the permission is granted.
+77. The dialog shall show the answer to the permission request in a sunken status field.
+78. While `permissions.html` is open, nothing on it shall animate or transition.
