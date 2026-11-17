@@ -45,7 +45,7 @@ export const byCountThenName = (a: CompanyHit, b: CompanyHit) => b.count - a.cou
 /** The company's shortest category ("Advertising" over "Ad Motivated Tracking"), else "Tracker". */
 export const categoryOf = (hit: CompanyHit) => hit.categories.reduce<string | undefined>((a, c) => (!a || c.length < a.length ? c : a), undefined) ?? "Tracker";
 
-const LABEL_ROOM = 96; // a 12ch Comic Sans 11px label
+const LABEL_ROOM = 96; // a 12ch Comic Sans 12px label
 
 /**
  * Lane slots at a 72px pitch from `top` to `bottom` (the bands and the HUD), one lane centred in

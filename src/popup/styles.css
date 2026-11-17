@@ -10,7 +10,7 @@
   --title-ink: #ffffff;
   --field: #ffffff;
   --ink: #000000;
-  --sub: #333333;
+  --sub: #222222;
   --hover: #ccccff;
   --counter: #000000;
   --counter-ink: #33ff33;
@@ -334,7 +334,7 @@ body.popup .primary:disabled {
   border: 1px solid var(--dark);
   background: #cccccc;
   color: #333333;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 14px;
 }

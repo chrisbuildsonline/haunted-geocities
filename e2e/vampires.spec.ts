@@ -178,7 +178,7 @@ test("scripts caught fingerprinting become vampires; the page is not changed and
     rs.flatMap((r) => [...r.querySelectorAll<HTMLElement>(".row-title, .row-sub")].filter((e) => e.scrollWidth > e.clientWidth).map((e) => `${e.className}: ${e.textContent}`)),
   );
   expect(cut).toEqual([]);
-  expect(await popup.locator(".vampire-row .row-sub").evaluateAll((ss) => ss.map((s) => getComputedStyle(s).color))).toEqual(["rgb(51, 51, 51)", "rgb(51, 51, 51)"]);
+  expect(await popup.locator(".vampire-row .row-sub").evaluateAll((ss) => ss.map((s) => getComputedStyle(s).color))).toEqual(["rgb(34, 34, 34)", "rgb(34, 34, 34)"]);
   await expect(popup.locator('[data-count="ghosts"] .num')).toHaveText("0");
   await expect(popup.locator('[data-count="vampires"] .num')).toHaveText("2");
   expect(await popup.locator(".tag-pill.caught").first().evaluate((p) => [getComputedStyle(p).backgroundColor, getComputedStyle(p).color])).toEqual(["rgb(204, 204, 255)", "rgb(51, 0, 153)"]);

@@ -40,7 +40,7 @@ type Tokens = {
 };
 const POPUP_COLOURS: Record<string, string> = {
   face: "#c0c0c0", hilite: "#ffffff", light: "#dfdfdf", shadow: "#808080", dark: "#000000",
-  title: "#000080", titleInk: "#ffffff", field: "#ffffff", ink: "#000000", sub: "#333333",
+  title: "#000080", titleInk: "#ffffff", field: "#ffffff", ink: "#000000", sub: "#222222",
   hover: "#ccccff", counter: "#000000", counterInk: "#33ff33", link: "#0000ff", visited: "#800080",
   desktop: "#008080", accent: "#6633cc",
 };
@@ -111,6 +111,20 @@ describe("tokens", () => {
     for (const [fg, bg] of pairs) expect({ fg, bg, ok: contrast(fg, bg) >= 4.5 }).toEqual({ fg, bg, ok: true });
     // The focus ring is not text: 3:1 against both grounds.
     for (const bg of [p.face, p.field]) expect(contrast(p.accent, bg)).toBeGreaterThanOrEqual(3);
+  });
+
+  test("popup sub-lines are 12px on grey, so they reach AAA 7:1 on every ground", () => {
+    const p = tokens().popup;
+    for (const bg of [p.face, p.field, p.hover]) expect({ bg, ok: contrast(p.sub, bg) >= 7 }).toEqual({ bg, ok: true });
+  });
+
+  test("the costume's smallest text is 12px", () => {
+    const t = tokens() as Tokens & { costume: { layout: { minText: number } } };
+    expect(t.costume.layout.minText).toBe(12);
+    // No 11px type left in the prose ("11px short of the column" is a distance, not text).
+    const type11 = /Comic Sans(?: MS)? 11px|11px (?:bold|`#)|\(11px/;
+    expect(section("Costume")).not.toMatch(type11);
+    expect(section("Popup")).not.toMatch(type11);
   });
 
   test("DESIGN.md popup section describes the Win95 costume and no longer the 2024 pill", () => {

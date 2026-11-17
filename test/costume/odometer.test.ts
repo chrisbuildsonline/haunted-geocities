@@ -51,7 +51,7 @@ test("HUD stays within two rows at 375px with the new label", () => {
   expect(rule(css, "#hud")).toContain("flex-wrap: nowrap");
 });
 
-test("sub-label contrast is at least 4.5:1 and at least 11px", () => {
+test("sub-label contrast is at least 4.5:1 and at least 12px", () => {
   const sub = rule(css, ".hits .sub");
   const px = Number(sub.match(/font-size:\s*(\d+)px/)?.[1] ?? rule(css, ".hits").match(/font-size:\s*(\d+)px/)?.[1]);
   expect(px).toBeGreaterThanOrEqual(LAYOUT.minText);

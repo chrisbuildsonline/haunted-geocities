@@ -42,12 +42,12 @@ const rule = (sheet: string, selector: string) => {
 };
 
 describe("8.4 vampire label", () => {
-  test("is the ghost label: Comic Sans 11px bone on crypt, 1px spectral border, 12ch with ellipsis", () => {
+  test("is the ghost label: Comic Sans 12px bone on crypt, 1px spectral border, 12ch with ellipsis", () => {
     const tag = rule(css, ".tag, .stack");
     expect(tag).toContain("background: #000033;");
     expect(tag).toContain("color: #ffffcc;");
     expect(tag).toContain("border: 1px solid #6633cc;");
-    expect(tag).toContain('font: 11px/14px "Comic Sans MS"');
+    expect(tag).toContain('font: 12px/16px "Comic Sans MS"');
     expect(tag).toContain("max-width: min(12ch, 100%);");
     expect(tag).toMatch(/overflow: hidden;.*text-overflow: ellipsis;.*white-space: nowrap;/);
   });
@@ -279,14 +279,14 @@ describe("12.7 vampire text contrast and animation rate", () => {
       ["card title", P.bone, P.vampireLining],
       ["card body", P.bone, P.crypt],
       ["caught list", "#ff9999", P.crypt],
-      ["honest line and footer", P.hudBevelLight, P.crypt],
+      ["honest line and footer", P.bevelLight, P.crypt],
     ];
     for (const [what, fg, bg] of pairs) expect({ [what]: contrast(fg, bg) >= 4.5 }).toEqual({ [what]: true });
   });
 
-  test("the CSS draws those colours: card title on #660000, honest line #9999cc, caught list #ff9999", () => {
+  test("the CSS draws those colours: card title on #660000, honest line #ccccff, caught list #ff9999", () => {
     expect(rule(css, ".vampire-card .bar")).toContain(`background: ${P.vampireLining};`);
-    expect(rule(css, ".honest")).toContain(`color: ${P.hudBevelLight};`);
+    expect(rule(css, ".honest")).toContain(`color: ${P.bevelLight};`);
     expect(rule(css, ".did b")).toContain("color: #ff9999;");
   });
 

@@ -86,10 +86,10 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .empty { flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hud-break { display: none; }
-.hits { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; margin-left: auto; font-size: 11px; white-space: nowrap; }
-.hits-label { display: flex; flex-direction: column; min-width: 0; overflow: hidden; line-height: 13px; }
+.hits { display: flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; margin-left: auto; font-size: 12px; white-space: nowrap; }
+.hits-label { display: flex; flex-direction: column; min-width: 0; overflow: hidden; line-height: 14px; }
 .hits .label, .hits .sub { overflow: hidden; text-overflow: ellipsis; }
-.hits .sub { color: ${P.hudBevelLight}; font-size: 11px; }
+.hits .sub { color: ${P.bevelLight}; font-size: 12px; }
 .odo { display: flex; flex: none; gap: 2px; padding: 2px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; }
 .cell { display: block; width: 10px; height: 16px; overflow: hidden; background: ${P.ink}; }
 .strip { display: block; width: 10px; height: 160px; background-image: ${digitsUrl()}; }
@@ -97,7 +97,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .ring button { flex: none; padding: 0 2px; border: 0; background: none; color: ${P.ectoplasm}; font: inherit; text-decoration: underline; cursor: pointer; }
 .ring-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-#show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 40px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 11px; line-height: 12px; pointer-events: auto; }
+#show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 40px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 12px; line-height: 13px; pointer-events: auto; }
 #show-tab svg { display: block; image-rendering: pixelated; }
 
 button:focus { outline: none; }
@@ -112,11 +112,11 @@ button:focus-visible { ${ring} }
 .sprite svg { display: block; image-rendering: pixelated; }
 @keyframes hg-bob { from { transform: translateY(-${M.ghostBob.px}px); } to { transform: translateY(${M.ghostBob.px}px); } }
 @keyframes hg-sway { from { transform: translateX(-${M.ghostSway.px}px); } to { transform: translateX(${M.ghostSway.px}px); } }
-.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 11px/14px ${COMIC}; transform-origin: 50% 0; }
+.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 12px/16px ${COMIC}; transform-origin: 50% 0; }
 .stack { position: absolute; display: flex; align-items: center; justify-content: center; height: 48px; margin: 0; padding: 0; font: bold 13px ${COMIC}; box-shadow: ${HARD_SHADOW}; }
 .exorcised .sprite { opacity: .4; }
-.exorcised .tag { color: ${P.hudBevelLight}; }
-.stamp { position: absolute; top: 15px; left: 50%; padding: 0 2px; transform: translateX(-50%) rotate(-12deg); background: ${P.crypt}; color: ${P.curse}; border: 2px solid ${P.curse}; font: bold 11px/13px ${COMIC}; box-shadow: 2px 2px 0 ${P.ink}; }
+.exorcised .tag { color: ${P.bevelLight}; }
+.stamp { position: absolute; top: 15px; left: 50%; padding: 0 2px; transform: translateX(-50%) rotate(-12deg); background: ${P.crypt}; color: ${P.curse}; border: 2px solid ${P.curse}; font: bold 12px/14px ${COMIC}; box-shadow: 2px 2px 0 ${P.ink}; }
 .ghost:focus-visible { ${ring} }
 
 .vampire .bob { animation: hg-drift 3000ms ease-in-out var(--phase, 0ms) infinite alternate; }
@@ -128,21 +128,21 @@ button:focus-visible { ${ring} }
 @keyframes hg-drift { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
 .vampire:focus-visible { ${ring} }
 
-#graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 16px; padding: 0 6px 0 4px; color: ${P.bone}; font: 11px/16px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
+#graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 16px; padding: 0 6px 0 4px; color: ${P.bone}; font: 12px/16px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
 #graveyard .gy-icon svg { display: block; image-rendering: pixelated; }
-#graveyard .stones { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
-#graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: 48px; height: 54px; justify-content: flex-end; }
-#graveyard .tag { display: none; }
+#graveyard .stones { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
+#graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: auto; min-width: 48px; height: auto; justify-content: flex-end; }
+#graveyard .tag { margin-top: 4px; }
 #graveyard .stamp { top: 14px; }
 #graveyard .gy-empty { margin: 0; padding: 4px 10px; color: ${P.bone}; font: 13px/18px ${COMIC}; }
 
 .card { position: absolute; display: flex; flex-direction: column; box-sizing: border-box; width: ${L.cardWidth}px; max-height: 320px; background: ${P.crypt}; border: 2px solid; border-color: ${P.bevelLight} ${P.bevelDark} ${P.bevelDark} ${P.bevelLight}; box-shadow: ${HARD_SHADOW}; pointer-events: auto; transform-origin: top left; }
-.card .bar { display: flex; flex: none; align-items: center; gap: 6px; height: 22px; padding: 0 3px 0 6px; background: ${P.cryptViolet}; color: ${P.bone}; font: bold 14px ${TIMES}; }
+.card .bar { display: flex; flex: none; align-items: center; gap: 6px; height: 28px; padding: 0 2px 0 6px; background: ${P.cryptViolet}; color: ${P.bone}; font: bold 14px ${TIMES}; }
 .card h2 { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
-.card .close { width: 16px; height: 16px; padding: 0; font: bold 11px/10px ${COMIC}; }
+.card .close { width: 24px; height: 24px; padding: 0; font: bold 13px/18px ${COMIC}; }
 .card-body { padding: 12px; overflow-y: auto; font: 13px/1.35 ${COMIC}; color: ${P.bone}; }
 .card-body p { margin: 0; }
-.card .cat { display: inline-block; margin-bottom: 10px; padding: 0 6px; background: ${P.cryptViolet}; color: ${P.ectoplasm}; border: 1px solid ${P.spectral}; font-size: 11px; line-height: 16px; letter-spacing: .5px; text-transform: uppercase; }
+.card .cat { display: inline-block; margin-bottom: 10px; padding: 0 6px; background: ${P.cryptViolet}; color: ${P.ectoplasm}; border: 1px solid ${P.spectral}; font-size: 12px; line-height: 16px; letter-spacing: .5px; text-transform: uppercase; }
 .domains { margin: 4px 0 10px; padding: 6px 8px 6px 24px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; color: ${P.ectoplasm}; font: 13px/1.4 ${TIMES}; list-style: square; overflow-wrap: anywhere; }
 .seen { margin-bottom: 12px !important; }
 .card .act { display: block; box-shadow: 0 0 0 1px ${P.ink}; }
@@ -151,29 +151,30 @@ button:focus-visible { ${ring} }
 .vampire-card .domains { overflow-wrap: normal; word-break: keep-all; }
 .did { margin-bottom: 4px !important; }
 .did b { color: ${VAMPIRE_GLOW_HI}; font-weight: normal; }
-.honest { margin-bottom: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
+.honest { margin-bottom: 10px !important; color: ${P.bevelLight}; font-size: 12px; }
 .what { margin-bottom: 12px !important; }
-.foot { margin-top: 10px !important; color: ${P.hudBevelLight}; font-size: 11px; }
+.foot { margin-top: 10px !important; color: ${P.bevelLight}; font-size: 12px; }
 
 .tomb-marker { position: absolute; display: block; width: 16px; height: 20px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; }
 .tomb-marker svg { display: block; image-rendering: pixelated; }
 .tomb-marker:hover svg { filter: drop-shadow(0 0 3px ${P.spectral}); }
 .tomb-marker:focus-visible { ${ring} }
 
-.curse-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box; height: 18px; margin: 0; padding: 0 4px; white-space: nowrap; cursor: pointer; pointer-events: auto; background: ${P.curse}; color: ${P.ink}; border: 1px solid ${P.ink}; box-shadow: 2px 2px 0 ${P.ink}; font: bold 11px/16px ${COMIC}; }
+.curse-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box; height: 18px; margin: 0; padding: 0 4px; white-space: nowrap; cursor: pointer; pointer-events: auto; background: ${P.curse}; color: ${P.ink}; border: 1px solid ${P.ink}; box-shadow: 2px 2px 0 ${P.ink}; font: bold 12px/16px ${COMIC}; }
 .curse-badge svg { display: block; flex: none; image-rendering: pixelated; }
+.curse-badge.compact span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .curse-badge:focus-visible { outline: 2px dotted ${P.star}; outline-offset: 2px; box-shadow: 2px 2px 0 ${P.ink}, 0 0 0 5px ${P.ink}; }
 .curse-card .quote { margin-bottom: 8px !important; font-style: italic; overflow-wrap: anywhere; }
 
 .card.tombstone-card { display: block; width: ${L.tombstoneWidth}px; height: 208px; max-height: none; overflow: hidden; background: ${P.stone}; border: 2px solid; border-color: ${P.ghostWhite} ${P.stoneShadow} ${P.stoneShadow} ${P.ghostWhite}; border-radius: 88px 88px 0 0; box-shadow: ${HARD_SHADOW}; }
-.tombstone-card .close { position: absolute; top: 24px; right: 30px; z-index: 1; }
-.tombstone-card .inscription { position: absolute; inset: 16px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
+.tombstone-card .close { position: absolute; top: 24px; right: 32px; z-index: 1; }
+.tombstone-card .inscription { position: absolute; inset: 16px; top: 52px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
 .tombstone-card p { margin: 0; }
-.tombstone-card .here-lies { font-size: 11px; line-height: 14px; letter-spacing: 2px; padding-left: 2px; }
+.tombstone-card .here-lies { font-size: 12px; line-height: 15px; letter-spacing: 2px; padding-left: 2px; }
 .tombstone-card .path { margin: 6px 0; font-size: 13px; line-height: 17px; overflow-wrap: normal; word-break: keep-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 .tombstone-card .seg { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; vertical-align: top; }
-.tombstone-card .status { font-size: 11px; line-height: 14px; }
-.tombstone-card .host { font-size: 11px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tombstone-card .status { font-size: 12px; line-height: 15px; }
+.tombstone-card .host { font-size: 12px; line-height: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tombstone-card .moss { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; }
 
 .scan { position: absolute; inset: 0; background-image: ${scanUrl()}; background-size: 4px 3px; }

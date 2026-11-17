@@ -134,6 +134,20 @@ describe("popup costume CSS", () => {
     expect(pair(".tag-pill.dead-404")).toEqual(["#ffcccc", "#660000"]);
     expect(pair(".tag-pill.dead-410")).toEqual(["#ffcc99", "#663300"]);
     expect(pair(".ghost-row.exorcised .tag-pill")).toEqual(["#cccccc", "#333333"]);
+    expect([decls(STYLES, ".tag-pill")["font-size"], decls(STYLES, ".tag-pill")["font-weight"]]).toEqual(["12px", "700"]);
+  });
+
+  test("no text under 12px in the popup or on permissions.html", () => {
+    for (const [name, css] of [["styles.css", STYLES], ["permissions.css", PERMS]] as const) {
+      const sizes = values(css, "font-size").map((v) => parseFloat(v));
+      expect({ name, small: sizes.filter((px) => px < 12) }).toEqual({ name, small: [] });
+    }
+  });
+
+  test("the haunted lists scroll in the client, which ends above the status bar", () => {
+    const client = decls(STYLES, ".client");
+    expect([client.flex, client["min-height"], client["overflow-y"]]).toEqual(["1 1 auto", "0", "auto"]);
+    expect(decls(STYLES, ".statusbar").flex).toBe("none");
   });
 
   test("links are blue and purple, and #6633cc appears only in the focus ring", () => {

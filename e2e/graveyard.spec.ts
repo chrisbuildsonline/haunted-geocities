@@ -100,9 +100,9 @@ test("strip scrolls when sprites do not fit and the page does not", async ({ con
   const inView = await inShadow(function () {
     const b = (this.activeElement as HTMLElement).getBoundingClientRect();
     const row = this.querySelector("#graveyard .stones")!.getBoundingClientRect();
-    return b.left >= row.left - 1 && b.right <= row.right + 1;
+    return { ok: b.left >= row.left - 1 && b.right <= row.right + 1, b: [b.left, b.right], row: [row.left, row.right] };
   });
-  expect(inView).toBe(true);
+  expect(inView).toEqual({ ok: true, b: inView.b, row: inView.row }); // the boxes show in a failure
   await page.screenshot({ path: `${SHOTS}/crowded-375.png` });
 });
 

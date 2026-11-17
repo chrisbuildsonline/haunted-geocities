@@ -30,11 +30,51 @@ test("graveyard has HUD bevel, 1px line, hard shadow and focus ring", () => {
   expect(g).not.toMatch(/border-radius|blur/);
   const bar = block("#graveyard .gy-bar");
   expect(bar).toContain(`color: ${P.bone}`);
-  expect(bar).toMatch(/font: 11px\/16px "Comic Sans MS"/);
+  expect(bar).toMatch(/font: 12px\/16px "Comic Sans MS"/);
   expect(block("#graveyard .gy-empty")).toMatch(/font: 13px[^;]*"Comic Sans MS"/);
   // the sprites keep the costume focus ring
   expect(css).toMatch(/\.ghost:focus-visible\s*\{\s*outline: 2px dotted #ffff66; outline-offset: 2px; box-shadow: 0 0 0 5px #000000;/);
   expect(css).toMatch(/\.vampire:focus-visible\s*\{\s*outline: 2px dotted #ffff66/);
-  // no name tag under a docked sprite: the row is one sprite tall
-  expect(block("#graveyard .tag")).toContain("display: none");
+});
+
+test("a docked sprite wears its name tag: as wide as the tag, never squeezed, the row one sprite and one tag tall", () => {
+  expect(block("#graveyard .tag")).not.toContain("display: none");
+  const stone = block("#graveyard .ghost, #graveyard .vampire");
+  for (const d of ["flex: 0 0 auto", "width: auto", "min-width: 48px", "height: auto"]) expect({ d, ok: stone.includes(d) }).toEqual({ d, ok: true });
+  expect(block("#graveyard .stones")).toContain("gap: 12px");
+  expect(block("#graveyard .stones")).toContain("align-items: flex-end");
+});
+
+/** Every px font size the sheet sets, from `font:` shorthands and `font-size:`. */
+const fontSizes = (sheet: string) =>
+  [...sheet.matchAll(/font(?:-size)?:\s*(?:bold\s+|italic\s+)*(\d+(?:\.\d+)?)px/g)].map((m) => Number(m[1]));
+
+test("no costume text under 12px", () => {
+  expect(LAYOUT.minText).toBe(12);
+  const sizes = fontSizes(css);
+  expect(sizes.length).toBeGreaterThan(20);
+  expect(sizes.filter((px) => px < LAYOUT.minText)).toEqual([]);
+});
+
+test("card close buttons are 24px hit targets in a 28px title bar", () => {
+  expect(block(".card .bar")).toContain("height: 28px");
+  expect(block(".card .close")).toMatch(/width: 24px; height: 24px;/);
+  expect(block(".card .close")).toMatch(/font: bold 13px/);
+});
+
+const lum = (hex: string) => {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
+};
+const contrast = (a: string, b: string) => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi! + 0.05) / (lo! + 0.05);
+};
+
+test("secondary costume labels are bright: #ccccff on the crypt, 12:1 or more", () => {
+  for (const sel of [".hits .sub", ".honest", ".foot", ".exorcised .tag"]) {
+    expect({ sel, colour: block(sel).match(/color: (#[0-9a-f]{6})/)?.[1] }).toEqual({ sel, colour: P.bevelLight });
+  }
+  expect(contrast(P.bevelLight, P.crypt)).toBeGreaterThanOrEqual(12);
+  expect(css).not.toMatch(/(?<![\w-])color: #9999cc/); // text; the scrollbar thumb may keep it
 });

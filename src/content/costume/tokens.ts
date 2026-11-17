@@ -64,7 +64,7 @@ export const LAYOUT = {
   cardWidth: 248,
   tombstoneWidth: 176,
   starTile: 64,
-  minText: 11,
+  minText: 12,
   frameBevel: 6,
   frameGap: 4,
   edgeFrame: 12,

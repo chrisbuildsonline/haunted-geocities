@@ -74,8 +74,9 @@ describe("the stone card (req 36-43)", () => {
     for (const d of ["width: 176px", "background: #cccccc", "border-radius: 88px 88px 0 0", "border-color: #ffffff #666666 #666666 #ffffff", "box-shadow: 4px 4px 0 #000000"]) expect(stone).toContain(d);
     const ins = css.match(/\.tombstone-card \.inscription \{[^}]*\}/)![0];
     for (const d of ["position: absolute", "inset: 16px", "color: #000000", `"Times New Roman"`]) expect(ins).toContain(d);
-    expect(css).toMatch(/\.tombstone-card \.here-lies \{[^}]*font-size: 11px;[^}]*letter-spacing: 2px;/);
-    expect(css).toMatch(/\.tombstone-card \.status \{[^}]*font-size: 11px;/);
+    expect(css).toMatch(/\.tombstone-card \.here-lies \{[^}]*font-size: 12px;[^}]*letter-spacing: 2px;/);
+    expect(css).toMatch(/\.tombstone-card \.status \{[^}]*font-size: 12px;/);
+    expect(css).toMatch(/\.tombstone-card \.host \{[^}]*font-size: 12px;/);
     expect(css).toMatch(/\.tombstone-card \.moss \{[^}]*%23336633/); // moss pixels: an inline SVG strip in the moss token
   });
 });
