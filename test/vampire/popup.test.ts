@@ -44,7 +44,7 @@ describe("popup vampires", () => {
       ["nightowl-metrics.test", "Caught", "AudioContext", null],
     ]);
     const heads = [...p.doc.querySelectorAll(".list-head")].map((h) => p.text(h));
-    expect(heads).toEqual(["Ghosts 2", "Vampires 3"]);
+    expect(heads).toEqual(["Ghosts (2)", "Vampires (3)"]);
     const first = p.doc.querySelector(".vampire-row")!;
     expect(first.querySelector(".tag-pill")!.className).toBe("tag-pill caught");
     expect(p.doc.querySelectorAll(".vampire-row")[1]!.querySelector(".tag-pill")!.className).toBe("tag-pill known");
@@ -77,11 +77,11 @@ describe("popup vampires", () => {
     expect(only.doc.querySelector(".no-vampires")).toBeNull();
   });
 
-  test("bust art is 12×12 and the pills use the DESIGN tints", () => {
+  test("bust art is 12×12 and the tags use the Win95 colour pairs", () => {
     expect(VAMPIRE_BUST).toHaveLength(12);
     for (const r of VAMPIRE_BUST) expect(r).toHaveLength(12);
     const css = readFileSync(join(import.meta.dir, "../../src/popup/styles.css"), "utf8").replace(/\s+/g, " ");
-    expect(css).toContain(".tag-pill.caught { background: #f1ecfb; color: var(--accent); }");
-    expect(css).toContain(".tag-pill.known { background: #e3e6ec; color: var(--muted); }");
+    expect(css).toContain(".tag-pill.caught { background: #ccccff; color: #330099; }");
+    expect(css).toContain(".tag-pill.known { background: #cccccc; color: #000000; }");
   });
 });

@@ -3,9 +3,9 @@
 Every UI feature cites this file. There are two worlds, and they are deliberately different:
 
 - **The costume:** a 1998 GeoCities crypt drawn over any page. Only the 216 web-safe colours, Comic Sans MS / Times New Roman, original pixel art, bevels and hard edges.
-- **The popup:** a modern control room, 360px wide, soft and quiet.
+- **The popup:** a Windows 95 window, 360px wide: the same era as the crypt, kept clean and scannable.
 
-Both worlds share exactly one colour, the web-safe violet `#6633cc`. In the costume it is the spectral glow. In the popup it is the only accent. Exact values are in the `## Tokens` JSON. Where prose and JSON disagree, the JSON wins.
+Both worlds share the web-safe violet `#6633cc`. In the costume it is the spectral glow. In the popup it is only the focus ring. Exact values are in the `## Tokens` JSON. Where prose and JSON disagree, the JSON wins.
 
 ## References
 
@@ -211,146 +211,160 @@ All overlay text meets 4.5:1:
 
 ## Popup
 
-The modern control room. It is 360px wide, at most 600px tall, and lists scroll inside their own surface.
+A Windows 95 window, the same era as the crypt. It is 360px wide and at most 600px tall: the title bar and the status bar stay put, and the client area between them scrolls.
+
+**The era costume wins over the old modern-dashboard rules.** This is a Costume Contest entry, and the judges said a 2024 flat popup broke the costume. Where the earlier popup rules (borderless floating cards, no nesting, rounded corners, soft blurred shadows, a near-black primary button, the system font) disagree with this section, this section wins. The popup keeps what made it scannable: one primary action, a fixed type scale, 4.5:1 contrast, the focus ring and the reduced-motion rule. The Win95 system greys (`#c0c0c0`, `#dfdfdf`, `#808080`) are not web-safe colours. They are exempt from the web-safe rule in `era-accuracy.md`, which governs the page costume, not the extension's own UI.
 
 ### Look
 
-- **Canvas and surfaces:** the canvas is `#eef0f4`. Content sits on white `#ffffff` surfaces with radius 18px, floating with a soft shadow `0 1px 2px rgba(17,19,24,.04), 0 8px 24px rgba(17,19,24,.06)` (ref 02).
-  - Surfaces are never bordered.
-  - Surfaces are never nested inside other surfaces.
-  - The gap between surfaces is 12px.
-- **Primary action:** exactly one, Haunt or Un-haunt. It is a near-black pill: `#111318` ground, `#ffffff` text, 48px tall, full width, radius 999, 15px semibold.
-- **Accent: `#6633cc` spectral violet, the one accent.**
-  - It is the costume's ghost-glow colour, so the popup visibly belongs to the crypt.
-  - It is web-safe, so it is the same colour in both worlds.
-  - It reads as spooky without the danger connotation of red or the success connotation of green.
-  - It is 7.2:1 on white, so it works for text links as well as fills.
-  - Used only for: links, selection/toggle-on, count emphasis, the Exorcise text button, and focus rings. Nothing else is coloured.
-- **Text colours:** ink `#111318` and muted `#5b6170` (6.2:1 on white).
-- **Font stack:** `system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`. Numbers use `font-variant-numeric: tabular-nums`.
-- **Status pill** (24px, radius 999, 12px semibold, 10px side padding):
-  - Haunted: `#efe9fb`/`#6633cc`.
-  - Idle: `#e3e6ec`/`#5b6170`.
-  - Restricted: `#fff1e0`/`#8a4600`.
+- **Window:** `#c0c0c0` face with a 2px raised bevel: `#ffffff` outer and `#dfdfdf` inner on the top-left, `#000000` outer and `#808080` inner on the bottom-right. 3px between the bevel and the title bar.
+- **Title bar:** 24px, solid `#000080`, the 16px pixel ghost in white and `Haunted GeoCities` in bold white 13px. No status in it.
+- **Bevels are box-shadows:** every bevel is an inset `box-shadow` with `0` blur, so corners stay square. Radius is `0` everywhere. Nothing has a blurred shadow or a gradient.
+  - Raised (window, push buttons): `inset -1px -1px 0 #000000, inset 1px 1px 0 #ffffff, inset -2px -2px 0 #808080, inset 2px 2px 0 #dfdfdf`.
+  - Sunken (list box, checkbox): `inset -1px -1px 0 #ffffff, inset 1px 1px 0 #808080, inset -2px -2px 0 #dfdfdf, inset 2px 2px 0 #000000`.
+  - Status field: 1px only, `inset 1px 1px 0 #808080, inset -1px -1px 0 #ffffff`.
+- **Group boxes:** content sits in etched group boxes (`<fieldset>` with a bold `<legend>`), never in floating cards. The etch is 2px: a 1px `#808080` border plus `1px 1px 0 #ffffff, inset 1px 1px 0 #ffffff`, with a 1px margin for the outer white line. 8px between group boxes, 8px window padding, 12px inside a group box.
+- **Primary action:** exactly one, Haunt or Un-haunt, drawn as the Win95 default push button: full width, 40px, `#c0c0c0` face, the raised bevel, an extra 1px `#000000` frame (`0 0 0 1px #000000`) and a bold 13px `#000000` label. Pressed, the bevel inverts and the frame stays. While the answer is on its way the button is disabled: label `#808080` with the white emboss `1px 1px 0 #ffffff`.
+- **Small push buttons:** Exorcise and Let it back, 24px, the raised bevel, 12px `#000000` label. Pressed, the bevel inverts.
+- **Checkboxes:** each setting is a Win95 checkbox left of its label: a 13px sunken white box with a 7px black pixel check when on. The sub-line sits under the label.
+- **Status bar:** two sunken status fields at the bottom of the window: the state (`Idle`, `Haunted` or `Can't haunt`) and the Tracker Radar attribution line. 12px.
+- **Accent: `#6633cc` spectral violet** is the focus ring (`outline: 2px solid #6633cc; outline-offset: 2px` on every control) and the toolbar badge ground. Nothing else in the popup uses it.
+- **Links:** `#0000ff`, visited `#800080`, underlined.
+- **Text colours:** `#000000` ink, `#333333` sub-lines and attribution.
+- **Fonts:** UI text in `'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, Geneva, sans-serif`. The site title in Times New Roman (`"Times New Roman", Times, serif`). The hit-counter digits in Courier New (`"Courier New", Courier, monospace`) with `font-variant-numeric: tabular-nums`. No web fonts.
 - **Type scale:**
 
 | px | Weight | Use |
 |----|--------|-----|
-| 12 | 500 | Captions, attribution |
-| 13 | 400 | Muted short lines |
-| 15 | 500 | Body, row titles, buttons |
-| 20 | 650 | Section headings |
-| 28 | 700, -0.02em | Screen title |
-| 36 | 700, -0.03em | Count numbers |
-
-- **Spacing scale:** 4, 8, 12, 16, 20, 24, 32. The popup padding is 16. Surface inner padding is 20. Rows are 56px tall with 12px between icon and text.
-- **Lists** (ref 03): each row is a 32px icon tile (radius 10, canvas fill, pixel sprite at 2x) + kind/name (15px ink) + short line (13px muted), with the action on the right. There are no dividers. Hover is a `#f5f6f8` fill with radius 12.
-- **Secondary button:** Exorcise. 32px tall, radius 999, `#f1ecfb` ground, `#6633cc` 13px semibold text.
-- **Toggle:** 40×24 track, radius 12. Off is `#d6d9e0`, on is `#6633cc`. The knob is a 20px white circle with `0 1px 2px rgba(17,19,24,.2)`.
-- **Focus:** `outline: 2px solid #6633cc; outline-offset: 2px` on every control.
+| 12 | 400 | Sub-lines, attribution, status bar, small buttons, count labels |
+| 13 | 400 | Body text, setting labels |
+| 13 | 700 | Title bar, primary label, group legends, row names |
+| 24 | 700 | Site title (Times New Roman), hit-counter digits (Courier New) |
 
 ### Screen: idle (not haunted)
 
 ```text
-[ghost 24] Haunted GeoCities                 ( Idle )
-example.org                                    <- 28px title
-+------------------------------------------+
-|  Turn this page into a 1998 crypt.       |  15px ink
-|  Ghosts, vampires and dead links show up |  13px muted
-|  ( ######## Haunt this page ######## )   |  near-black pill
-+------------------------------------------+
-+------------------------------------------+
-|  Check links to other sites      [o  ]   |
-|  Asks Chrome to visit linked sites. Off. |
-|  Sound effects                   [o  ]   |
-|  Muted                                   |
-+------------------------------------------+
-Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0   <- 12px muted
++==[ghost16] Haunted GeoCities========== (title #000080, bold white 13) =+
+| example.org                          <- Times New Roman bold 24        |
+| +- Haunt -----------------------------------------------------------+ |
+| | Turn this page into a 1998 crypt.                                  | |
+| | Ghosts, vampires and dead links show up.            <- 12px #333   | |
+| | [#### Haunt this page ####]  <- default push button, 40px          | |
+| +--------------------------------------------------------------------+ |
+| +- Settings ---------------------------------------------------------+ |
+| | [ ] Check links to other sites                                     | |
+| |     Asks Chrome to visit linked sites. Off.                        | |
+| | [ ] Sound effects                                                  | |
+| |     Muted                                                          | |
+| +--------------------------------------------------------------------+ |
+| [ Idle ]  [ Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0 ]  | <- sunken status bar
++========================================================================+
 ```
 
 ### Screen: haunted
 
 ```text
-[ghost 24] Haunted GeoCities              ( Haunted )
-example.org
-TimesSquare/Midway/7315                        <- address line: 13px muted, 4px under the title
-+------------------------------------------+
-|  7        1         3         2          |  36px numbers, 2x2 at <340
-|  Ghosts   Vampires  Tombstones Curses    |  13px muted, 16px sprite each
-|  ( ######### Un-haunt ######### )        |
-+------------------------------------------+
-+------------------------------------------+
-|  Ghosts                           7      |  20px heading, count in accent
-|  [g] AdCo Inc                [Exorcise]  |
-|      4 domains · Advertising             |
-|  [g] PixelTrack             (Exorcised)  |  tinted pill, row at 60% ink
-|      2 domains · Analytics               |
-|  Vampires                         1      |
-|  [v] cdn.example-metrics.net             |
-|      Canvas + audio fingerprinting       |
-+------------------------------------------+
-+--- settings surface (as idle) -----------+
++==[ghost16] Haunted GeoCities============================================+
+| example.org                                        <- 24px bold serif   |
+| TimesSquare/Midway/7315                            <- address line, 12px|
+| +- Found on this page -----------------------------------------------+ |
+| | [ 0007 ]  [ 0001 ]  [ 0003 ]  [ 0002 ]  <- #000 cells, #33ff33 digits | |
+| |  [g]       [v]       [t]       [c]       <- 16px sprite              | |
+| |  Ghosts    Vampires  Tombstones Curses   <- kind label under each     | |
+| | [#### Un-haunt ####]                                                  | |
+| +--------------------------------------------------------------------+ |
+| +- Ghosts (7) --------------------------------------------------------+ |
+| | +-sunken white list box-------------------------------------------+ | |
+| | | [g32] AdCo Inc                                      [Exorcise]  | | |
+| | |       4 domains · Advertising                                   | | |
+| | | [g32] PixelTrack                         (Exorcised) [Let it back]| | |
+| | +-----------------------------------------------------------------+ | |
+| +--------------------------------------------------------------------+ |
+| +- Vampires (1) / Tombstones / Curses: same list box, same rows ------+ |
+| +- Settings (as idle) ------------------------------------------------+ |
+| [ Haunted ]  [ Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0 ] |
++========================================================================+
 ```
 
-- **Legend:** each count tile carries its 16px sprite, and the label under the number names the kind. The tiles are the legend.
-- **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 13px muted line under the title, `.address` with `margin-top: -8px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
-- **List order:** ghosts sorted by request count, then vampires.
+- **Hit counters:** each count is a black `#000000` cell with `#33ff33` Courier New bold 24px digits, padded with zeros to four digits like a 1998 hit counter. The zeros are drawn by CSS (`content: attr(data-pad) / ""`), so a screen reader reads `7 Ghosts`, not `0007`. The 16px sprite and the kind label sit under each cell. Four in a row, a 2x2 grid under 340px.
+- **Address line:** the page host's neighborhood address (the same one the costume's bar shows) as one 12px `#333333` line under the title, `.address` with `margin-top: -6px` so it reads with the title. It may break anywhere rather than overflow. Haunted screen only, and only when the URL has a host.
+- **Lists:** a group box per kind (`Ghosts (7)`, `Vampires (1)`, `Tombstones (3)`, `Curses (2)`), each holding a sunken white list box that scrolls at 280px. Ghosts by request count, then vampires by name, then tombstones and curses in the order reported.
+- **Rows:** a 32px square sprite tile + the name in bold 13px + a 12px sub-line, the action on the right. Hover is a `#ccccff` ground. Exorcised rows keep full contrast: the `Exorcised` tag and the `Let it back` button already say the state.
 - **Ghost row tiles:** each ghost sprite wears the same hem tint as its lane ghost (see the hem tint rule under Pixel-art grid), so neighbouring rows never share a hem colour.
-- **Vampire rows:** a caught vampire has the `Caught` pill and what it read (`Canvas readback · font probing`). A known vampire (on the list, not caught here) has the `Known` pill and the line `On the Tracker Radar fingerprint list`.
-- **Empty list:** the surface shows `No ghosts here. Suspiciously clean.` (15px ink) and `Trackers that load later will appear here.` (13px muted).
+- **Vampire rows:** a caught vampire has the `Caught` tag and what it read (`Canvas readback · font probing`). A known vampire (on the list, not caught here) has the `Known` tag and the line `On the Tracker Radar fingerprint list`.
+- **Tags:** square, a 1px `#000000` border, 11px bold. Ground / text: Caught `#ccccff`/`#330099`, Known `#cccccc`/`#000000`, 404 `#ffcccc`/`#660000`, 410 `#ffcc99`/`#663300`, Exorcised `#cccccc`/`#333333`.
+- **Empty states:** a kind with nothing found shows one line instead of its list box. Lines of neighbouring empty kinds share one `Nothing found` group box, so a clean page stays short: `No ghosts here. Suspiciously clean.` (13px ink) and `Trackers that load later will appear here.`, `No vampires. Your blood is safe.`, `No tombstones. Every link is alive.`, `No curses. This page plays fair.` (12px `#333333`).
 
 ### Screen: restricted page
 
 Applies to `chrome://`, `chrome-extension://`, `edge://`, `about:`, `view-source:`, the Chrome Web Store, the PDF viewer, and `file://` without access.
 
 ```text
-[ghost 24] Haunted GeoCities           ( Can't haunt )
-This page is protected                         <- 28px
-+------------------------------------------+
-|  Chrome doesn't let extensions draw on   |
-|  its own pages. Open any website and     |
-|  press Haunt there.                      |  13px muted, no pill shown
-+------------------------------------------+
-+--- settings surface ---------------------+
++==[ghost16] Haunted GeoCities============================================+
+| This page is protected                             <- 24px bold serif   |
+| +- Why not -----------------------------------------------------------+ |
+| | Chrome doesn't let extensions draw on its own pages. Open any website | |
+| | and press Haunt there.                  (no primary push button)      | |
+| +--------------------------------------------------------------------+ |
+| +- Settings (as idle) ------------------------------------------------+ |
+| [ Can't haunt ]  [ Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0 ] |
++========================================================================+
 ```
+
+The Settings group box stays on this screen, as it always has, so link checks and sound can be set from any tab.
 
 ### Row: "Check links to other sites" (opt-in)
 
 - **Off by default.** Sub-line: `Asks Chrome to visit linked sites. Off.`
-- **Turning it on:** opens `permissions.html` in a new tab. The popup never asks Chrome itself, because Chrome's permission dialog closes the toolbar popup before it answers. The toggle springs back to off and the sub-line reads `Finish on the page that just opened.`
-- **On:** whenever the popup opens (and while it stays open) the toggle follows `chrome.permissions.contains`. When granted the sub-line reads `Checking links on other sites too.`
-- **Turning it off:** removes the permission from the popup directly.
+- **Ticking it:** opens `permissions.html` in a new tab. The popup never asks Chrome itself, because Chrome's permission dialog closes the toolbar popup before it answers. The checkbox clears again and the sub-line reads `Finish on the page that just opened.`
+- **On:** whenever the popup opens (and while it stays open) the checkbox follows `chrome.permissions.contains`. When granted the sub-line reads `Checking links on other sites too.`
+- **Clearing it:** removes the permission from the popup directly.
 - **Scope:** same-origin links are always checked.
+- The control is a native checkbox with `role="switch"`, so assistive tech announces an on/off setting.
 
 ### Page: `permissions.html` (link-check permission)
 
-A tab, not a popup, in the popup's look scaled to a page. The body is not fixed at 360px. Nothing on it animates, not even the pill hover.
+A tab, not a popup: one Win95 dialog on an empty `#008080` desktop. The body is not fixed at 360px. Nothing on it animates or transitions, and nothing changes on hover.
 
 ```text
-                 [ghost 24] Haunted GeoCities            <- header, as the popup
-                +----------------------------------+
-                |  [tomb]                          |  48px tile, #efe9fb, sprite #6633cc
-                |  Check links                     |  28px/700 title, balanced
-                |  to other sites                  |
-                |  Haunted GeoCities will send     |  15px muted #5b6170, one honest
-                |  cookie-free requests ...        |  explanation (the exact copy below)
-                |  ( ###### Allow link checks ###### )  near-black pill, 48px
-                |  (* Link checks are on. ... )    |  status pill, hidden until answered
-                +----------------------------------+
+#008080 desktop, nothing else on it
+          +==[ghost16] Check links to other sites===================+
+          |  [tomb48]  Haunted GeoCities will send cookie-free      |
+          |            requests to the sites a haunted page links   |
+          |            to, to find dead links. Chrome words this    |
+          |            as access to all websites.                   |
+          |  [#### Allow link checks ####]  <- default push button  |
+          |  [# Link checks are on. You can close this tab. ]       | <- sunken status field,
+          +=========================================================+    hidden until answered
 ```
 
-- **Canvas** `#eef0f4`. **Column** max 440px, centred, 12vh from the top (32px under 480px wide).
-- **Surface:** one white card, radius 18, the popup shadow, 32px padding (24/20 under 480px).
-- **Copy:** title `Check links to other sites`. Explanation, exactly: `Haunted GeoCities will send cookie-free requests to the sites a haunted page links to, to find dead links. Chrome words this as access to all websites.`
-- **Button:** `Allow link checks`, the popup pill (`#111318`/`#ffffff`, 48px, full width). It calls `chrome.permissions.request` straight from the click. Once granted it is disabled and turns quiet: `#e3e6ec` ground, `#5b6170` text (5.1:1). After a refusal it stays enabled so the user can try again.
-- **Status pill** (`role="status"`, polite): 13px semibold, radius 999 (14 when it wraps on a phone), a 6px dot in the text colour.
-  - Granted: `#efe9fb`/`#6633cc`, `Link checks are on. You can close this tab.` (or `Link checks are already on.` when the page opens after a grant).
-  - Refused: `#fff1e0`/`#8a4600`, `Chrome didn't allow it. Link checks stay off.`
+- **Dialog:** at most 440px wide, centred, 12vh from the top (32px under 480px wide), the window bevel. The title bar text is the page's `h1`, `Check links to other sites`.
+- **Body:** a message box. The 48px headstone sprite left of the explanation, which is exactly: `Haunted GeoCities will send cookie-free requests to the sites a haunted page links to, to find dead links. Chrome words this as access to all websites.`
+- **Button:** `Allow link checks`, the default push button, full width. It calls `chrome.permissions.request` straight from the click. Once granted it is disabled: label `#808080` with the white emboss `1px 1px 0 #ffffff`. After a refusal it stays enabled so the user can try again.
+- **Status field** (`role="status"`, polite): 12px, 1px sunken, a square 6px marker in the text colour.
+  - Granted: `#000000` on `#ffffff`, `Link checks are on. You can close this tab.` (or `Link checks are already on.` when the page opens after a grant).
+  - Refused: `#660000` on `#ffcccc`, `Chrome didn't allow it. Link checks stay off.`
 - **Focus:** the popup ring, `2px solid #6633cc`, offset 2px.
+
+### Contrast (popup)
+
+| Text | Ground | Ratio |
+|------|--------|-------|
+| `#000000` body, labels, legends | `#c0c0c0` face | 11.5:1 |
+| `#333333` sub-lines, attribution | `#c0c0c0` face | 6.9:1 |
+| `#000000` / `#333333` | `#ffffff` list box, status field | 21:1 / 12.6:1 |
+| `#000000` / `#333333` | `#ccccff` row hover | 13.6:1 / 8.2:1 |
+| `#ffffff` title bar text | `#000080` | 16.0:1 |
+| `#33ff33` counter digits | `#000000` | 15.5:1 |
+| `#0000ff` link / `#800080` visited | `#c0c0c0` | 4.7:1 / 5.2:1 |
+| Tags and the refused status | their grounds | 7.0:1 or more |
+| `#6633cc` focus ring (not text, 3:1 needed) | `#c0c0c0` / `#ffffff` | 4.0:1 / 7.2:1 |
+
+Disabled controls are the one exception: the granted `Allow link checks` label at `#808080` on `#c0c0c0` is 2.2:1. WCAG 1.4.3 exempts inactive components, and the status field next to it states the result at 21:1.
 
 ### Toolbar badge
 
-While a tab is haunted, the extension icon carries that tab's total: ghosts (vampires included) + tombstones + curses, the same sum as the popup tiles.
+While a tab is haunted, the extension icon carries that tab's total: ghosts (vampires included) + tombstones + curses, the same sum as the popup's hit counters.
 
 - Text: empty at 0, `1` to `99`, then `99+`.
 - Colours: `#6633cc` ground, `#ffffff` text (7.1:1), the one accent.
@@ -358,7 +372,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 ### Row: audio toggle
 
-- **Default:** `Sound effects`, toggle off, sub-line `Muted`.
+- **Default:** `Sound effects`, checkbox clear, sub-line `Muted`.
 - **When on:** the sub-line reads `On · plays only after you click`. Sound starts only from that gesture. There is no ambient loop.
 - **What plays:** the Haunt click plays the whoosh (see "Haunt moment"). Opening a card plays one short sound: a ghost card a soft "ooo", a vampire card a low organ stab, a tombstone card a stone thud, a curse card a short sting. Closing a card, or clicking the marker of the card already open, plays nothing.
 
@@ -431,7 +445,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 - **Marquee:** 60px/s linear. It restarts each line from the right edge and pauses while the tab is hidden.
 - **Twinkles:** 4-point stars fade 0.4 ↔ 1 over 2000ms (0.5 Hz).
 - **Under-construction sign:** 1 Hz.
-- **Popup:** toggle knob 160ms `out`. Counts tween to their new value over 200ms. List rows enter with a 120ms opacity fade. No other popup motion.
+- **Popup:** none. The Win95 window does not move: no transitions, no animations, and the counts change in place.
 - **3 Hz ceiling:** no luminance alternation has a period under 1000ms anywhere in this system, so it stays well under the 3 Hz limit.
 
 **Reduced-motion rules** (`prefers-reduced-motion: reduce`, read live through a `matchMedia` change listener):
@@ -441,7 +455,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 - The marquee is static. Its first line is shown and truncated with an ellipsis. Lines advance only on Hide/Show.
 - Ghosts and vampires sit still at their slot centres. Twinkles are off. The sign shows frame 1.
 - The haunt and un-haunt sequences are replaced by the cross-fades above.
-- The popup count tween is replaced by an instant value change.
+- The popup has no motion to reduce; its `prefers-reduced-motion: reduce` block stays as a guard.
 
 ## Tokens
 
@@ -516,26 +530,47 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
   },
   "popup": {
     "width": 360,
-    "canvas": "#eef0f4",
-    "surface": "#ffffff",
-    "ink": "#111318",
-    "muted": "#5b6170",
+    "maxHeight": 600,
+    "face": "#c0c0c0",
+    "hilite": "#ffffff",
+    "light": "#dfdfdf",
+    "shadow": "#808080",
+    "dark": "#000000",
+    "title": "#000080",
+    "titleInk": "#ffffff",
+    "field": "#ffffff",
+    "ink": "#000000",
+    "sub": "#333333",
+    "hover": "#ccccff",
+    "counter": "#000000",
+    "counterInk": "#33ff33",
+    "link": "#0000ff",
+    "visited": "#800080",
+    "desktop": "#008080",
     "accent": "#6633cc",
-    "accentTint": "#efe9fb",
-    "pill": "#111318",
-    "pillInk": "#ffffff",
-    "hover": "#f5f6f8",
-    "toggleOff": "#d6d9e0",
-    "statusIdle": ["#e3e6ec", "#5b6170"],
-    "statusHaunted": ["#efe9fb", "#6633cc"],
-    "statusRestricted": ["#fff1e0", "#8a4600"],
-    "radius": 18,
-    "radiusTile": 10,
-    "typeScale": [12, 13, 15, 20, 28, 36],
-    "spacing": [4, 8, 12, 16, 20, 24, 32],
-    "shadow": "0 1px 2px rgba(17,19,24,.04), 0 8px 24px rgba(17,19,24,.06)",
-    "pillHeight": 48,
-    "rowHeight": 56
+    "tags": {
+      "caught": ["#ccccff", "#330099"],
+      "known": ["#cccccc", "#000000"],
+      "dead404": ["#ffcccc", "#660000"],
+      "dead410": ["#ffcc99", "#663300"],
+      "exorcised": ["#cccccc", "#333333"]
+    },
+    "radius": 0,
+    "blur": 0,
+    "fonts": {
+      "ui": ["MS Sans Serif", "Microsoft Sans Serif", "Tahoma", "Geneva", "sans-serif"],
+      "title": ["Times New Roman", "Times", "serif"],
+      "counter": ["Courier New", "Courier", "monospace"]
+    },
+    "typeScale": [12, 13, 24],
+    "spacing": [4, 8, 12],
+    "titleBar": 24,
+    "primaryHeight": 40,
+    "buttonHeight": 24,
+    "checkbox": 13,
+    "rowTile": 32,
+    "listMaxHeight": 280,
+    "dialogMaxWidth": 440
   },
   "motion": {
     "fast": 120,

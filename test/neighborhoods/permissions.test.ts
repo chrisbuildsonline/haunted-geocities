@@ -151,27 +151,27 @@ describe("permissions.html: the page", () => {
   test("the page has the heading, the one-sentence explanation and one Allow link checks button", async () => {
     const { doc, app } = await page();
     expect(doc.querySelector("h1")?.textContent).toBe("Check links to other sites");
-    expect(app.querySelectorAll("section.surface")).toHaveLength(1);
+    expect(app.querySelectorAll(".dialog")).toHaveLength(1);
     expect([...app.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Allow link checks"]);
-    expect(app.querySelector("section.surface p.muted")?.textContent).toBe(EXPLANATION);
+    expect(app.querySelector(".dialog p.explain")?.textContent).toBe(EXPLANATION);
   });
   test("the explanation text is exact", async () => {
     const { app } = await page();
     expect([...app.querySelectorAll("p")].map((p) => p.textContent)).toContain(EXPLANATION);
   });
-  test("the button is a pill with the popup class", async () => {
+  test("the button is the popup's default push button", async () => {
     const { allow } = await page();
-    expect(allow.className).toBe("pill");
+    expect(allow.className).toBe("primary");
     expect(allow.type).toBe("button");
-    expect(rule(read("styles.css"), ".pill")).toContain("background: var(--pill)");
+    expect(rule(read("styles.css"), ".primary")).toContain("background: var(--face)");
   });
-  test("CSS: canvas #eef0f4, surface white with an 18px radius", () => {
+  test("CSS: a #c0c0c0 Win95 window on the #008080 desktop, square corners", () => {
     const css = read("styles.css");
-    expect(rule(css, ":root")).toContain("--canvas: #eef0f4");
-    expect(rule(css, ":root")).toContain("--surface: #ffffff");
-    expect(rule(css, ":root")).toContain("--radius: 18px");
-    expect(rule(css, ".surface")).toContain("border-radius: var(--radius)");
-    expect(read("permissions.css")).not.toMatch(/--(canvas|surface|radius)\s*:/); // the page keeps the popup tokens
+    expect(rule(css, ":root")).toContain("--face: #c0c0c0");
+    expect(rule(css, ":root")).toContain("--desktop: #008080");
+    expect(rule(css, ".window")).toContain("box-shadow: var(--raised)");
+    expect(read("permissions.css")).not.toMatch(/border-radius:\s*[1-9]/);
+    expect(read("permissions.css")).not.toMatch(/--(face|desktop|title|shadow)\s*:/); // the page keeps the popup tokens
   });
   test("CSS: the body is not fixed at 360px", () => {
     const body = rule(read("permissions.css"), "body.permissions");

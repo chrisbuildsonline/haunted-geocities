@@ -271,7 +271,7 @@ describe("12.7 vampire text contrast and animation rate", () => {
   };
   const popupCss = readFileSync(join(import.meta.dir, "../../src/popup/styles.css"), "utf8").replace(/\s+/g, " ");
   const popupVar = (name: string) => popupCss.match(new RegExp(`--${name}: (#[0-9a-f]{6});`, "i"))![1]!;
-  const pill = (kind: string) => popupCss.match(new RegExp(`\\.tag-pill\\.${kind} \\{ background: (#[0-9a-f]{6}); color: var\\(--(\\w+)\\);`, "i"))!;
+  const pill = (kind: string) => popupCss.match(new RegExp(`\\.tag-pill\\.${kind} \\{ background: (#[0-9a-f]{6}); color: (#[0-9a-f]{6});`, "i"))!;
 
   test("costume vampire text pairs meet 4.5:1", () => {
     const pairs: [string, string, string][] = [
@@ -290,12 +290,12 @@ describe("12.7 vampire text contrast and animation rate", () => {
     expect(rule(css, ".did b")).toContain("color: #ff9999;");
   });
 
-  test("popup Caught and Known pills and the row line meet 4.5:1", () => {
+  test("popup Caught and Known tags and the row line meet 4.5:1", () => {
     const caughtPill = pill("caught");
     const knownPill = pill("known");
-    expect(contrast(popupVar(caughtPill[2]!), caughtPill[1]!)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(popupVar(knownPill[2]!), knownPill[1]!)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(popupVar("muted"), popupVar("surface"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(caughtPill[2]!, caughtPill[1]!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(knownPill[2]!, knownPill[1]!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(popupVar("sub"), popupVar("field"))).toBeGreaterThanOrEqual(4.5);
   });
 
   test("no vampire animation period under 333ms (3 Hz): the only loop is the 3000ms alternating drift", () => {

@@ -32,12 +32,12 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
   const [state, settings] = await Promise.all([ask("GET_STATE"), createSettings(doc, api)]);
 
   const render = (s: TabState, opts: { focus?: boolean; error?: string } = {}) => {
-    // A refresh must not lose a keyboard user's place (the pill or a ghost row's button).
+    // A refresh must not lose a keyboard user's place (the primary button or a ghost row's button).
     const was = doc.activeElement as HTMLElement | null;
     const company = was?.dataset?.company;
     root.dataset.screen = screenFor(s);
     root.replaceChildren(...renderScreen(doc, { state: s, settings, onPrimary: () => act(s), onExorcise, error: opts.error }));
-    if (opts.focus || was?.classList.contains("pill")) root.querySelector<HTMLButtonElement>(".pill")?.focus();
+    if (opts.focus || was?.classList.contains("primary")) root.querySelector<HTMLButtonElement>(".primary")?.focus();
     else if (company) [...root.querySelectorAll<HTMLElement>("[data-company]")].find((b) => b.dataset.company === company)?.focus();
   };
 
@@ -54,7 +54,7 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
   });
 
   const act = async (current: TabState) => {
-    const button = root.querySelector<HTMLButtonElement>(".pill");
+    const button = root.querySelector<HTMLButtonElement>(".primary");
     if (button) {
       button.disabled = true;
       button.setAttribute("aria-busy", "true");

@@ -10,13 +10,14 @@ export const SOUND_SUB = { off: "Muted", on: "On · plays only after you click" 
 
 function row(doc: Document, id: string, title: string, sub: string, checked: boolean) {
   const subEl = h(doc, "p", { class: "row-sub", id: `${id}-sub`, "aria-live": "polite" }, sub);
-  const input = h(doc, "input", { type: "checkbox", role: "switch", id, class: "switch", "aria-describedby": subEl.id });
+  // A Win95 checkbox, left of its label. It keeps role="switch": it turns a setting on and off.
+  const input = h(doc, "input", { type: "checkbox", role: "switch", id, class: "check", "aria-describedby": subEl.id });
   input.checked = checked;
-  const el = h(doc, "div", { class: "row" }, h(doc, "div", { class: "row-text" }, h(doc, "label", { for: id, class: "row-title" }, title), subEl), input);
+  const el = h(doc, "div", { class: "row" }, input, h(doc, "div", { class: "row-text" }, h(doc, "label", { for: id, class: "row-title" }, title), subEl));
   return { el, input, subEl };
 }
 
-/** The settings surface. Built once per popup and kept across screen changes. */
+/** The Settings group box. Built once per popup and kept across screen changes. */
 export async function createSettings(doc: Document, api: typeof chrome): Promise<HTMLElement> {
   const origins = { origins: LINK_CHECK_ORIGINS };
   const [linkOn, stored] = await Promise.all([
@@ -59,5 +60,5 @@ export async function createSettings(doc: Document, api: typeof chrome): Promise
     void api.storage.local.set({ [AUDIO_KEY]: on });
   });
 
-  return h(doc, "section", { class: "surface settings", "aria-label": "Settings" }, link.el, sound.el);
+  return h(doc, "fieldset", { class: "group settings" }, h(doc, "legend", {}, "Settings"), link.el, sound.el);
 }

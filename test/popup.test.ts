@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Window } from "happy-dom";
 import { mountPopup } from "../src/popup/app";
 import { AUDIO_KEY, LINK_CHECK_ORIGINS, type TabState } from "../src/data/types";
@@ -49,7 +51,7 @@ const toggle = async (input: HTMLInputElement) => {
 };
 
 describe("popup screens", () => {
-  test("idle: hostname title, Idle pill, one Haunt button, settings, attribution", async () => {
+  test("idle: hostname title, Idle status, one Haunt button, settings, attribution", async () => {
     const { root } = await mount();
     expect(root.dataset.screen).toBe("idle");
     expect(text(root.querySelector("h1"))).toBe("example.org");
@@ -61,7 +63,7 @@ describe("popup screens", () => {
     expect(root.querySelectorAll('input[type="checkbox"][role="switch"]')).toHaveLength(2);
   });
 
-  test("haunted: Haunted pill, four zero tiles, empty list text, one Un-haunt button", async () => {
+  test("haunted: Haunted status, four zero counters, empty list text, one Un-haunt button", async () => {
     const { root } = await mount({ state: { haunted: true } });
     expect(root.dataset.screen).toBe("haunted");
     expect(text(root.querySelector('[data-status]'))).toBe("Haunted");
@@ -78,7 +80,7 @@ describe("popup screens", () => {
     expect(text(root)).toContain(ATTRIBUTION);
   });
 
-  test("restricted: protected title, Can't haunt pill, no button", async () => {
+  test("restricted: protected title, Can't haunt status, no button", async () => {
     const { root } = await mount({ state: { restricted: true, url: "chrome://version" } });
     expect(root.dataset.screen).toBe("restricted");
     expect(text(root.querySelector("h1"))).toBe("This page is protected");
@@ -88,11 +90,11 @@ describe("popup screens", () => {
     expect(text(root)).toContain(ATTRIBUTION);
   });
 
-  test("the ghost mark is an inline 24px SVG hidden from assistive tech", async () => {
+  test("the ghost mark is an inline 16px SVG hidden from assistive tech", async () => {
     const { root } = await mount();
     const svg = root.querySelector("header svg")!;
-    expect(svg.getAttribute("width")).toBe("24");
-    expect(svg.getAttribute("height")).toBe("24");
+    expect(svg.getAttribute("width")).toBe("16");
+    expect(svg.getAttribute("height")).toBe("16");
     expect(svg.getAttribute("aria-hidden")).toBe("true");
   });
 
@@ -230,11 +232,11 @@ describe("ghost list", () => {
     expect(rows(root).map((r) => text(r.querySelector("button")))).toEqual(["Exorcise", "Exorcise", "Exorcise", "Exorcise"]);
     expect(rows(root)[0]!.querySelector(".icon-tile svg")).not.toBeNull();
     expect(text(root.querySelector('[data-count="ghosts"] .num'))).toBe("4");
-    expect(text(root.querySelector(".list-head"))).toBe("Ghosts 4");
+    expect(text(root.querySelector(".list-head"))).toBe("Ghosts (4)");
     expect(text(root)).not.toContain("Suspiciously clean");
   });
 
-  test("an exorcised row shows the Exorcised pill, dims its text and offers Let it back", async () => {
+  test("an exorcised row shows the Exorcised tag and offers Let it back", async () => {
     const { root } = await mount({ state: { haunted: true, ghosts: GHOSTS, exorcised: ["Hotjar"] } });
     const row = rows(root)[1]!;
     expect(row.classList.contains("exorcised")).toBe(true);
@@ -269,7 +271,7 @@ describe("ghost list", () => {
     await flush();
     expect(rows(root)).toHaveLength(4);
     // keyboard focus survives a refresh
-    (root.querySelector(".pill") as HTMLElement).focus();
+    (root.querySelector(".primary") as HTMLElement).focus();
     for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
     await flush();
     expect(text(root.ownerDocument.activeElement)).toBe("Un-haunt");
@@ -280,5 +282,131 @@ describe("ghost list", () => {
     for (const l of m.chrome.storage.onChanged.listeners) l({ audioEnabled: { newValue: true } }, "local");
     await flush();
     expect(m.calls.runtimeMessages.filter((x) => (x as { type: string }).type === "GET_STATE")).toHaveLength(4);
+  });
+});
+
+describe("popup costume (1998)", () => {
+  const SRC = join(import.meta.dir, "..", "src", "popup");
+  const css = readFileSync(join(SRC, "styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\s+/g, " ");
+  const legends = (root: HTMLElement) => [...root.querySelectorAll("fieldset.group > legend")].map(text);
+  const FULL: Partial<TabState> = {
+    haunted: true,
+    ghosts: [
+      { company: "Criteo", count: 3, domains: ["criteo.com"], categories: ["Advertising"], fingerprinting: 0 },
+      { company: "Hotjar", count: 2, domains: ["hotjar.com"], categories: ["Analytics"], fingerprinting: 2, vampire: { caught: [], knownOnly: true } },
+    ],
+    tombstones: [{ url: "https://example.org/missing.html", path: "/missing.html", status: 404 }],
+    curses: [{ kind: "scarcity", snippet: "Only 2 left!" }] as unknown as TabState["curses"],
+  };
+
+  test("window has a navy title bar with the ghost sprite and Haunted GeoCities", async () => {
+    const { root } = await mount();
+    const bar = root.firstElementChild!;
+    expect(bar.matches("header.titlebar")).toBe(true);
+    expect(text(bar)).toBe("Haunted GeoCities");
+    const svg = bar.querySelector("svg")!;
+    expect([svg.getAttribute("width"), svg.getAttribute("height"), svg.getAttribute("aria-hidden")]).toEqual(["16", "16", "true"]);
+    expect(bar.querySelector("[data-status]")).toBeNull(); // the status lives in the status bar now
+  });
+
+  test("content sits in group boxes with legends", async () => {
+    expect(legends((await mount()).root)).toEqual(["Haunt", "Settings"]);
+    expect(legends((await mount({ state: { restricted: true, url: "chrome://version" } })).root)).toEqual(["Why not", "Settings"]);
+    expect(legends((await mount({ state: FULL })).root)).toEqual(["Found on this page", "Ghosts (1)", "Vampires (1)", "Tombstones (1)", "Curses (1)", "Settings"]);
+    expect(legends((await mount({ state: { haunted: true } })).root)).toEqual(["Found on this page", "Nothing found", "Settings"]);
+    const { root } = await mount();
+    expect(root.querySelector(".surface")).toBeNull();
+    expect(root.querySelector(".client")!.contains(root.querySelector("h1"))).toBe(true);
+  });
+
+  test("idle screen has one primary push button labelled Haunt this page", async () => {
+    const { root } = await mount();
+    expect([...root.querySelectorAll("button.primary")].map(text)).toEqual(["Haunt this page"]);
+    expect(root.querySelector(".pill")).toBeNull();
+  });
+
+  test("haunted screen has one primary push button labelled Un-haunt", async () => {
+    const { root } = await mount({ state: FULL });
+    expect([...root.querySelectorAll("button.primary")].map(text)).toEqual(["Un-haunt"]);
+  });
+
+  test("restricted screen has no primary push button", async () => {
+    const { root } = await mount({ state: { restricted: true, url: "chrome://version" } });
+    expect(root.querySelectorAll("button.primary")).toHaveLength(0);
+    expect(root.querySelectorAll("button")).toHaveLength(0);
+  });
+
+  test("counts render as hit-counter cells with a 16px sprite and a label", async () => {
+    const { root } = await mount({ state: FULL });
+    const cells = [...root.querySelectorAll<HTMLElement>("[data-count]")];
+    expect(cells.map((c) => [...c.children].map((k) => k.getAttribute("class")))).toEqual(Array(4).fill(["num", "tile-sprite", "label"]));
+    for (const c of cells) expect(c.querySelector("svg")!.getAttribute("width")).toBe("16");
+    // Hit-counter zeros pad each count to four digits, outside the text a screen reader reads.
+    expect(cells.map((c) => [text(c.querySelector(".num")), c.querySelector<HTMLElement>(".num")!.dataset.pad])).toEqual([
+      ["1", "000"],
+      ["1", "000"],
+      ["1", "000"],
+      ["1", "000"],
+    ]);
+    expect(css).toMatch(/\.num::before \{[^}]*content: attr\(data-pad\) \/ "";/);
+  });
+
+  test("ghost, vampire, tombstone and curse lists sit in a sunken list box", async () => {
+    const { root } = await mount({ state: FULL });
+    const boxes = [...root.querySelectorAll("ul.rows")];
+    expect(boxes).toHaveLength(4);
+    for (const b of boxes) {
+      expect(b.classList.contains("listbox")).toBe(true);
+      expect(b.parentElement!.matches("fieldset.group")).toBe(true);
+    }
+    expect(boxes.map((b) => [...b.children].map((r) => r.classList[0]))).toEqual([["ghost-row"], ["ghost-row"], ["ghost-row"], ["ghost-row"]]);
+    expect([...root.querySelectorAll(".ghost-row button")].every((b) => b.classList.contains("btn"))).toBe(true);
+  });
+
+  test("settings controls are checkboxes that keep their toggle behaviour", async () => {
+    const { root, m } = await mount();
+    const boxes = [...root.querySelectorAll<HTMLInputElement>("fieldset.settings input")];
+    expect(boxes.map((b) => [b.type, b.className])).toEqual([
+      ["checkbox", "check"],
+      ["checkbox", "check"],
+    ]);
+    // A Win95 checkbox sits to the left of its label.
+    for (const b of boxes) expect(b.compareDocumentPosition(root.querySelector(`label[for="${b.id}"]`)!) & 4).toBeTruthy();
+    expect(boxes.map((b) => b.checked)).toEqual([false, false]);
+    await toggle(switchNamed(root, "Sound effects"));
+    expect(m.chrome.storage.local.data[AUDIO_KEY]).toBe(true);
+    await toggle(switchNamed(root, "Check links to other sites"));
+    expect(m.calls.createTab).toHaveLength(1);
+    expect(css).toMatch(/\.check \{[^}]*width: 13px;[^}]*height: 13px;/);
+    expect(css).toMatch(/\.check:checked::before \{[^}]*box-shadow:/);
+  });
+
+  test("status bar shows the state and the attribution line", async () => {
+    for (const [state, label] of [
+      [{}, "Idle"],
+      [{ haunted: true }, "Haunted"],
+      [{ restricted: true, url: "chrome://version" }, "Can't haunt"],
+    ] as const) {
+      const { root } = await mount({ state });
+      const bar = root.lastElementChild!;
+      expect(bar.matches("footer.statusbar")).toBe(true);
+      expect(text(bar.querySelector("[data-status]"))).toBe(label);
+      expect(text(bar.querySelector(".attribution"))).toBe(ATTRIBUTION);
+      expect(root.querySelectorAll("[data-status]")).toHaveLength(1);
+    }
+  });
+
+  test("popup is 360px wide and at most 600px tall", () => {
+    const html = readFileSync(join(SRC, "popup.html"), "utf8");
+    expect(html).toContain('<body class="popup">');
+    expect(html).toContain('<main id="app" class="window">');
+    expect(css).toMatch(/body\.popup \{[^}]*width: 360px;[^}]*max-height: 600px;/);
+    expect(css).toMatch(/body\.popup #app \{[^}]*max-height: 600px;/);
+    expect(css).toMatch(/\.client \{[^}]*overflow-y: auto;/);
+  });
+
+  test("prefers-reduced-motion disables popup motion", () => {
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{ \*, \*::before, \*::after \{ transition: none !important; animation: none !important; \} \}/);
+    expect(css).not.toMatch(/transition: (?!none)/);
   });
 });

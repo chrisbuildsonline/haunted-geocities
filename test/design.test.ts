@@ -33,11 +33,18 @@ const contrast = (a: string, b: string) => {
 
 type Tokens = {
   costume: { palette: Record<string, string>; fonts: string[] };
-  popup: {
-    canvas: string; surface: string; ink: string; muted: string; accent: string;
-    pill: string; pillInk: string; radius: number; typeScale: number[];
+  popup: Record<string, string> & {
+    width: number; maxHeight: number; radius: number; blur: number; typeScale: number[];
+    tags: Record<string, [string, string]>;
   };
 };
+const POPUP_COLOURS: Record<string, string> = {
+  face: "#c0c0c0", hilite: "#ffffff", light: "#dfdfdf", shadow: "#808080", dark: "#000000",
+  title: "#000080", titleInk: "#ffffff", field: "#ffffff", ink: "#000000", sub: "#333333",
+  hover: "#ccccff", counter: "#000000", counterInk: "#33ff33", link: "#0000ff", visited: "#800080",
+  desktop: "#008080", accent: "#6633cc",
+};
+const kebab = (k: string) => k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 const jsonBlocks = () => [...section("Tokens").matchAll(/```json\s*\n([\s\S]*?)```/g)].map((m) => m[1]!);
 const tokens = (): Tokens => JSON.parse(jsonBlocks()[0] ?? "null");
 
@@ -52,7 +59,7 @@ describe("design/DESIGN.md", () => {
 describe("section vocabulary", () => {
   const words: Record<string, string[]> = {
     Costume: ["overlay", "HUD", "starfield", "marquee", "ghost", "vampire", "tombstone", "badge", "neighborhood"],
-    Popup: ["canvas", "surface", "radius", "shadow", "type scale", "accent", "pill"],
+    Popup: ["Windows 95", "bevel", "title bar", "group box", "status bar", "checkbox", "type scale", "accent", "radius"],
     "Haunt moment": ["prefers-reduced-motion"],
   };
   for (const [s, ws] of Object.entries(words)) {
@@ -77,29 +84,45 @@ describe("tokens", () => {
     const f = tokens().costume.fonts;
     expect(f.includes("Comic Sans MS") || f.includes("Times New Roman")).toBe(true);
   });
-  test("popup colours are 6-digit hex", () => {
+  test("popup costume tokens are the Win95 palette", () => {
     const p = tokens().popup;
-    for (const k of ["canvas", "surface", "ink", "muted", "accent", "pill", "pillInk"] as const) {
-      expect({ [k]: p[k] }).toEqual({ [k]: expect.stringMatching(HEX) });
-    }
-  });
-  test("popup radius is 16-20", () => {
-    const r = tokens().popup.radius;
-    expect(r).toBeGreaterThanOrEqual(16);
-    expect(r).toBeLessThanOrEqual(20);
-  });
-  test("popup typeScale has 4+ strictly ascending steps topping out at 28+", () => {
-    const t = tokens().popup.typeScale;
-    expect(t.length).toBeGreaterThanOrEqual(4);
-    t.slice(1).forEach((v, i) => expect(v).toBeGreaterThan(t[i]!));
-    expect(Math.max(...t)).toBeGreaterThanOrEqual(28);
-  });
-  for (const [fg, bg, min] of [
-    ["ink", "surface", 4.5], ["muted", "surface", 4.5], ["pillInk", "pill", 4.5], ["accent", "surface", 3],
-  ] as const) {
-    test(`${fg} on ${bg} has WCAG contrast >= ${min}`, () => {
-      const p = tokens().popup;
-      expect(contrast(p[fg], p[bg])).toBeGreaterThanOrEqual(min);
+    for (const [k, v] of Object.entries(POPUP_COLOURS)) expect({ [k]: p[k] }).toEqual({ [k]: v });
+    expect([p.width, p.maxHeight, p.radius, p.blur]).toEqual([360, 600, 0, 0]);
+    expect(p.typeScale).toEqual([12, 13, 24]);
+    expect(p.tags).toEqual({
+      caught: ["#ccccff", "#330099"], known: ["#cccccc", "#000000"], dead404: ["#ffcccc", "#660000"],
+      dead410: ["#ffcc99", "#663300"], exorcised: ["#cccccc", "#333333"],
     });
-  }
+    for (const old of ["canvas", "surface", "muted", "pill", "pillInk", "toggleOff"]) expect({ old, has: old in p }).toEqual({ old, has: false });
+    // styles.css reads the same values as custom properties.
+    const css = readFileSync(join(import.meta.dir, "..", "src", "popup", "styles.css"), "utf8");
+    const root = css.match(/:root\s*\{([^}]*)\}/)![1]!;
+    for (const [k, v] of Object.entries(POPUP_COLOURS)) expect({ k, declared: root.includes(`--${kebab(k)}: ${v};`) }).toEqual({ k, declared: true });
+  });
+
+  test("popup costume text pairs have WCAG contrast >= 4.5", () => {
+    const p = tokens().popup;
+    const pairs: [string, string][] = [
+      [p.ink, p.face], [p.sub, p.face], [p.ink, p.field], [p.sub, p.field], [p.ink, p.hover], [p.sub, p.hover],
+      [p.titleInk, p.title], [p.counterInk, p.counter], [p.link, p.face], [p.link, p.field], [p.visited, p.face], [p.visited, p.field],
+      ...Object.values(p.tags).map(([bg, fg]) => [fg, bg] as [string, string]),
+      ["#660000", "#ffcccc"],
+    ];
+    for (const [fg, bg] of pairs) expect({ fg, bg, ok: contrast(fg, bg) >= 4.5 }).toEqual({ fg, bg, ok: true });
+    // The focus ring is not text: 3:1 against both grounds.
+    for (const bg of [p.face, p.field]) expect(contrast(p.accent, bg)).toBeGreaterThanOrEqual(3);
+  });
+
+  test("DESIGN.md popup section describes the Win95 costume and no longer the 2024 pill", () => {
+    const s = section("Popup");
+    for (const w of ["#c0c0c0", "#000080", "#dfdfdf", "#808080", "#008080", "MS Sans Serif", "Times New Roman", "Courier New", "default push button", "hit-counter", "list box"]) {
+      expect({ w, found: s.includes(w) }).toEqual({ w, found: true });
+    }
+    expect(s).toMatch(/era costume wins/i);
+    for (const old of ["#eef0f4", "#111318", "#5b6170", "#f5f6f8", "#d6d9e0", "system-ui", "999", "18px", "rgba("]) {
+      expect({ old, found: s.includes(old) }).toEqual({ old, found: false });
+    }
+    expect(s).not.toMatch(/\bpill\b/i);
+    expect(doc().split("## Haunt moment")[0]).not.toMatch(/modern control room/i);
+  });
 });

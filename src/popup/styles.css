@@ -1,19 +1,27 @@
-/* Popup look from design/DESIGN.md "## Popup"; values from the Tokens JSON. */
+/* The popup as a Windows 95 window, from design/DESIGN.md "## Popup"; values from the Tokens JSON.
+   Every bevel is an inset box-shadow with 0 blur, so corners stay square. */
 :root {
-  --canvas: #eef0f4;
-  --surface: #ffffff;
-  --ink: #111318;
-  --muted: #5b6170;
+  --face: #c0c0c0;
+  --hilite: #ffffff;
+  --light: #dfdfdf;
+  --shadow: #808080;
+  --dark: #000000;
+  --title: #000080;
+  --title-ink: #ffffff;
+  --field: #ffffff;
+  --ink: #000000;
+  --sub: #333333;
+  --hover: #ccccff;
+  --counter: #000000;
+  --counter-ink: #33ff33;
+  --link: #0000ff;
+  --visited: #800080;
+  --desktop: #008080;
   --accent: #6633cc;
-  --accent-tint: #efe9fb;
-  --pill: #111318;
-  --pill-ink: #ffffff;
-  --hover: #f5f6f8;
-  --toggle-off: #d6d9e0;
-  --radius: 18px;
-  --shadow: 0 1px 2px rgba(17, 19, 24, 0.04), 0 8px 24px rgba(17, 19, 24, 0.06);
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --fast: 120ms;
+  --raised: inset -1px -1px 0 var(--dark), inset 1px 1px 0 var(--hilite), inset -2px -2px 0 var(--shadow), inset 2px 2px 0 var(--light);
+  --pressed: inset 1px 1px 0 var(--dark), inset -1px -1px 0 var(--hilite), inset 2px 2px 0 var(--shadow), inset -2px -2px 0 var(--light);
+  --sunken: inset -1px -1px 0 var(--hilite), inset 1px 1px 0 var(--shadow), inset -2px -2px 0 var(--light), inset 2px 2px 0 var(--dark);
+  --field-edge: inset 1px 1px 0 var(--shadow), inset -1px -1px 0 var(--hilite);
   color-scheme: light;
 }
 
@@ -26,217 +34,263 @@
 html,
 body {
   margin: 0;
-  background: var(--canvas);
+  background: var(--face);
 }
 
 body {
-  width: 360px;
-  max-height: 600px;
-  overflow-y: auto;
   color: var(--ink);
-  font: 500 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-#app {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  min-height: 120px;
+  font-family: 'MS Sans Serif', 'Microsoft Sans Serif', Tahoma, Geneva, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 16px;
 }
 
 p {
   margin: 0;
 }
 
-/* Header: 24px ghost mark, name, status pill */
-.top {
+a {
+  color: var(--link);
+  text-decoration: underline;
+}
+a:visited {
+  color: var(--visited);
+}
+
+/* The popup document is one window: title bar, scrolling client area, status bar. */
+body.popup {
+  width: 360px;
+  max-height: 600px;
+  overflow: hidden;
+}
+body.popup #app {
   display: flex;
+  flex-direction: column;
+  max-height: 600px;
+  min-height: 120px;
+}
+
+.window {
+  padding: 3px;
+  background: var(--face);
+  box-shadow: var(--raised);
+}
+
+.titlebar {
+  display: flex;
+  flex: none;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   height: 24px;
+  padding: 0 4px;
+  background: var(--title);
+  color: var(--title-ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.titlebar h1,
+.brand {
+  margin: 0;
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .mark {
   flex: none;
   display: block;
-  color: var(--accent);
-}
-.brand {
-  flex: 1;
-  font-size: 15px;
-  font-weight: 600;
-}
-.status {
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.status[data-status="idle"] {
-  background: #e3e6ec;
-  color: #5b6170;
-}
-.status[data-status="haunted"] {
-  background: #efe9fb;
-  color: #6633cc;
-}
-.status[data-status="restricted"] {
-  background: #fff1e0;
-  color: #8a4600;
 }
 
-/* 28px screen title */
+.client {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* Site title: the page's own name, in the era's serif */
 .title {
-  margin: 4px 0 0;
-  padding: 0 4px;
-  font-size: 28px;
+  margin: 0;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 28px;
   overflow-wrap: anywhere;
-}
-
-/* Surfaces: white, radius 18, soft shadow, never bordered, never nested */
-.surface {
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px;
 }
 
 .lead {
-  font-size: 15px;
-  font-weight: 500;
   color: var(--ink);
 }
 .muted {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
-}
-.surface > .muted:first-child {
-  margin-top: 0;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--sub);
 }
 
-/* The GeoCities address under the title: pulled up into the 12px gap so it reads with the title */
+/* The GeoCities address under the title: pulled up into the 8px gap so it reads with the title */
 .address {
-  margin-top: -8px;
-  padding: 0 4px;
-  font-size: 13px;
-  color: var(--muted);
+  margin-top: -6px;
+  font-size: 12px;
+  color: var(--sub);
   overflow-wrap: anywhere;
 }
 
-/* The one primary action: near-black pill */
-.pill {
+/* Group box: etched, 2px in all. The outer shadow adds the white line, so the box has a 1px margin. */
+.group {
+  min-width: 0;
+  margin: 1px;
+  padding: 6px 12px 12px;
+  border: 1px solid var(--shadow);
+  box-shadow: 1px 1px 0 var(--hilite), inset 1px 1px 0 var(--hilite);
+}
+.group > legend {
+  padding: 0 4px;
+  background: var(--face);
+  font-weight: 700;
+}
+
+/* The one primary action: the Win95 default push button, raised with a 1px black frame. */
+.primary {
   display: block;
   width: 100%;
-  height: 48px;
-  margin-top: 16px;
+  height: 40px;
+  margin-top: 12px;
+  padding: 0 8px;
   border: 0;
-  border-radius: 999px;
-  background: var(--pill);
-  color: var(--pill-ink);
+  background: var(--face);
+  color: var(--ink);
   font: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--dark), var(--raised);
   cursor: pointer;
-  transition: background-color var(--fast) var(--ease-out);
 }
-.pill:hover {
-  background: #2a2d36;
+.primary:active:not(:disabled) {
+  padding: 2px 6px 0 10px;
 }
-.pill:disabled {
+.primary:active {
+  box-shadow: 0 0 0 1px var(--dark), var(--pressed);
+}
+.primary:disabled {
+  color: var(--shadow);
+  text-shadow: 1px 1px 0 var(--hilite);
+  cursor: default;
+}
+body.popup .primary:disabled {
   cursor: progress;
-  opacity: 0.7;
+}
+
+/* Small push buttons: Exorcise and Let it back */
+.btn {
+  flex: none;
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  background: var(--face);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  box-shadow: var(--raised);
+  cursor: pointer;
+}
+.btn:active {
+  padding: 1px 9px 0 11px;
+  box-shadow: var(--pressed);
 }
 
 .error {
-  margin-top: 12px;
-  font-size: 13px;
-  font-weight: 500;
+  margin-top: 8px;
   color: var(--ink);
 }
 
-/* Count tiles: the tiles are the legend */
+/* Hit counters: black cells with green digits, the sprite and the kind name under each */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, auto);
-  justify-content: space-between;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  margin: 0;
+  margin: 2px 0 0;
   padding: 0;
   list-style: none;
 }
 .tile {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
+}
+.num {
+  display: block;
+  width: 100%;
+  padding: 4px 2px 3px;
+  background: var(--counter);
+  color: var(--counter-ink);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 24px;
+  text-align: center;
+  box-shadow: var(--field-edge);
+}
+.num::before {
+  content: attr(data-pad) / "";
 }
 .tile-sprite {
   display: block;
-  color: var(--muted);
-}
-.num {
-  margin-top: 8px;
-  font-size: 36px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+  color: var(--ink);
 }
 .label {
-  margin-top: 4px;
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 15px;
+  white-space: nowrap;
 }
 @media (max-width: 339px) {
   .tiles {
-    grid-template-columns: repeat(2, 1fr);
-    row-gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
+/* The haunted lists: a group box per kind, each with a sunken white list box */
 .list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.list-count {
+  font-variant-numeric: tabular-nums;
+}
+.found-none .muted:first-child,
+.found-none .lead + .muted {
+  margin-top: 0;
+}
+.found-none p + p {
+  margin-top: 4px;
+}
+.listbox {
   max-height: 280px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  background: var(--field);
+  box-shadow: var(--sunken);
   overflow-y: auto;
 }
 
-/* Ghost list (ref 03): 32px tile + name + muted line, action on the right, no dividers */
-.list-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin: 0 0 8px;
-  font-size: 20px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-.list-count {
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-.rows {
-  margin: 0 -8px;
-  padding: 0;
-  list-style: none;
-}
+/* One row: 32px square sprite tile + name + sub-line, the action on the right */
 .ghost-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 0 8px;
-  border-radius: 12px;
-  transition: background-color var(--fast) var(--ease-out);
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 6px;
 }
 .ghost-row:hover {
   background: var(--hover);
@@ -247,8 +301,6 @@ p {
   flex: none;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
-  background: var(--canvas);
 }
 .icon-tile svg {
   display: block;
@@ -268,43 +320,54 @@ p {
   white-space: nowrap;
   cursor: default;
 }
-.ghost-row.exorcised .icon-tile,
-.ghost-row.exorcised .row-title,
-.ghost-row.exorcised .row-sub {
-  opacity: 0.6;
+.ghost-row .row-title {
+  font-weight: 700;
 }
+
+/* Tags: square, 1px black border, one colour pair each */
 .tag-pill {
   flex: none;
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  padding: 0 7px;
-  border-radius: 999px;
-  background: var(--accent-tint);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
+  height: 16px;
+  padding: 0 4px;
+  border: 1px solid var(--dark);
+  background: #cccccc;
+  color: #333333;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
 }
 .tag-pill.caught {
-  background: #f1ecfb;
-  color: var(--accent);
+  background: #ccccff;
+  color: #330099;
 }
 .tag-pill.known {
-  background: #e3e6ec;
-  color: var(--muted);
+  background: #cccccc;
+  color: #000000;
 }
-.vampires-head {
-  margin-top: 12px;
+.tag-pill.dead-404 {
+  background: #ffcccc;
+  color: #660000;
 }
-/* Vampire rows: name and Exorcise on the first line; the pill and what was caught on the second,
+.tag-pill.dead-410 {
+  background: #ffcc99;
+  color: #663300;
+}
+.ghost-row.exorcised .tag-pill {
+  background: #cccccc;
+  color: #333333;
+}
+
+/* Vampire rows: name and Exorcise on the first line; the tag and what was caught on the second,
    running under the button so the full width is used and the caught line wraps, never cut. */
 .vampire-row {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto;
-  column-gap: 12px;
-  row-gap: 6px;
+  column-gap: 8px;
+  row-gap: 4px;
   align-items: center;
-  padding-block: 10px;
+  padding-block: 6px;
 }
 .vampire-row .icon-tile {
   grid-row: 1 / span 2;
@@ -321,44 +384,32 @@ p {
   grid-column: 2 / -1;
 }
 .vampire-row .tag-pill {
-  float: left; /* the caught line wraps back to full width under the pill */
+  float: left; /* the caught line wraps back to full width under the tag */
   margin-right: 6px;
 }
 .vampire-row button {
   grid-column: 3;
   grid-row: 1;
-  margin-block: -6px; /* the 32px button sits on the name's line without making it taller */
 }
 .ghost-row.vampire-row .row-sub {
-  line-height: 18px;
+  line-height: 16px;
   white-space: normal;
   text-wrap: wrap; /* greedy: "pretty" balances this into three lines with a leading "·" */
   overflow: visible;
 }
-.ghost-row.exorcised .tag-pill.caught,
-.ghost-row.exorcised .tag-pill.known {
-  opacity: 0.6;
-}
-.no-vampires {
-  margin-top: 12px;
-}
 
 /* Tombstone rows: the path on line 1, wrapping only after a "/" (a filename too long for the line
-   keeps its end and loses its start); the status pill (and the host, cross-site) on line 2. */
-.tombstones-head,
-.no-tombstones {
-  margin-top: 12px;
-}
+   keeps its end and loses its start); the status tag (and the host, cross-site) on line 2. */
 .tombstone-row {
   align-items: flex-start;
-  padding-block: 10px;
+  padding-block: 6px;
 }
 .tombstone-row .row-title {
   white-space: normal;
   overflow: visible;
   overflow-wrap: normal;
   word-break: keep-all;
-  line-height: 20px;
+  line-height: 16px;
 }
 .tomb-path .seg {
   display: inline-block;
@@ -369,72 +420,28 @@ p {
   white-space: nowrap;
   vertical-align: top;
 }
-.tombstone-row .row-line {
+.tombstone-row .row-line,
+.curse-row .row-line {
   margin-top: 4px;
-}
-.tag-pill.dead-404 {
-  background: var(--accent-tint);
-  color: var(--accent);
-}
-.tag-pill.dead-410 {
-  background: #e3e6ec;
-  color: var(--muted);
 }
 
 /* Curse rows: the kind name on line 1, the quoted snippet wrapping beneath it. */
-.curses-head,
-.no-curses {
-  margin-top: 12px;
-}
 .curse-row {
   align-items: flex-start;
-  padding-block: 10px;
-}
-.curse-row .row-line {
-  margin-top: 4px;
+  padding-block: 6px;
 }
 .curse-row .row-sub.quote {
   white-space: normal;
   overflow: visible;
   overflow-wrap: anywhere;
 }
-.secondary,
-.quiet {
-  flex: none;
-  height: 32px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color var(--fast) var(--ease-out);
-}
-.secondary {
-  background: #f1ecfb;
-  color: var(--accent);
-}
-.secondary:hover {
-  background: #e6dcf8;
-}
-.quiet {
-  background: var(--canvas);
-  color: var(--ink);
-}
-.quiet:hover {
-  background: #e3e6ec;
-}
 
-/* Settings rows: 56px, title 15 ink, sub-line 13 muted, switch on the right */
-.settings {
-  padding: 12px 20px;
-}
+/* Settings: a Win95 checkbox left of each label, the sub-line under the label */
 .row {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 0;
 }
 .row-text {
   flex: 1;
@@ -442,58 +449,92 @@ p {
 }
 .row-title {
   display: block;
-  font-size: 15px;
-  font-weight: 500;
   cursor: pointer;
 }
 .row-sub {
-  font-size: 13px;
-  font-weight: 400;
-  color: var(--muted);
+  font-size: 12px;
+  line-height: 15px;
+  color: var(--sub);
   text-wrap: pretty;
 }
+.settings .row-sub {
+  margin-top: 1px;
+}
 
-/* Switch: 40x24 track, radius 12, 20px white knob */
-.switch {
+/* Checkbox: a 13px sunken white box with a 7px black pixel check */
+.check {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
   flex: none;
-  width: 40px;
-  height: 24px;
-  margin: 0;
-  border-radius: 12px;
-  background: var(--toggle-off);
+  width: 13px;
+  height: 13px;
+  margin: 1px 0 0;
+  background: var(--field);
+  box-shadow: var(--sunken);
   cursor: pointer;
-  transition: background-color 160ms var(--ease-out);
 }
-.switch::before {
+.check:checked::before {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(17, 19, 24, 0.2);
-  transition: transform 160ms var(--ease-out);
-}
-.switch:checked {
-  background: var(--accent);
-}
-.switch:checked::before {
-  transform: translateX(16px);
+  top: 3px;
+  left: 3px;
+  width: 1px;
+  height: 1px;
+  box-shadow:
+    6px 0 0 var(--dark),
+    5px 1px 0 var(--dark), 6px 1px 0 var(--dark),
+    0 2px 0 var(--dark), 4px 2px 0 var(--dark), 5px 2px 0 var(--dark), 6px 2px 0 var(--dark),
+    0 3px 0 var(--dark), 1px 3px 0 var(--dark), 3px 3px 0 var(--dark), 4px 3px 0 var(--dark), 5px 3px 0 var(--dark),
+    0 4px 0 var(--dark), 1px 4px 0 var(--dark), 2px 4px 0 var(--dark), 3px 4px 0 var(--dark), 4px 4px 0 var(--dark),
+    1px 5px 0 var(--dark), 2px 5px 0 var(--dark), 3px 5px 0 var(--dark),
+    2px 6px 0 var(--dark);
 }
 
-.attribution {
-  padding: 0 4px;
+/* Status bar: two sunken fields at the bottom of the window */
+.statusbar {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  gap: 2px;
+  margin-top: 2px;
+}
+.status-field {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px;
   font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
+  line-height: 15px;
+  box-shadow: var(--field-edge);
+}
+.statusbar [data-status] {
+  flex: none;
+  min-width: 76px;
+  color: var(--ink);
+}
+.attribution {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  color: var(--sub);
 }
 .nowrap {
   white-space: nowrap;
+}
+
+/* Scrollbars in the window: a raised face thumb on a light track */
+.client::-webkit-scrollbar,
+.listbox::-webkit-scrollbar {
+  width: 16px;
+}
+.client::-webkit-scrollbar-track,
+.listbox::-webkit-scrollbar-track {
+  background: var(--light);
+}
+.client::-webkit-scrollbar-thumb,
+.listbox::-webkit-scrollbar-thumb {
+  background: var(--face);
+  box-shadow: var(--raised);
 }
 
 /* Focus: 2px accent ring on every control */

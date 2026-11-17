@@ -110,9 +110,9 @@ export const TOMB_TILE = [
   "MMMMMMMMMMMM",
 ];
 
-/** The headstone at 2x (24px), decorative. */
-export function tombTile(doc: Document): SVGSVGElement {
-  return pixelSvg(doc, TOMB_TILE, [["o", "#111318"], ["W", "#ffffff"], ["S", "#cccccc"], ["M", "#336633"]]);
+/** The headstone at 2x (24px) by default, decorative; permissions.html shows it at 4x (48px). */
+export function tombTile(doc: Document, size = 24): SVGSVGElement {
+  return pixelSvg(doc, TOMB_TILE, [["o", "#111318"], ["W", "#ffffff"], ["S", "#cccccc"], ["M", "#336633"]], size);
 }
 
 /** The list-row skull: ink outline and sockets, curse-orange bone (the badge's colour). */
@@ -136,9 +136,9 @@ export function curseTile(doc: Document): SVGSVGElement {
   return pixelSvg(doc, CURSE_TILE, [["o", "#111318"], ["O", "#ff9900"]]);
 }
 
-function pixelSvg(doc: Document, rows: readonly string[], fills: readonly (readonly [string, string])[]): SVGSVGElement {
+function pixelSvg(doc: Document, rows: readonly string[], fills: readonly (readonly [string, string])[], size = 24): SVGSVGElement {
   const svg = doc.createElementNS(SVG_NS, "svg");
-  for (const [k, v] of Object.entries({ width: "24", height: "24", viewBox: "0 0 12 12", "shape-rendering": "crispEdges", "aria-hidden": "true", focusable: "false" })) {
+  for (const [k, v] of Object.entries({ width: String(size), height: String(size), viewBox: "0 0 12 12", "shape-rendering": "crispEdges", "aria-hidden": "true", focusable: "false" })) {
     svg.setAttribute(k, v);
   }
   for (const [ch, fill] of fills) {

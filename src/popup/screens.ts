@@ -40,9 +40,20 @@ export interface ScreenProps {
   error?: string;
 }
 
+/** A Win95 group box: an etched frame with its legend. */
+const group = (doc: Document, legend: HTMLLegendElement | string, cls: string, ...children: (Node | null)[]) =>
+  h(doc, "fieldset", { class: cls ? `group ${cls}` : "group" }, typeof legend === "string" ? h(doc, "legend", {}, legend) : legend, ...children);
+
+/** The legend of a list's group box: "Ghosts (7)". */
+const listHead = (doc: Document, label: string, cls: string, n: number) =>
+  h(doc, "legend", { class: `list-head ${cls}` }, `${label} `, h(doc, "span", { class: "list-count" }, `(${n})`));
+
+/** The hit-counter zeros that pad a count to four digits (drawn by CSS, not read out). */
+const padFor = (n: number) => "000".slice(0, Math.max(0, 4 - String(n).length));
+
 function ghostRow(doc: Document, g: CompanyHit, tint: string, exorcised: boolean, onExorcise: ScreenProps["onExorcise"]): HTMLElement {
   const n = g.domains.length;
-  const button = h(doc, "button", { type: "button", class: exorcised ? "quiet" : "secondary", "data-company": g.company }, exorcised ? "Let it back" : "Exorcise");
+  const button = h(doc, "button", { type: "button", class: "btn", "data-company": g.company }, exorcised ? "Let it back" : "Exorcise");
   button.setAttribute("aria-label", `${exorcised ? "Let it back" : "Exorcise"}: ${g.company}`);
   button.addEventListener("click", () => onExorcise(g.company, exorcised));
   return h(
@@ -77,7 +88,7 @@ function vampireRow(doc: Document, v: CompanyHit, exorcised: boolean, onExorcise
   const did = caughtLine(v.vampire?.caught ?? []);
   let button: HTMLElement | null = null;
   if (!unlisted(v)) {
-    button = h(doc, "button", { type: "button", class: exorcised ? "quiet" : "secondary", "data-company": v.company }, exorcised ? "Let it back" : "Exorcise");
+    button = h(doc, "button", { type: "button", class: "btn", "data-company": v.company }, exorcised ? "Let it back" : "Exorcise");
     button.setAttribute("aria-label", `${exorcised ? "Let it back" : "Exorcise"}: ${v.company}`);
     button.addEventListener("click", () => onExorcise(v.company, exorcised));
   }
@@ -170,35 +181,28 @@ const addressOf = (url: string | null): string | null => {
 /** Everything that goes inside #app for one screen. */
 export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
-  const header = h(
-    doc,
-    "header",
-    { class: "top" },
-    sprite(doc, "ghost", 24, "mark"),
-    h(doc, "span", { class: "brand" }, "Haunted GeoCities"),
-    h(doc, "span", { class: "status", "data-status": screen }, STATUS[screen]),
-  );
+  const titlebar = h(doc, "header", { class: "titlebar" }, sprite(doc, "ghost", 16, "mark"), h(doc, "span", { class: "brand" }, "Haunted GeoCities"));
   const title = h(doc, "h1", { class: "title" }, screen === "restricted" ? "This page is protected" : hostname(state.url));
   const address = screen === "haunted" ? addressOf(state.url) : null;
   const addressLine = address ? h(doc, "p", { class: "address muted" }, address) : null;
 
-  const pill = (label: string) => {
-    const b = h(doc, "button", { type: "button", class: "pill" }, label);
+  const primary = (label: string) => {
+    const b = h(doc, "button", { type: "button", class: "primary" }, label);
     b.addEventListener("click", onPrimary);
     return b;
   };
   const alert = error ? h(doc, "p", { class: "error", role: "alert" }, error) : null;
 
-  let surfaces: HTMLElement[];
+  let groups: HTMLElement[];
   if (screen === "idle") {
-    surfaces = [
-      h(
+    groups = [
+      group(
         doc,
-        "section",
-        { class: "surface", "aria-label": "Haunt" },
+        "Haunt",
+        "",
         h(doc, "p", { class: "lead" }, "Turn this page into a 1998 crypt."),
         h(doc, "p", { class: "muted" }, "Ghosts, vampires and dead links show up."),
-        pill("Haunt this page"),
+        primary("Haunt this page"),
         alert,
       ),
     ];
@@ -212,25 +216,30 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
           doc,
           "li",
           { class: "tile", "data-count": key },
-          sprite(doc, spr, 16, "tile-sprite"),
           h(doc, "span", { class: "num" }, "0"),
+          sprite(doc, spr, 16, "tile-sprite"),
           " ",
           h(doc, "span", { class: "label" }, label),
         ),
       ),
     );
+    const setCount = (key: string, n: number) => {
+      const num = tiles.querySelector<HTMLElement>(`[data-count="${key}"] .num`)!;
+      num.textContent = String(n);
+      num.dataset.pad = padFor(n);
+    };
     // Ghosts by request count, then vampires by name (a vampire is not also counted as a ghost).
     const ghosts = state.ghosts.filter((g) => !g.vampire).sort(byCountThenName);
     const vampires = state.ghosts.filter((g) => g.vampire).sort((a, b) => (a.company < b.company ? -1 : a.company > b.company ? 1 : 0));
-    tiles.querySelector('[data-count="ghosts"] .num')!.textContent = String(ghosts.length);
-    tiles.querySelector('[data-count="vampires"] .num')!.textContent = String(vampires.length);
+    setCount("ghosts", ghosts.length);
+    setCount("vampires", vampires.length);
     // The lanes' tints for the same order, so a company wears one hem colour everywhere.
     const tints = assignTints(ghosts.map((g) => g.company));
+    const listBox = (rows: HTMLElement[]) => h(doc, "ul", { class: "rows listbox" }, ...rows);
+    // Each kind is a group box with a list box, or a line saying there are none. Lines of
+    // neighbouring empty kinds share one "Nothing found" box, so a clean page stays short.
     const ghostList = ghosts.length
-      ? [
-          h(doc, "h2", { class: "list-head" }, "Ghosts ", h(doc, "span", { class: "list-count" }, String(ghosts.length))),
-          h(doc, "ul", { class: "rows" }, ...ghosts.map((g, i) => ghostRow(doc, g, tints[i]!, state.exorcised.includes(g.company), onExorcise))),
-        ]
+      ? group(doc, listHead(doc, "Ghosts", "ghosts-head", ghosts.length), "", listBox(ghosts.map((g, i) => ghostRow(doc, g, tints[i]!, state.exorcised.includes(g.company), onExorcise))))
       : vampires.length
         ? []
         : [
@@ -238,46 +247,51 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
             h(doc, "p", { class: "muted" }, "Trackers that load later will appear here."),
           ];
     const vampireList = vampires.length
-      ? [
-          h(doc, "h2", { class: "list-head vampires-head" }, "Vampires ", h(doc, "span", { class: "list-count" }, String(vampires.length))),
-          h(doc, "ul", { class: "rows" }, ...vampires.map((v) => vampireRow(doc, v, state.exorcised.includes(v.company), onExorcise))),
-        ]
+      ? group(doc, listHead(doc, "Vampires", "vampires-head", vampires.length), "", listBox(vampires.map((v) => vampireRow(doc, v, state.exorcised.includes(v.company), onExorcise))))
       : [h(doc, "p", { class: "muted no-vampires" }, "No vampires. Your blood is safe.")];
     const tombs = state.tombstones ?? [];
-    tiles.querySelector('[data-count="tombstones"] .num')!.textContent = String(tombs.length);
+    setCount("tombstones", tombs.length);
     const pageOrigin = originOf(state.url);
     const tombList = tombs.length
-      ? [
-          h(doc, "h2", { class: "list-head tombstones-head" }, "Tombstones ", h(doc, "span", { class: "list-count" }, String(tombs.length))),
-          h(doc, "ul", { class: "rows" }, ...tombs.map((t) => tombstoneRow(doc, t, pageOrigin))),
-        ]
+      ? group(doc, listHead(doc, "Tombstones", "tombstones-head", tombs.length), "", listBox(tombs.map((t) => tombstoneRow(doc, t, pageOrigin))))
       : [h(doc, "p", { class: "muted no-tombstones" }, "No tombstones. Every link is alive.")];
     const curses = state.curses ?? [];
-    tiles.querySelector('[data-count="curses"] .num')!.textContent = String(curses.length);
+    setCount("curses", curses.length);
     const curseList = curses.length
-      ? [
-          h(doc, "h2", { class: "list-head curses-head" }, "Curses ", h(doc, "span", { class: "list-count" }, String(curses.length))),
-          h(doc, "ul", { class: "rows" }, ...curses.map((c) => curseRow(doc, c))),
-        ]
+      ? group(doc, listHead(doc, "Curses", "curses-head", curses.length), "", listBox(curses.map((c) => curseRow(doc, c))))
       : [h(doc, "p", { class: "muted no-curses" }, "No curses. This page plays fair.")];
-    const list = [...ghostList, ...vampireList, ...tombList, ...curseList];
-    surfaces = [
-      h(doc, "section", { class: "surface", "aria-label": "Haunting" }, tiles, pill("Un-haunt"), alert),
-      h(doc, "section", { class: "surface list", "aria-label": "Ghosts, vampires, tombstones and curses" }, ...list),
+    const boxes: HTMLElement[] = [];
+    let empty: HTMLElement[] = [];
+    for (const part of [ghostList, vampireList, tombList, curseList]) {
+      if (Array.isArray(part)) {
+        empty.push(...part);
+        continue;
+      }
+      if (empty.length) boxes.push(group(doc, "Nothing found", "found-none", ...empty));
+      empty = [];
+      boxes.push(part);
+    }
+    if (empty.length) boxes.push(group(doc, "Nothing found", "found-none", ...empty));
+    groups = [
+      group(doc, "Found on this page", "", tiles, primary("Un-haunt"), alert),
+      h(doc, "div", { class: "list", role: "group", "aria-label": "Ghosts, vampires, tombstones and curses" }, ...boxes),
     ];
   } else {
-    surfaces = [
-      h(
-        doc,
-        "section",
-        { class: "surface", "aria-label": "Why not" },
-        h(doc, "p", { class: "muted" }, "Chrome doesn't let extensions draw on its own pages. Open any website and press Haunt there."),
-      ),
+    groups = [
+      group(doc, "Why not", "", h(doc, "p", { class: "lead" }, "Chrome doesn't let extensions draw on its own pages. Open any website and press Haunt there.")),
     ];
   }
 
+  // The status bar: the state in one sunken field, the attribution in the other.
   // Keep the licence name on one line: "CC BY-NC-SA 4.0" must not break at its hyphens.
   const [source, licence] = ATTRIBUTION.split(", ");
-  const attribution = h(doc, "p", { class: "attribution" }, `${source}, `, h(doc, "span", { class: "nowrap" }, licence));
-  return [header, title, ...(addressLine ? [addressLine] : []), ...surfaces, settings, attribution];
+  const statusbar = h(
+    doc,
+    "footer",
+    { class: "statusbar" },
+    h(doc, "p", { class: "status-field", "data-status": screen }, STATUS[screen]),
+    h(doc, "p", { class: "status-field attribution" }, `${source}, `, h(doc, "span", { class: "nowrap" }, licence)),
+  );
+  const client = h(doc, "div", { class: "client" }, title, addressLine, ...groups, settings);
+  return [titlebar, client, statusbar];
 }

@@ -55,9 +55,9 @@ describe("popup curses (req 54-58)", () => {
 
   test("the list follows the tombstone list", () => {
     const doc = render(CURSES, DEAD);
-    expect(text(doc.querySelector(".curses-head"))).toBe("Curses 3");
+    expect(text(doc.querySelector(".curses-head"))).toBe("Curses (3)");
     expect(doc.querySelector(".tombstones-head")!.compareDocumentPosition(doc.querySelector(".curses-head")!) & 4).toBeTruthy();
-    expect(doc.querySelector(".surface.list")!.getAttribute("aria-label")).toBe("Ghosts, vampires, tombstones and curses");
+    expect(doc.querySelector(".list")!.getAttribute("aria-label")).toBe("Ghosts, vampires, tombstones and curses");
     const none = render(CURSES);
     expect(none.querySelector(".no-tombstones")!.compareDocumentPosition(none.querySelector(".curses-head")!) & 4).toBeTruthy();
   });
@@ -97,7 +97,7 @@ describe("popup curses (req 54-58)", () => {
     expect(css()).toMatch(/--accent: #6633cc;/);
     expect(css()).toMatch(/:focus-visible \{[^}]*outline: 2px solid var\(--accent\);[^}]*outline-offset: 2px;/);
     expect(css()).toMatch(/\.curse-row \{[^}]*align-items: flex-start;/);
-    expect(css()).toMatch(/\.curses-head, \.no-curses \{[^}]*margin-top: 12px;/);
+    expect(css()).toMatch(/\.curse-row \.row-line \{[^}]*margin-top: 4px;/);
   });
 
   test("CSS: the quote wraps", () => {

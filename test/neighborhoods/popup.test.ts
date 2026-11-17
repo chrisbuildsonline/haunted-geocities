@@ -95,17 +95,17 @@ describe("popup address line", () => {
     expect(line.firstChild!.nodeType).toBe(3);
   });
 
-  test("CSS: .address is 13px, muted, and may break anywhere", () => {
+  test("CSS: .address is 12px, the sub-line colour, and may break anywhere", () => {
     const rule = CSS.match(/(?:^|\n)\.address\s*\{([^}]*)\}/)?.[1];
     expect(rule).toBeDefined();
-    expect(rule).toMatch(/font-size:\s*13px/);
-    expect(rule).toMatch(/color:\s*var\(--muted\)/);
-    expect(rule).toMatch(/margin-top:\s*-8px/);
+    expect(rule).toMatch(/font-size:\s*12px/);
+    expect(rule).toMatch(/color:\s*var\(--sub\)/);
+    expect(rule).toMatch(/margin-top:\s*-6px/);
     expect(rule).toMatch(/overflow-wrap:\s*anywhere/);
   });
 
-  test("CSS: muted text meets 4.5:1 on the canvas", () => {
-    expect(contrast(cssVar("muted"), cssVar("canvas"))).toBeGreaterThanOrEqual(4.5);
+  test("CSS: sub-line text meets 4.5:1 on the window face", () => {
+    expect(contrast(cssVar("sub"), cssVar("face"))).toBeGreaterThanOrEqual(4.5);
   });
 });
 
@@ -113,7 +113,7 @@ describe("known vampire row", () => {
   const vampireRows = (doc: Document) => [...doc.querySelectorAll(".vampire-row")];
   const txt = (el: Element | null) => (el?.textContent ?? "").replace(/\s+/g, " ").trim();
 
-  test("a known vampire row has the pill Known and the line On the Tracker Radar fingerprint list", () => {
+  test("a known vampire row has the tag Known and the line On the Tracker Radar fingerprint list", () => {
     const [row] = vampireRows(render({ ghosts: [HOTJAR] }));
     expect(txt(row!.querySelector(".tag-pill"))).toBe("Known");
     expect(row!.querySelector(".tag-pill")!.className).toBe("tag-pill known");

@@ -51,7 +51,7 @@ async function popup(opts: { state?: Partial<TabState>; play?: boolean; haunt?: 
   };
   await mountPopup(el, asChrome(m), "", opts.play === false ? undefined : { play });
   await flush();
-  const pill = () => el.querySelector<HTMLButtonElement>(".pill");
+  const pill = () => el.querySelector<HTMLButtonElement>(".primary");
   return { el, m, played, log, pill, release: () => release() };
 }
 

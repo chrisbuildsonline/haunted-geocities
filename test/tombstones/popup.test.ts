@@ -36,7 +36,7 @@ describe("popup tombstones (req 46-48, 58)", () => {
   test("rows after the vampires: path on line 1 (wbr after every '/'), status pill on line 2, host only when cross-site", () => {
     const doc = render(DEAD, [VAMP]);
     const head = doc.querySelector(".tombstones-head")!;
-    expect(text(head)).toBe("Tombstones 3");
+    expect(text(head)).toBe("Tombstones (3)");
     expect(doc.querySelector(".vampires-head")!.compareDocumentPosition(head) & 4).toBeTruthy(); // FOLLOWING
     const rows = [...doc.querySelectorAll(".tombstone-row")];
     expect(rows.map((r) => [text(r.querySelector(".row-title")), text(r.querySelector(".tag-pill")), text(r.querySelector(".row-sub"))])).toEqual([
@@ -60,10 +60,10 @@ describe("popup tombstones (req 46-48, 58)", () => {
     expect(doc.querySelector(".tombstone-row")).toBeNull();
   });
 
-  test("CSS: pills tinted inside the one-accent system, path wraps only at '/', rows hover like the others", () => {
+  test("CSS: tags in the Win95 colour pairs, path wraps only at '/', rows hover like the others", () => {
     const css = readFileSync(join(import.meta.dir, "../../src/popup/styles.css"), "utf8").replace(/\s+/g, " ");
-    expect(css).toContain(".tag-pill.dead-404 { background: var(--accent-tint); color: var(--accent); }");
-    expect(css).toContain(".tag-pill.dead-410 { background: #e3e6ec; color: var(--muted); }");
+    expect(css).toContain(".tag-pill.dead-404 { background: #ffcccc; color: #660000; }");
+    expect(css).toContain(".tag-pill.dead-410 { background: #ffcc99; color: #663300; }");
     expect(css).toMatch(/\.tombstone-row \.row-title \{[^}]*overflow-wrap: normal;[^}]*word-break: keep-all;/);
     expect(css).toMatch(/\.tomb-path \.seg \{[^}]*direction: rtl;[^}]*text-overflow: ellipsis;/);
   });
