@@ -6,7 +6,8 @@ import { hauntThroughPopup, hudCount, openPreparedPopup, prepare, tickUntil, vis
 
 const WIDTHS = [1280, 375] as const;
 
-const FIXTURES = ["index", "trackers", "links", "dark-patterns", "column"] as const;
+// article: the restyle, tint and guestbook frame on a white page (full-overlay at 375); dark: no tint, light-blue links.
+const FIXTURES = ["index", "trackers", "links", "dark-patterns", "column", "article", "dark"] as const;
 
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
