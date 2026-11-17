@@ -30,13 +30,14 @@ Everything renders inside one closed Shadow DOM.
 
 - The host is `<hg-crypt>`, appended to `document.documentElement` with `position: fixed; inset: 0; z-index: 2147483647; pointer-events: none`.
 - No page node is touched.
-- The only document-level change is one adopted stylesheet. It holds the body padding and the HUD lift variable. Un-haunt removes it.
+- The only document-level change is one adopted stylesheet, the page sheet. It holds the body padding, the HUD lift variable, the content column restyle (fonts and links), and the parchment tint and guestbook frame drawn as `html::before` / `html::after` (see "Content column costume"). Un-haunt removes it together with the host.
 
 Layers, bottom to top:
 
 | z | Layer | pointer-events | Notes |
 |---|-------|----------------|-------|
-| 1 | Gutter starfield | none | Only outside the content column (see below) |
+| 0 | Page sheet: parchment tint, then guestbook frame | none | `html::before` / `html::after` at z-index 2147483646, one under the host, so every layer below sits above them |
+| 1 | Gutter starfield, or the 12px edge frame in full-overlay mode | none | The tile is never over the column's text (see below) |
 | 2 | Lanes: ghosts, vampires | sprites `auto`, lane `none` | Left/right gutter lanes, 64px wide |
 | 3 | Markers: tombstones, curse badges | marker `auto` | Pinned beside page elements |
 | 4 | Top bands: neighborhood bar + marquee | bar links `auto` | 24px + 24px |
@@ -71,8 +72,26 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
 - **Content column:**
   1. Start from the bounding box of `main`/`article`. If neither exists, use the widest block holding more than 50% of the page's text.
   2. Widen it to cover every text node rect.
-- **Gutters:** the gutters are everything left and right of the column. Fill them with the tile at opacity 0.92. A 16px edge toward the column is 2×2-checker dithered (1998 dithering, no gradients).
-- **Narrow pages:** with no gutter of 64px or more, the starfield appears only inside the top bands and the HUD. The page body stays fully visible.
+- **Gutters:** the gutters are everything left and right of the column. Fill them with the tile at opacity 0.92. A 16px edge toward the column is 2×2-checker dithered (1998 dithering, no gradients). The gutters stop 11px short of the column, where the guestbook frame's line is.
+- **Narrow pages (full-overlay mode):** with no gutter of 64px or more (phones, full-width pages), there are no gutters. The starfield appears inside the top bands, the HUD and a 12px edge frame fixed inside the viewport edges, whose inner 4px is 2×2-checker dithered. The whole page width is tinted and restyled, and the page sheet adds 12px to the body's inline padding so no text sits under the edge frame. The page body stays fully visible and clickable.
+
+### Content column costume
+
+The costume dresses the page itself, not only its edges. Everything here is rules in the page sheet, so no page element, attribute or inline style changes, and un-haunt takes it all away in one reflow.
+
+- **Restyle:**
+  - Body text in Times New Roman; `h1`, `h2` and `h3` (and what is inside them) in Comic Sans MS. `!important`, with `:where()` so the heading rule wins over the body rule.
+  - Kept as they are, with everything inside them: form controls (`input`, `textarea`, `select`, `button`), code (`pre`, `code`, `kbd`, `samp`, `tt`, `var`), `svg`, `math`, `i`, and icon fonts (`[class*="icon"]`, `fa-`, `material`, `glyph`, `[data-icon]`, `[aria-hidden="true"]`).
+  - Links underlined. Light pages: `#0000ff`, visited `#990099`, hover `#ff0000`. Dark pages: `#66ccff`, visited `#cc99ff`, hover `#ff0000`. No colour transition under reduced motion.
+  - Site chrome keeps its link colours, because it often sits on its own dark bar: links in `nav`, in a `header` or `footer` outside `main`/`article`, in the banner, navigation and contentinfo roles, and links dressed as buttons (`[role="button"]`, `[class*="btn"]`, `[class*="button"]`).
+  - Visited is `#990099`, the web-safe neighbour of the classic `#800080`.
+- **Light or dark:** the page is dark when the WCAG relative luminance of the body background (else `html`, else white) is under 0.4. It is checked again on resize, on a `prefers-color-scheme` change and when `class` or `style` changes on `html` or `body`.
+- **Contrast:** every link colour must reach 4.5:1 on what it sits on: the page background, multiplied by `#ffffcc` where the tint is drawn. A colour that misses moves to the nearest web-safe colour (RGB distance) that reaches it. On white the hover `#ff0000` (3.9:1 on parchment) becomes `#cc0000` (5.7:1).
+- **Parchment tint (light pages only):** `#ffffcc` with `mix-blend-mode: multiply` over the column, so white turns to old paper and black text stays black. It is `html::before` in the page sheet, not a shadow-root node: a blend inside the fixed `<hg-crypt>` host only blends with the host's own stacking context and would paint a flat yellow sheet over the text.
+- **Guestbook frame:** `html::after`, around the tint: a 6px ridge (an outer 3px band `#9999cc` top-left / `#333366` bottom-right, an inner 3px band reversed), a 1px `#000000` line and a `0 0 6px 1px #6633cc` glow, 4px clear of the column. Not drawn in full-overlay mode.
+- **Placement:** tint and frame are in document coordinates and run the full height of the document, like a 1998 page-long centred table. Their top is under the bands, so no strip of the modern page shows above them, and they scroll with the page on the compositor, so they never lag it. The column is measured again after the restyle lands and when web fonts load, because new fonts move the text.
+- **Pointer and focus:** every layer here has `pointer-events: none` and takes no focus; the edge frame is `aria-hidden`.
+- **Motion:** none of these layers animates. In the haunt moment the restyle lands at t=0 with the padding (one reflow), and the tint and frame wipe in behind the ghost with layer 1. Hide fades the tint and frame (200ms, instant under reduced motion); the restyle stays while hidden, because Hide keeps the haunt.
 
 ### Top bands: neighborhood bar + marquee
 
@@ -103,8 +122,8 @@ Each ghost body is `#ffffff` with `#ccffff` shade and `#000033` eyes. Its 2-art-
   - Row 1 holds Hide + counts. Row 2 holds the hit counter + web ring.
   - Never more than 2 rows (88px) and never horizontal scroll.
 - **Body padding:**
-  - The adopted stylesheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift.
-  - Both are computed once at haunt and when the HUD wraps.
+  - The page sheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
+  - They are computed at haunt and again when the HUD wraps, the lift changes or the mode changes.
   - The sheet is removed on Un-haunt, so page content is never trapped under the costume.
 - **Empty state:** when nothing is found, the counts are replaced by `No ghosts here. Suspiciously clean.`
 
@@ -355,7 +374,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | t (ms) | Layer | What happens | Easing |
 |--------|-------|--------------|--------|
 | 0-200 | FX vignette | Radial `#000033` from transparent centre to 40% at edges fades in | `cubic-bezier(.2,.8,.2,1)` |
-| 200-1100 | FX ghost + layers 1 and 4 | The 96×96 Webmaster's Ghost travels `translateX(-96px → 100vw)` at mid-viewport height, with one ±6px vertical bob (a single 900ms cycle). The gutter starfield and top bands reveal behind it via `clip-path: inset(0 calc(100% - X) 0 0)`. Ghost and clip share one timing object, so they stay synced. A 32px strip trails the ghost: a 2×2 checker of `#66ff99`/transparent, the dither seam. | `cubic-bezier(.45,0,.2,1)` |
+| 200-1100 | FX ghost + layers 1 and 4 | The 96×96 Webmaster's Ghost travels `translateX(-96px → 100vw)` at mid-viewport height, with one ±6px vertical bob (a single 900ms cycle). The gutter starfield (or edge frame), the parchment tint, the guestbook frame and the top bands reveal behind it via `clip-path: inset(0 calc(100% - X) 0 0)`. Ghost and clip share one timing object, so they stay synced. A 32px strip trails the ghost: a 2×2 checker of `#66ff99`/transparent, the dither seam. | `cubic-bezier(.45,0,.2,1)` |
 | 1100-1400 | FX | Ghost leaves the right edge. Vignette fades 40% → 0. Marquee starts scrolling. | `cubic-bezier(.2,.8,.2,1)` |
 | 1400-2000 | Lanes | Tracker ghosts rise 16px into their slots and fade 0 → 1, each 300ms, staggered 60ms (first 8; the rest arrive with the 8th). | `cubic-bezier(.2,.8,.2,1)` |
 | 1400-1700 | HUD | Slides up from `translateY(100%)` to its lifted position | `cubic-bezier(.2,.8,.2,1)` |
@@ -375,7 +394,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | 200-500 | Sprites sink 16px and fade |
 | 300-600 | HUD slides down |
 | 500-1100 | The Webmaster's Ghost crosses right → left (600ms). The clip shrinks behind it, handing the page back to the modern world. |
-| 1100 | The shadow host and the adopted stylesheet are removed together, so the body padding goes in one reflow. Page markup is byte-identical. |
+| 1100 | The shadow host and the page sheet are removed together, so the body padding, fonts and link colours go in one reflow. Page markup is byte-identical. |
 
 **prefers-reduced-motion: reduce**
 
@@ -449,6 +468,19 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "bevelDark": "#333366",
       "hudBevelLight": "#9999cc"
     },
+    "page": {
+      "link": "#0000ff",
+      "visited": "#990099",
+      "hover": "#ff0000",
+      "hoverFallback": "#cc0000",
+      "darkLink": "#66ccff",
+      "darkVisited": "#cc99ff",
+      "parchment": "#ffffcc",
+      "frameLight": "#9999cc",
+      "frameDark": "#333366",
+      "frameLine": "#000000",
+      "glow": "#6633cc"
+    },
     "hemTints": ["#ff99cc", "#99ccff", "#ccff99", "#ffcc99", "#cc99ff", "#99ffcc"],
     "fonts": ["Comic Sans MS", "Times New Roman"],
     "pixel": { "spriteScale": 3, "iconScale": 2 },
@@ -471,7 +503,13 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "cardWidth": 248,
       "tombstoneWidth": 176,
       "starTile": 64,
-      "minText": 11
+      "minText": 11,
+      "frameBevel": 6,
+      "frameGap": 4,
+      "edgeFrame": 12,
+      "edgeDither": 4,
+      "darkLuminance": 0.4,
+      "minContrast": 4.5
     },
     "hardShadow": "4px 4px 0 #000000",
     "focusRing": "2px dotted #ffff66, halo 0 0 0 5px #000000"

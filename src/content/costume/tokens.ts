@@ -22,7 +22,22 @@ export const PALETTE = {
   hudBevelLight: "#9999cc",
 } as const;
 
-export const HEM_TINTS = ["#ff99cc", "#99ccff", "#ccff99", "#ffcc99", "#cc99ff", "#99ffcc"] as const;
+/** The content column restyle (page sheet): link colours, the parchment tint and the guestbook frame. */
+export const PAGE = {
+  link: "#0000ff",
+  visited: "#990099",
+  hover: "#ff0000",
+  hoverFallback: "#cc0000",
+  darkLink: "#66ccff",
+  darkVisited: "#cc99ff",
+  parchment: "#ffffcc",
+  frameLight: "#9999cc",
+  frameDark: "#333366",
+  frameLine: "#000000",
+  glow: "#6633cc",
+} as const;
+
+export const HEM_TINTS =["#ff99cc", "#99ccff", "#ccff99", "#ffcc99", "#cc99ff", "#99ffcc"] as const;
 
 export const FONTS = ["Comic Sans MS", "Times New Roman"] as const;
 
@@ -49,6 +64,12 @@ export const LAYOUT = {
   tombstoneWidth: 176,
   starTile: 64,
   minText: 11,
+  frameBevel: 6,
+  frameGap: 4,
+  edgeFrame: 12,
+  edgeDither: 4,
+  darkLuminance: 0.4,
+  minContrast: 4.5,
 } as const;
 
 export const HARD_SHADOW = "4px 4px 0 #000000";

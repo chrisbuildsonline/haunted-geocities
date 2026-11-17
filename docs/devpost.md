@@ -12,7 +12,7 @@ The old GeoCities pages were loud, but you could see everything they did. A mode
 
 ## What it does
 
-- **Haunt and un-haunt** any page from the toolbar popup. The costume (night sky, a heads-up display along the bottom, a marquee) sits in a closed shadow root over the page. Un-haunting removes it and leaves the page's DOM as it was before.
+- **Haunt and un-haunt** any page from the toolbar popup. The page itself is restyled as a 1998 page (Times New Roman text, Comic Sans headings, blue underlined links, a parchment tint and a ridged guestbook frame around the content column), and the night sky, a heads-up display along the bottom and a marquee sit in a closed shadow root over it. Un-haunting removes it and leaves the page's DOM as it was before.
 - **Ghosts.** Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card.
 - **Exorcise** blocks a tracker company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - **Vampires.** Scripts caught fingerprinting while the page is haunted (canvas readback, AudioContext, font probing) become vampires. Companies Tracker Radar already rates as fingerprinters are listed as known vampires.
@@ -30,7 +30,7 @@ The code is MIT. The bundled tracker data, `src/data/trackers.json`, comes from 
 
 TypeScript, built with Vite into an MV3 extension: a service worker, a content script injected with `chrome.scripting` when you click Haunt, and a popup.
 
-- The costume lives in a closed shadow root with adopted stylesheets, so page CSS can't reach it and it can't reach the page. Apart from the overlay's host element, the only change to the page is an adopted stylesheet that pads the body for the bands and the HUD, and both go on un-haunt.
+- The costume lives in a closed shadow root with adopted stylesheets, so page CSS can't reach it and it can't reach the page. Apart from the overlay's host element, the only change to the page is one adopted stylesheet: it pads the body for the bands and the HUD and holds the restyle, and both go on un-haunt. The parchment tint is a `mix-blend-mode: multiply` pseudo-element in that stylesheet, because a blend inside the fixed shadow host only blends with the host itself.
 - Ghosts come from the page's resource timing entries, matched by host against the Tracker Radar data.
 - Vampire detection injects observe-only wrappers into the page's main world for the canvas, audio and font APIs. A wrapper reads the call stack to find which script called it, reports through a per-haunt nonce event, and is removed again on un-haunt.
 - Exorcise uses declarativeNetRequest session rules aimed at one tab.
@@ -47,7 +47,7 @@ The `.kiro/` folder holds what kiro-cli generated for the project. No MCP server
 
 ### Tests
 
-- more than 950 unit tests (`bun run test`), with happy-dom for the DOM parts.
+- more than 1000 unit tests (`bun run test`), with happy-dom for the DOM parts.
 - more than 110 end-to-end tests (`bun run test:e2e`) that load the unpacked extension in headless Chromium and drive it on local fixture pages, including checks that un-haunting leaves the page byte for byte as it was.
 - 14 visual screenshot tests (`bun run test:visual`): the costume on five fixture pages and the popup before and after haunting, each at 1280 and 375 pixels wide, compared with baselines made in the Playwright Docker image.
 - `bun run lint:manifest` checks the shipping manifest: MV3, the four permissions and nothing more, no remote code, no `'unsafe-eval'`.
