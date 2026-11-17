@@ -412,7 +412,7 @@ Requirements 71-90. Do 17.1 first: its result can change requirement 77.
   - Req: 71-81
   - Test: `bun run visual:baselines`, then `bun run docker:test` passes `test:visual` against the committed PNGs.
 
-- [ ] 17.15 README hero shot: retake `docs/screenshots/haunted.png` with `bun run screenshots` so it shows the costumed column (restyled text, frame, tint). Update the README "What it does" lines that describe the costume as a frame only.
+- [x] 17.15 README hero shot: retake `docs/screenshots/haunted.png` with `bun run screenshots` so it shows the costumed column (restyled text, frame, tint). Update the README "What it does" lines that describe the costume as a frame only.
   - Req: 71, 75, 77
   - Test: the new PNG shows the frame and tinted column; `bun run typecheck` and `bun run test` still pass.
 

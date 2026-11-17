@@ -1,14 +1,14 @@
 # Haunted GeoCities
 
-A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page gets a night sky, a heads-up display and a marquee. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
+A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page itself turns 1998: Times New Roman text, Comic Sans headings, blue underlined links and a parchment column in a ridged guestbook frame, under a night sky, a heads-up display and a marquee. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
 
 A pre-period prototype exists outside the entry and was rebuilt from lessons, not copied; Tracker Radar ingest output is the only reused data.
 
-![A haunted page: a tracker ghost, two vampires, the HUD along the bottom](docs/screenshots/haunted.png)
+![A haunted page: the article in Times New Roman on a parchment column inside a ridged guestbook frame, a tracker ghost and two vampires in the starfield, the HUD along the bottom](docs/screenshots/haunted.png)
 
 ## What it does
 
-- Haunt and un-haunt any page from the toolbar popup. The costume (starfield, HUD, marquee) sits in a closed shadow root over the page, and un-haunting removes it.
+- Haunt and un-haunt any page from the toolbar popup. The page is restyled (fonts, link colours, a parchment tint and a guestbook frame around the content column) by one adopted stylesheet, and the starfield, HUD and marquee sit in a closed shadow root over it. On a phone or a full-width page the whole page is tinted inside a 12px starfield edge. Un-haunting removes it all and the page is byte for byte as it was.
 - Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card.
 - Exorcise blocks a company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - Scripts caught fingerprinting at runtime (canvas, audio or font probing) become vampires. Companies that Tracker Radar already rates as fingerprinters are listed as known vampires.
@@ -57,6 +57,8 @@ It serves them on `http://127.0.0.1:4321` (`scripts/fixture-server.ts`, an optio
 | `index.html` | A plain newspaper page with a form and links. Haunt it and un-haunt it. |
 | `clean.html` | A quiet page with no trackers. |
 | `column.html` | A long article, good for seeing the costume around a page. |
+| `article.html` | A plain white article with code, an icon and a form: the restyle, the tint and the guestbook frame. |
+| `dark.html` | A dark page: no tint, light-blue links. |
 | `trackers.html` | Ghosts (Criteo), plus Hotjar and Taboola as known vampires. Try Exorcise on the card or in the popup. |
 | `vampires.html` | Two scripts that fingerprint the visitor when you click into the email field. After that they show up as caught vampires. |
 | `links.html` | Three dead links (404, 410 and a long path) that get tombstones. |
@@ -69,7 +71,7 @@ The tracker and vampire pages load scripts from real tracker domains. Chrome has
 google-chrome --user-data-dir=/tmp/hg-profile --host-resolver-rules="MAP criteo.com 127.0.0.1,MAP hotjar.com 127.0.0.1,MAP taboola.com 127.0.0.1,MAP adentifi.com 127.0.0.1,MAP nightowl-metrics.test 127.0.0.1"
 ```
 
-`index.html`, `clean.html`, `column.html`, `links.html`, `dark-patterns.html` and `forms.html` work in any Chrome. The tracker and vampire pages need the flag, because otherwise the tracker hosts do not resolve and nothing is seen.
+`index.html`, `clean.html`, `column.html`, `article.html`, `dark.html`, `links.html`, `dark-patterns.html` and `forms.html` work in any Chrome. The tracker and vampire pages need the flag, because otherwise the tracker hosts do not resolve and nothing is seen.
 
 ## Permissions
 
