@@ -144,7 +144,7 @@ Each gutter has `background-image` set to the tile URL, `background-repeat: repe
 
 ### Narrow pages
 
-[Amended] If `gutterWidths(column, viewportWidth)` returns null (`contentColumn.left < 64 && (viewport.width - contentColumn.right) < 64`), the gutters are not rendered and the renderer enters **full-overlay mode**: the starfield appears inside the top bands and HUD (as before) and in a 12px edge frame (see "Content Column Costume"). The page body stays fully visible and clickable.
+[Amended] If `gutterWidths(column, viewportWidth)` returns null (`contentColumn.left < 64 && (viewport.width - contentColumn.right) < 64`), the gutters are not rendered and the renderer enters **full-overlay mode**: the starfield appears inside the top bands and HUD (as before) and in a 12px edge frame (see "Content Column Costume"). The page body stays fully visible and clickable. Ghosts and vampires, which have no lanes in this mode, are shown in the docked graveyard strip (see "Docked Graveyard (no gutters)" below).
 
 ## Top Bands (`bands.ts`)
 
@@ -535,3 +535,89 @@ Content column costume (`e2e/costume.spec.ts`, plus visual baselines in `e2e-vis
 - At 375px wide, `elementFromPoint` on each link and form control returns the page element, and the page's form still submits.
 - Un-haunt: `outerHTML` and `document.adoptedStyleSheets` match their pre-haunt values, body font and link colour are back to the originals.
 - Reduced motion: the frame, tint and edge frame have `animation-name: none` and no transitions.
+
+
+## Docked Graveyard (no gutters)
+
+Requirements 91-113. In full-overlay mode `gutterWidths` is null, `planSlots` returns `[]`, and `updateGhosts` therefore shows nothing. Only the HUD counts and the odometer say anything about trackers. The graveyard strip puts the same companies, with the same cards, in a row docked above the HUD.
+
+### Layout
+
+```
+viewport (375px)
+┌────────────────────────────┐
+│ neighborhood bar / marquee │  z4
+│ ... page ...               │
+│                            │
+│ ┌ Graveyard ─────────────┐ │  z5  #graveyard  (4px above the HUD)
+│ │ [👻][👻][🧛][👻] → scroll│ │
+│ └────────────────────────┘ │
+│ ┌ HUD ───────────────────┐ │  z5  #hud
+│ │ Hide  counts  Souls …  │ │
+│ └────────────────────────┘ │
+└────────────────────────────┘
+```
+
+- **Element.** `#graveyard` is a new direct child of `#crypt-root`, created after `#hud` in `render.ts` (`croot.append(starfield, lanes, markers, bands, hud, graveyard, cards, tab)`). It must be a direct child because Hide works as `.costume-hidden > :not(#show-tab) { opacity: 0; pointer-events: none }` (requirement 95). Putting it inside `#lanes` would also hide it in lane mode logic and tie it to `planSlots`. It is `hidden` in lane mode.
+- **Position.** `position: fixed; left/right: 8px; max-width: 720px; margin: 0 auto` like the HUD (4px insets at 400px or less). `bottom: calc(8px + var(--hg-lift, 0px) + var(--hg-hud-h, 40px) + 4px)`. `--hg-hud-h` is a new custom property on `#crypt-root`, written by `render.ts` from `hud.offsetHeight` in `pad()`. That is the same measurement the page sheet already uses, so the strip follows the HUD when it wraps to two rows below 400px (requirement 95) and when `--hg-lift` changes.
+- **Structure.** A `role="region"` `aria-label="Graveyard of trackers"` box with two children: a label bar (`Graveyard`, 11px) and a `.stones` row (`display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 4px 8px`). Sprite buttons are flex items with `flex: 0 0 auto`. Row height is the tallest sprite (vampire, 54px) plus the 4px paddings. Label bar is `LAYOUT.minText` (11px) text on a 16px bar. Both heights are CSS constants, but the page sheet uses the measured `offsetHeight`.
+- **Frame.** Same as the HUD: `#000033` ground, 2px bevel `#9999cc`/`#333366` as inset shadows, 1px `#000000` border, `HARD_SHADOW`. The starfield tile at 30% on the HUD is not repeated; the strip uses the flat ground so sprite silhouettes stay readable (assumption, easy to change).
+- **Scrolling.** `overscroll-behavior-x: contain` so a swipe at the end of the row does not scroll the page. `scroll-snap-type` is not used. Focus moves with Tab and the browser scrolls the focused button into view; `scroll-behavior: auto` always (requirement 107). The sprite buttons are the keyboard path: Tab reaches each one and scrolls it into view, so the row needs no `tabindex` of its own (verify in the e2e run).
+- **Mode switch.** `measure()` already knows `overlay`. After it, `render.ts` calls `placeGhosts()`, which now does one of two things: in lane mode `updateGhosts(lanes, ...)` and `dockGraveyard(graveyard, [], ...)` (hide and empty the strip); in full-overlay mode `updateGhosts(lanes, companies, [], ...)` (empties the lanes) and `updateDocked(graveyard, companies, opts)`. One company is therefore never in both places (requirement 96).
+
+### Code shape
+
+- `ghosts.ts`: pull the per-company button builder out of `updateGhosts` into `makeSprite(doc, hit, tint, opts)` and `applyState(el, hit, exorcised)` (label, `exorcised` class, `EXORCISED` stamp). `updateGhosts` calls them; `updateDocked` calls them too. This keeps the label text (requirement 98) and exorcised look (requirement 99) in one place. No change to lane behaviour.
+- `ghosts.ts`: `orderCompanies(companies)` returns ghosts by `byCountThenName`, then vampires by name, and `assignTints` runs over the ghosts in that order. Both the lanes and the strip use it, which is how requirement 92 holds ("same order as the lanes").
+- `ghosts.ts` (or a small new `graveyard.ts`, one responsibility per module per `structure.md`): `updateDocked(strip, companies, opts)` reuses elements by `kind:company` key like `updateGhosts`, appends only new ones (moving a focused node drops focus, requirement 100), and removes the ones no longer present. No `+N` overflow stack: the strip scrolls instead.
+- `hud.ts`: `buildHud` gets the new odometer label (below). `buildGraveyard(doc)` can live in `hud.ts` or in the new module; it returns the empty strip.
+- `render.ts`: `bounds()` returns `bottom: graveyard shown ? graveyard.offsetTop : hud.offsetTop`, so cards opened from a docked sprite (or any card) are kept clear of the strip as well as the HUD. `pad()` passes `hud.offsetHeight` plus the strip's `offsetHeight + 4` (when shown) to `page.update`. A second `ResizeObserver` entry observes the strip so a label wrap or sprite-row change re-pads.
+- `body-padding.ts`: `update(hudHeight, lift)` is called with the combined height, so the signature does not change. `padding-bottom` already is `original + hudHeight + 16 + lift`. Passing `hud + strip + 4` is enough. No new rule in the page sheet.
+- `styles.ts`: new `#graveyard` rules, plus `.costume-hidden`, the reduced-motion block and the focus ring selectors extended to the strip's buttons. Colours from `PALETTE` only.
+
+### Cards and focus
+
+The strip's buttons call the existing `onOpen(company, opener)` from `render.ts`, so `openCard` gets the sprite as `opener` and returns focus to it on close. Card placement uses `bounds()`; the card's own anchor logic for lane ghosts places it beside the ghost, and for a docked sprite this means above the strip, so the check (task 18.4) is that a card opened from the leftmost and rightmost sprite at 375px stays 8px inside the viewport and does not cover the strip's other sprites more than it has to. If `openCard` assumes a gutter slot, a docked-anchor branch is added there. Confirm when implementing.
+
+### Empty state (open choice)
+
+Requirement 103 shows the label bar and `No graves yet.` when there are no trackers. The cost is about 50px of permanent chrome on every tracker-free narrow page, on top of the HUD, and the HUD's own empty state (`No ghosts here. Suspiciously clean.`) already says the same thing. The default in this design is to **show the empty strip**, because the brief asks for it. If the screenshots look crowded at 375px, switch to hiding the strip when empty, and change requirement 103 to match.
+
+### Odometer label (requirements 104-106)
+
+- `.hits` gets a two-line label: `<span class="label">Souls counted</span><span class="sub">tracker requests blocked or seen</span>`. The visible label drops the colon, since the sub-label follows it.
+- `.hits` gets `title="tracker requests blocked or seen"`, and `setOdometer` writes `aria-label = "Souls counted: 000123, tracker requests blocked or seen"` (it already writes `Souls counted: <digits>`, so only the tail changes). It stays `role="img"` with children `aria-hidden`.
+- Sub-label: Comic Sans MS 11px, `#ffffcc` on `#000033` (ratio is above 4.5:1, already tested in task 15.3). On one line it adds about 200px to the odometer. At 400px or less the HUD's row 2 holds the hit counter and web ring, and 375px minus 8px insets cannot hold both with the sub-label. Plan: below 400px the sub-label is visually hidden (the `.sr` pattern the HUD already uses, so it stays in the accessible name) and the `title` still carries it. Above 400px it shows under the label, and the HUD's `min-height` grows to fit (checked in the visual shots at 1280px).
+- "Blocked or seen": the odometer is the total tracker requests seen from Resource Timing (requirement 34); blocked requests are the same requests after Exorcise, so the number is one count. The wording says both so a reader does not think Exorcise should lower it.
+
+### Motion
+
+- The lane `.bob` and `.sway` float keyframes are reused on strip sprites, with `--phase` as in the lanes. `.reduced-motion #graveyard * { animation: none !important }`. `riseIn` and `vampireIn` are not called for strip sprites under reduced motion (`opts.rise` is false when `motion.matches`, as in the lanes).
+- The strip has no haunt-moment animation of its own. It is added to the HUD's slide-up (`runHauntMoment` animates `#hud` today; the strip gets the same `translateY(100% → 0)` keyframes at the same delay) and to the un-haunt HUD slide-down (requirement 108). `haunt-moment.ts` was not read for this change: when implementing, add the strip wherever `#hud` is animated, as one extra target and not a new phase.
+
+### Z-order and hit testing
+
+| Layer | z-index | Notes |
+|-------|---------|-------|
+| starfield, edge frame | 1 | unchanged |
+| lanes | 2 | empty in full-overlay mode |
+| markers | 3 | unchanged |
+| top bands | 4 | unchanged |
+| HUD, graveyard | 5 | strip is after the HUD in DOM order and 4px above it, so they never overlap |
+| cards | 6 | above the strip (requirement 110) |
+| FX | 7 | unchanged |
+| `#show-tab` | by DOM order | after Hide, strip and HUD are `pointer-events: none` |
+
+`#crypt-root` and the host are `pointer-events: none`; only the strip box (and the HUD) set `auto` (requirement 111). The edge frame's bottom strip (12px) sits under the HUD and the graveyard (layer 1 against 5).
+
+### Tokens reused from `tokens.ts`
+
+`PALETTE.crypt` (ground), `PALETTE.hudBevelLight` and `PALETTE.bevelDark` (bevel), `PALETTE.ink` (1px line), `PALETTE.bone` (text), `HARD_SHADOW`, `FOCUS_RING`, `SPRITES.ghost` and `SPRITES.vampire` (48×48 and 48×54), `PIXEL.spriteScale`, `HEM_TINTS` through `assignTints`, `LAYOUT.hudMaxWidth`, `LAYOUT.hudWrapBelow` (400), `LAYOUT.minText` (11), `MOTION`. One new value: `LAYOUT.graveyardGap = 4` (the gap above the HUD), mirrored in `design/DESIGN.md` Tokens. Nothing else new. The label and empty-state strings live in `render.ts`/`hud.ts` like the HUD's other strings.
+
+### Test strategy additions
+
+Unit tests (`test/costume/graveyard.test.ts`, odometer tests extended): strip hidden in lane mode and shown in full-overlay mode; order equals the lanes' order for a mixed set; one 48px button per company; aria-label strings equal the lane ghost's; click, Enter and Space call `onOpen`; exorcised class and stamp on and off; element reuse keeps focus; empty state text; label text and classes; reduced motion has `animation: none`; Hide hides it; `padding-bottom` includes strip height + 4; mode switch moves companies between lanes and strip with none in both; un-haunt removes it and restores `outerHTML` and `adoptedStyleSheets`; odometer label, sub-label, `title` and `aria-label`.
+
+E2E (`e2e/graveyard.spec.ts`): at 375px on `trackers.html` (tracker hosts mapped as in the README) and on a full-width fixture, the strip shows one sprite per company in the right order, scrolls when there are more than fit, opens the card by keyboard and click, exorcise shows the stamp, `elementFromPoint` on page controls above the strip returns the page element, the last page line can be scrolled above the strip, Hide hides the strip, un-haunt is byte-identical.
+
+Visual: the existing 375px baselines for `trackers.html` change (strip now visible), and a 1280px shot is unchanged except the HUD's odometer label.

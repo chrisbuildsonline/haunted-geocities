@@ -6,6 +6,8 @@ This spec covers the **costume renderer**: the visual costume that draws the 199
 
 The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`. Colours are web-safe only, fonts are Comic Sans MS and Times New Roman, and every pixel-art asset is original. The costume lives inside the shadow root, plus one document-level change: a single adopted stylesheet (the "page sheet", `addPageSheet` in `body-padding.ts`). The page sheet holds the body padding, the `--hg-lift` variable and the content-column restyle (see "Content Column Costume"). It is removed together with the shadow host on un-haunt, so the page returns byte-identical to its pre-haunt state.
 
+**Docked graveyard.** Requirements 91-113 add a strip above the HUD that shows ghosts and vampires in full-overlay mode, where there are no gutter lanes, and make the odometer label say plainly what it counts. Requirements 4, 12 and 32 were amended for it and are marked `[Amended]`.
+
 **Design change (judges' request).** The costume must transform the page's content column itself, not only frame it with gutter starfield. Requirements 71-90 ("Content Column Costume") add that. Requirements 2, 3, 4, 8, 12, 52 and 53 were amended so they no longer contradict it. Amended lines are marked `[Amended]`.
 
 ## EARS Acceptance Criteria
@@ -15,7 +17,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 1. The costume renderer shall render all layers inside the closed Shadow DOM root returned by `haunt()` from `src/content/overlay.ts`, never touching any page DOM node.
 2. [Amended] The costume shall establish layers with the z-index order: starfield (1), lanes (2), markers (3), top bands (4), HUD (5), cards (6), haunt-moment FX (7), matching `design/DESIGN.md`. The content-column tint, guestbook frame and full-overlay frame (requirements 71-90) are sub-layers of layer 1, drawn in that order (tint, then frame), so lanes, markers, bands, HUD and cards always sit above them.
 3. [Amended] The only document-level change outside the shadow root shall be one `CSSStyleSheet` appended to `document.adoptedStyleSheets` (the page sheet). It holds the `--hg-lift` variable, body `padding-top` and `padding-bottom`, body inline padding in full-overlay mode, and the content-column restyle rules of requirement 71. No page `<style>` or `<link>` element, attribute or inline style shall be modified.
-4. The page sheet shall set `padding-top` to the page's original computed value plus 48px, and `padding-bottom` to the original value plus HUD height + 16px + `--hg-lift`.
+4. [Amended] The page sheet shall set `padding-top` to the page's original computed value plus 48px, and `padding-bottom` to the original value plus HUD height + 16px + `--hg-lift`, plus the graveyard strip's height + 4px while the strip is drawn (requirement 94).
 5. The page-sheet values shall be recomputed when the HUD wraps (below 400px viewport width) and when the HUD lift changes.
 6. Un-haunt shall remove the shadow host and the page sheet together, so body padding and the restyle change in one reflow.
 
@@ -26,7 +28,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 9. A 16px edge of the starfield toward the content column shall use a 2×2 checker dither (no gradients).
 10. The content column shall start from the bounding box of `main` or `article`; if neither exists, from the widest block holding more than 50% of the page's text.
 11. The content column shall be widened to cover every text-node rect plus 12px on each side, so no text sits closer than 16px to the guestbook frame.
-12. [Amended] When no gutter is 64px or wider (phones, full-width pages), the renderer shall enter full-overlay mode (requirements 80-81) instead of drawing gutters. The starfield shall then appear inside the top bands, the HUD and the 12px edge frame, and nowhere else. The page body shall remain fully visible and clickable.
+12. [Amended] When no gutter is 64px or wider (phones, full-width pages), the renderer shall enter full-overlay mode (requirements 80-81) instead of drawing gutters. The starfield shall then appear inside the top bands, the HUD and the 12px edge frame, and nowhere else, except the graveyard strip (requirements 91-113), which holds the company sprites. The page body shall remain fully visible and clickable.
 
 ### Top Bands: Neighborhood Bar + Marquee
 
@@ -58,7 +60,7 @@ The renderer builds every layer from the `## Tokens` JSON in `design/DESIGN.md`.
 
 ### Hit Counter (Odometer)
 
-32. The hit counter shall display a label `Souls counted:` and a 6-digit odometer.
+32. [Amended] The hit counter shall display a label `Souls counted` with a sub-label (requirements 104-106) and a 6-digit odometer.
 33. Each odometer cell shall be 10×16px, `#000000` ground, with `#66ff99` pixel digits from an original 5×7 font.
 34. The odometer value shall be the total tracker requests seen (zero in this spec, since trackers are out of scope).
 35. During the haunt moment, the odometer digits shall roll from `000000` to the count as continuous `translateY` strips, right digit first, over 600ms.
@@ -146,3 +148,46 @@ These requirements make the costume transform the page's content column itself. 
 88. The restyle shall be expressed only as rules in the page sheet. The renderer shall not add, remove or change any page element, attribute, class, inline style or event handler to apply it.
 89. The colours of requirements 71-80 shall be added to `design/DESIGN.md` under `## Tokens` as `costume.page` (links `#0000ff`, visited `#800080`, hover `#ff0000`, hover fallback `#cc0000`, dark links `#66ccff`, dark visited `#cc99ff`, parchment `#ffffcc`, frame `#9999cc`, `#333366`, `#000000`, glow `#6633cc`), each web-safe, and mirrored in `tokens.ts`.
 90. Every layer in this section shall have `pointer-events: none` and `aria-hidden="true"`, and shall not take focus.
+
+
+### Docked Graveyard (no gutters)
+
+Today `gutterWidths` returns null on 375px pages and full-width pages (full-overlay mode, requirements 80-81), `planSlots` returns no slots, and ghosts and vampires are not shown at all. Only the HUD odometer counts them. These requirements add a docked graveyard strip that shows them in that mode. "Company sprite" means a ghost or vampire, one per tracker company, as in the lanes. Lane mode (a gutter of 64px or wider) is unchanged and shows no strip.
+
+**Strip and order**
+
+91. Where the renderer is in full-overlay mode and at least one tracker company has been found, the renderer shall draw a graveyard strip in the shadow root, fixed at the bottom of the viewport directly above the HUD (4px between the strip's bottom edge and the HUD's top edge), with the same left and right insets, max-width and centring as the HUD.
+92. The graveyard strip shall hold one 48px-wide company sprite per company, in the same order as the lanes: ghosts by request count (most first, then by name), then vampires by name.
+93. Where the sprites do not fit the strip's width, the strip shall scroll horizontally (`overflow-x: auto`, no vertical scroll, no wrapping), a focused sprite shall scroll into view, and the strip shall never cause horizontal scroll of the page.
+94. The graveyard strip shall not cover page text more than the HUD already does: the page sheet shall add the strip's height plus its 4px gap to body `padding-bottom` (extending requirement 4), and shall remove it again when the strip is hidden or removed.
+95. The graveyard strip shall hide and show together with the HUD: when Hide is activated it shall fade out with the other costume layers (requirement 28) and take no pointer events, and the Show tab (requirement 29) shall restore it. The strip's position shall follow `--hg-lift` and the HUD's height, including the HUD's two-row wrap at 400px or less (requirement 27).
+96. When the renderer leaves full-overlay mode (for instance the viewport is widened until a gutter of 64px exists), the strip shall be removed and the ghosts and vampires shall return to the lanes. The reverse also applies. Company sprites shall never be shown in the lanes and the strip at the same time.
+
+**Sprites as buttons**
+
+97. Each company sprite in the strip shall be a `<button type="button">` that is keyboard focusable, with the costume focus ring (requirement 63), and that opens the same card as the company's lane ghost (same `onOpen(company, opener)` path, same card content, same exorcise action, same focus return to the sprite on close) on click, `Enter` or `Space`.
+98. Each company sprite shall have an `aria-label` naming the company and its request count in the same words as the lane ghost's label: `<company>, tracker ghost, seen <n> time(s)` for a ghost, and `<company>, vampire, caught doing <what>` or `<company>, vampire, known to fingerprint` for a vampire.
+99. A company that is exorcised shall be shown the same way as in the lanes: the `exorcised` state class and the `EXORCISED` stamp on its sprite, and the card shall show its exorcised state. Un-exorcising (from the card or the popup) shall remove both.
+100. Each company's sprite element shall be reused across updates, so a focused sprite keeps focus when counts, order or exorcise state change, as lane ghosts do.
+
+**Label and empty state**
+
+101. The graveyard strip shall have a label bar reading `Graveyard`, in the Win95 HUD idiom: Comic Sans MS 11px `#ffffcc` text on the HUD's `#000033` ground, with the HUD's 2px bevel (`#9999cc` top-left, `#333366` bottom-right), the 1px `#000000` outer line and the hard shadow `4px 4px 0 #000000`.
+102. The graveyard strip shall be a `role="region"` landmark with `aria-label="Graveyard of trackers"`, and its sprites shall be in DOM order, which is the visual order.
+103. Where the renderer is in full-overlay mode and no tracker company has been found, the renderer shall show the strip's empty state: the label bar and the text `No graves yet.` in Comic Sans MS 13px `#ffffcc`, and no sprites. (Open choice, see design.md: the empty strip may stay hidden instead. If it does, requirements 91 and 94 apply to it as zero height.)
+
+**HUD odometer label**
+
+104. The HUD odometer label shall say what it counts: the visible label shall read `Souls counted` with a sub-label `tracker requests blocked or seen`, and the hit-counter element shall have a `title` of `tracker requests blocked or seen`.
+105. The hit counter's `aria-label` shall say the same: `Souls counted: <six digits>, tracker requests blocked or seen`. This applies in every mode, not only full-overlay mode.
+106. The sub-label shall meet the 4.5:1 contrast of requirement 65 and be at least 11px (`LAYOUT.minText`). It shall not push the HUD over its two-row limit at 400px or less (requirement 27); where it does not fit, the sub-label may be dropped visually (the `title` and `aria-label` stay).
+
+**Motion, tokens, z-order, un-haunt**
+
+107. When `prefers-reduced-motion: reduce` is active, company sprites in the strip shall not float, sway or bob (`animation: none`), shall not rise into place when they arrive, and the strip shall scroll without smooth-scroll animation. Toggling the preference while haunted shall take effect live (requirement 56).
+108. Where reduced motion is not active, company sprites in the strip may use the lane float animation, which shall stay under the 3 Hz ceiling (requirement 66). The haunt moment shall not animate the strip beyond the HUD's slide up (requirement 45): the strip slides up with the HUD.
+109. Every colour, size and font in the strip shall come from `tokens.ts` (`PALETTE`, `SPRITES`, `LAYOUT`, `HARD_SHADOW`, `FOCUS_RING`), with no hard-coded colour in the costume CSS (requirement 60). Any new layout value shall be added to `LAYOUT` and to `design/DESIGN.md`.
+110. The graveyard strip shall sit at z-index 5 with the HUD, above the lanes, markers and top bands (2, 3, 4) and below the cards (6) and the haunt-moment FX (7), so an open card is never covered by the strip.
+111. The strip shall take pointer events (`pointer-events: auto`) only on its own box. The rest of the viewport shall stay clickable, and `elementFromPoint` on every page link, button and form control outside the strip and the HUD shall still return the page's own element (requirement 81).
+112. Un-haunt shall remove the strip with the shadow host in the same step (requirements 52 and 86), including its listeners and the extra `padding-bottom` in the page sheet. After un-haunt, `document.documentElement.outerHTML` and `document.adoptedStyleSheets` shall equal their pre-haunt values (requirements 53, 70 and 87).
+113. The strip shall make no change to any page node, script or form (requirements 67-69), and the ghost-card, exorcise and `TRACKER_UPDATE` message flows shall be unchanged.

@@ -419,3 +419,68 @@ Requirements 71-90. Do 17.1 first: its result can change requirement 77.
 - [x] 17.16 Update `design/DESIGN.md`: the "Overlay layers" paragraph (document-level change now also holds the restyle), the layer table (tint, frame and edge frame in layer 1), "Starfield" (narrow pages become full-overlay mode), "Body padding", a new "Content column costume" subsection, and `costume.page` in `## Tokens` (requirement 89).
   - Req: 2, 3, 8, 12, 89
   - Test: `test/costume/tokens.test.ts` → `"page tokens match DESIGN.md costume.page"`; manual read-through that no sentence in DESIGN.md says the starfield or the page sheet is padding-only.
+
+
+## 18. Docked Graveyard (no gutters)
+
+Requirements 91-113. Do 18.1 first: the other tasks share the sprite builder it extracts.
+
+- [ ] 18.1 Refactor `ghosts.ts` with no behaviour change: extract `makeSprite`, `applyState` (label, `exorcised` class, `EXORCISED` stamp) and `orderCompanies` from `updateGhosts`, so lanes and strip share them. Existing lane tests must pass unchanged.
+  - Req: 92, 98, 99, 100
+  - Test: `test/costume/ghosts.test.ts` (existing) still passes, plus `"orderCompanies puts ghosts by count then name, then vampires by name"`.
+
+- [ ] 18.2 Add `updateDocked(strip, companies, opts)` (in `ghosts.ts` or a new `graveyard.ts`) and `buildGraveyard(doc)`: `#graveyard` region with the `Graveyard` label bar, a `.stones` row, empty state `No graves yet.`, one 48px `<button type="button">` per company reusing elements by `kind:company` key, no `+N` overflow stack.
+  - Req: 91, 92, 93, 97, 98, 99, 100, 101, 102, 103
+  - Test: `test/costume/graveyard.test.ts` → `"one 48px button per company in lane order"`, `"aria-label matches the lane ghost's label"`, `"click, Enter and Space call onOpen with the sprite as opener"`, `"exorcised class and stamp on and off"`, `"focused sprite keeps focus across updates and reorder"`, `"empty state shows the label bar and 'No graves yet.'"`, `"row scrolls horizontally and never wraps"`.
+
+- [ ] 18.3 Wire it in `render.ts`: `#graveyard` as a direct child of `#crypt-root` after `#hud`; `--hg-hud-h` set from `hud.offsetHeight`; in full-overlay mode `placeGhosts` empties the lanes and fills the strip, in lane mode the reverse; `bounds().bottom` is the strip's top when it is shown; `pad()` passes HUD + strip + 4px; a `ResizeObserver` watches the strip; listeners and observer removed on un-haunt.
+  - Req: 91, 94, 95, 96, 110, 111, 112
+  - Test: `test/costume/render.test.ts` → `"375px page: strip shown above the HUD with 4px gap, lanes empty"`, `"lane page: strip hidden, lanes filled"`, `"resize across the 64px gutter boundary moves companies, never both"`, `"padding-bottom includes strip height + 4px, and drops it when hidden"`, `"strip follows --hg-lift and the HUD's two-row wrap at 400px"`, `"card opened from a docked sprite stays above the strip and 8px inside the viewport"`.
+
+- [ ] 18.4 Check card placement for a docked sprite: `openCard` anchors beside a lane ghost today. Confirm it works from a sprite in the bottom strip, at the leftmost and rightmost sprite at 375px; add a docked-anchor branch to `card.ts` only if it does not. Focus returns to the sprite on close.
+  - Req: 97, 110
+  - Test: `test/costume/card.test.ts` → `"card from a docked sprite is placed above the strip inside bounds"` and `"focus returns to the docked sprite on close"`.
+
+- [ ] 18.5 Hide / Show and z-order: the strip fades and takes no pointer events on Hide, returns on Show, sits at z-index 5 under the cards (6) and over the lanes and bands, and takes pointer events on its own box only.
+  - Req: 95, 110, 111
+  - Test: `test/costume/hide-show.test.ts` → `"Hide fades the graveyard with the HUD and Show restores it"`; `test/costume/stylesheet.test.ts` → `"graveyard z-index is 5, cards 6"`; `test/costume/render.test.ts` → `"costume host never intercepts pointer hits"` (extended to the strip's surroundings).
+
+- [ ] 18.6 Styles and tokens: `#graveyard` rules in `styles.ts` from `PALETTE`, `HARD_SHADOW`, `FOCUS_RING`, `SPRITES`, `LAYOUT` only; add `LAYOUT.graveyardGap = 4` to `tokens.ts`; `overscroll-behavior-x: contain`; focus ring on the strip's buttons.
+  - Req: 101, 109
+  - Test: `test/costume/stylesheet.test.ts` → `"no hard-coded hex outside PALETTE constants in CSS text"` (existing) and `"graveyard has HUD bevel, 1px line, hard shadow and focus ring"`; `test/costume/tokens.test.ts` → `"graveyardGap is 4 and matches DESIGN.md"`.
+
+- [ ] 18.7 HUD odometer label: `Souls counted` with sub-label `tracker requests blocked or seen`, `title` on `.hits`, `aria-label` `Souls counted: <digits>, tracker requests blocked or seen`; sub-label visually hidden but kept in the accessible name at 400px or less, so the HUD stays within two rows.
+  - Req: 32 (amended), 104, 105, 106
+  - Test: `test/costume/odometer.test.ts` → `"label reads 'Souls counted' with the sub-label"`, `"title and aria-label say tracker requests blocked or seen"`, `"aria-label keeps the six digits"`; `test/costume/hud.test.ts` → `"HUD stays within two rows at 375px with the new label"`; `test/costume/accessibility.test.ts` → `"sub-label contrast is at least 4.5:1 and at least 11px"`.
+
+- [ ] 18.8 Reduced motion: no float, sway, bob or rise in the strip, no smooth scroll; live `matchMedia` toggle. With motion on, the float stays under 3 Hz and the strip slides up and down with the HUD in the haunt and un-haunt moments, with no phase of its own.
+  - Req: 107, 108
+  - Test: `test/costume/reduced-motion.test.ts` → `"graveyard sprites have animation none under reduced motion"` and `"no rise for docked sprites under reduced motion"`; `test/costume/haunt-moment.test.ts` → `"graveyard slides with the HUD, no extra phase"`; `test/costume/accessibility.test.ts` → `"no animation has a period under 333ms (3 Hz)"` (existing) still passes.
+
+- [ ] 18.9 Un-haunt and non-destructive checks: strip, listeners and extra padding gone with the host and page sheet; `outerHTML` and `adoptedStyleSheets` equal their pre-haunt values; page nodes, scripts, forms and the `TRACKER_UPDATE`, exorcise and card flows unchanged.
+  - Req: 112, 113
+  - Test: `test/costume/unhaunt.test.ts` → `"graveyard gone and adoptedStyleSheets equal pre-haunt after unhaunt"`; `test/costume/render.test.ts` → `"no page DOM nodes modified outside shadow host"` (existing) still passes with trackers present.
+
+- [ ] 18.10 Unit test pass: `bun run typecheck` and `bun run test` pass with all of the above.
+  - Req: 91-113
+  - Test: `bun run typecheck && bun run test`.
+
+- [ ] 18.11 E2E at 375px and on a full-width fixture: use `trackers.html` at a 375px viewport, and a viewport or fixture where the column leaves no 64px gutter at full width (use `article.html` or `column.html` with trackers added, or add a fixture page, `fixtures/` is allowed to grow, if none qualifies). Check strip presence and order, scrolling when crowded, opening a card by click and by keyboard (Tab, Enter, Space), exorcise stamp, `elementFromPoint` on page controls, last page line reachable above the strip, Hide and Show, un-haunt byte-identical, and the odometer label in the shadow DOM.
+  - Req: 91-113
+  - Test: `e2e/graveyard.spec.ts` → `"375px: graveyard shows one sprite per company in lane order"`, `"full-width page: graveyard shown, no lanes"`, `"strip scrolls when sprites do not fit and the page does not"`, `"sprite opens its card by click, Enter and Space, focus returns"`, `"exorcise from a docked card stamps the sprite and the popup agrees"`, `"page links and form controls still hit the page, last line scrolls above the strip"`, `"Hide hides the strip, Show restores it"`, `"odometer says tracker requests blocked or seen"`, `"unhaunt: outerHTML and adoptedStyleSheets equal pre-haunt"`, `"reduced motion: no animation on docked sprites"`.
+
+- [ ] 18.12 Docker visual baselines: add `trackers.html` at 375px with the strip (several companies, one exorcised) and a full-width page with the strip to `e2e-visual/`, regenerate all baselines in the Playwright image with `bun run visual:baselines`, look at every changed PNG (strip, label, odometer label, HUD wrap, card above the strip), and only then commit them. Then `bun run docker:test` passes `test:visual` against the committed PNGs.
+  - Req: 91-106
+  - Test: `bun run visual:baselines`, then `bun run docker:test`; manual look at the changed PNGs in `e2e-visual/__screenshots__/` (the 1280px popup and haunted shots change only if the odometer label does).
+
+- [ ] 18.13 README and docs screenshot, if affected: check the README "What it does" lines about ghosts (they say trackers appear as ghosts and mention the HUD) and the `docs/screenshots/` images. Add a line that on a narrow or full-width page the ghosts and vampires sit in a graveyard strip above the HUD. Retake `docs/screenshots/haunted.png` with `bun run screenshots` only if it shows a full-overlay page or the HUD's odometer label (it shows the HUD along the bottom, so it very likely changes).
+  - Req: 91, 104
+  - Test: the new PNG shows the strip or the new label; `bun run typecheck` and `bun run test` still pass.
+
+- [ ] 18.14 Update `docs/devpost.md` Challenges: the line "Ghosts stay in the gutters (on a narrow screen they only appear in the HUD count), and badges and cards are kept clear of text and at least 8px from the viewport edges at 1280 and 375 pixels." becomes one that says ghosts stay in the gutters on wide pages and dock in a graveyard strip above the HUD on narrow ones. Search `docs/` for other statements that ghosts are missing on narrow pages.
+  - Req: 91
+  - Test: `grep -rn "only appear in the HUD count" docs README.md design` returns nothing.
+
+- [ ] 18.15 Update `design/DESIGN.md`: layer table (graveyard at layer 5 with the HUD), the HUD section (odometer label, sub-label, `title`), the ghost placement section (lane mode and docked mode), a "Docked graveyard" subsection (layout, bevel, label, empty state, reduced motion), the narrow-page paragraph (ghosts no longer HUD-only), and `LAYOUT.graveyardGap` in `## Tokens`.
+  - Req: 2, 104, 109, 110
+  - Test: `test/costume/tokens.test.ts` → `"graveyardGap is 4 and matches DESIGN.md"`; manual read-through that no sentence in DESIGN.md or the README says ghosts are absent on narrow pages.
