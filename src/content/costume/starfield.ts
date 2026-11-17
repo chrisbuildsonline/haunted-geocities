@@ -119,11 +119,27 @@ export function buildStarfield(doc: Document): HTMLElement {
 /** Clear px between the dither edge and the text column (the lanes are still planned from the full gutter). */
 const EDGE_GAP = 4;
 
-/** Size the gutters, EDGE_GAP short of the column; a side too narrow for its 16px dither edge stays hidden. */
-export function layoutStarfield(field: HTMLElement, widths: Column | null): void {
+/**
+ * The full-overlay frame for pages with no gutter: four 12px strips of the tile inside the
+ * viewport edges, each with a 4px 2×2-checker dithered inner edge. Hidden until full-overlay mode.
+ */
+export function buildEdgeFrame(doc: Document): HTMLElement {
+  const frame = doc.createElement("div");
+  frame.id = "edge-frame";
+  frame.hidden = true;
+  frame.setAttribute("aria-hidden", "true");
+  frame.innerHTML = ["top", "right", "bottom", "left"].map((s) => `<div class="ef ${s}"><div class="ef-dither"></div></div>`).join("");
+  return frame;
+}
+
+/**
+ * Size the gutters `gap` px short of the column (EDGE_GAP, or the guestbook frame's reach when it
+ * is drawn); a side too narrow for its 16px dither edge stays hidden.
+ */
+export function layoutStarfield(field: HTMLElement, widths: Column | null, gap = EDGE_GAP): void {
   for (const side of ["left", "right"] as const) {
     const g = field.querySelector(`.gutter.${side}`) as HTMLElement;
-    const w = Math.max(0, (widths?.[side] ?? 0) - EDGE_GAP);
+    const w = Math.max(0, (widths?.[side] ?? 0) - gap);
     g.hidden = w < 16;
     g.style.width = `${w}px`;
   }

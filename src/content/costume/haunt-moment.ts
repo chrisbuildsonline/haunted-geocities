@@ -30,7 +30,15 @@ function hudDrop(hud: HTMLElement): number {
 // The reveal edge sits 16px into the ghost, so the costume appears right behind it.
 const clipAt = (x: string) => `inset(0 calc(100% - ${x}) 0 0)`;
 
-export function playHaunt(croot: HTMLElement, reduced: boolean): Moment {
+/**
+ * A page-sheet layer (the tint or frame pseudo-element of <html>) that wipes in with layer 1.
+ * `left` is its box's viewport x, so the same viewport reveal edge is shifted into its own box; the
+ * -8px insets keep the frame's line and glow, which sit outside its box, inside the clip.
+ */
+export type Reveal = { el: Element; pseudo: string; left: number };
+const pseudoClip = (x: string, left: number) => `inset(-8px calc(100% - ${x} + ${left}px) -8px -8px)`;
+
+export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = []): Moment {
   if (reduced) {
     const fade = croot.animate([{ opacity: 0 }, { opacity: 1 }], { duration: M.reducedHaunt, easing: "linear" });
     return { done: settle([fade]), finish: () => fade.finish() };
@@ -53,6 +61,9 @@ export function playHaunt(croot: HTMLElement, reduced: boolean): Moment {
   for (const id of ["starfield", "top-bands"]) {
     run(layer(croot, id), [{ clipPath: clipAt("-80px") }, { clipPath: clipAt("100vw - 16px") }], wipe);
   }
+  for (const r of reveal) {
+    run(r.el, [{ clipPath: pseudoClip("-80px", r.left) }, { clipPath: pseudoClip("(100vw - 16px)", r.left) }], { ...wipe, pseudoElement: r.pseudo });
+  }
   // Tracker ghosts rise 16px into their slots, 60ms apart; the 9th onward arrive with the 8th.
   croot.querySelectorAll("#lanes > :not(.vampire)").forEach((g, i) => anims.push(riseIn(g, 1400 + Math.min(i, 7) * 60)));
   // Vampires fade in at 1800ms, then the caught ones swell into their hot glow once.
@@ -69,7 +80,7 @@ export function playHaunt(croot: HTMLElement, reduced: boolean): Moment {
   return { done: settle(anims).then(() => fx.remove()), finish: () => anims.forEach((a) => a.finish()) };
 }
 
-export function playUnhaunt(croot: HTMLElement, reduced: boolean): Promise<void> {
+export function playUnhaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = []): Promise<void> {
   const run = (el: Element, kf: Keyframe[], o: KeyframeAnimationOptions) => el.animate(kf, { fill: "forwards", ...o });
   if (reduced) return settle([run(croot, [{ opacity: 1 }, { opacity: 0 }], { duration: M.reducedUnhaunt, easing: "linear" })]);
   croot.querySelector("#fx")?.remove();
@@ -78,7 +89,13 @@ export function playUnhaunt(croot: HTMLElement, reduced: boolean): Promise<void>
   fx.querySelector(".vignette")!.remove();
   const hud = layer(croot, "hud");
   const back = { delay: 500, duration: 600, easing: M.easeInOut };
+  // The page-sheet layers shrink away too; their held end state is dropped in the same task as the
+  // sheet (no frame is drawn in between), so no finished animation is left on the page's <html>.
+  const pseudo = reveal.map((r) =>
+    run(r.el, [{ clipPath: pseudoClip("(100vw + 80px)", r.left) }, { clipPath: pseudoClip("-16px", r.left) }], { ...back, pseudoElement: r.pseudo }),
+  );
   return settle([
+    ...pseudo,
     run(layer(croot, "markers"), [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "linear" }),
     run(layer(croot, "lanes"), [{ transform: "translateY(0px)", opacity: 1 }, { transform: "translateY(16px)", opacity: 0 }], { delay: 200, duration: 300, easing: M.easeOut }),
     run(hud, [{ transform: "translateY(0px)" }, { transform: `translateY(${hudDrop(hud)}px)` }], { delay: 300, duration: 300, easing: M.easeOut }),
@@ -87,5 +104,5 @@ export function playUnhaunt(croot: HTMLElement, reduced: boolean): Promise<void>
     ...["starfield", "top-bands"].map((id) =>
       run(layer(croot, id), [{ clipPath: clipAt("100vw + 80px") }, { clipPath: clipAt("-16px") }], back),
     ),
-  ]);
+  ]).then(() => pseudo.forEach((a) => a.cancel()));
 }

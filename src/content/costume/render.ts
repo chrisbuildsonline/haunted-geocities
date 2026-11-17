@@ -5,11 +5,14 @@ import { checkLinks } from "../link-check";
 import { collectLinks } from "../links";
 import { buildBands, MARQUEE_LINES, marqueeSeconds, topOffset } from "./bands";
 import { addPageSheet } from "./body-padding";
-import { playHaunt, playUnhaunt, type Moment } from "./haunt-moment";
+import { documentHeight, FRAME, FRAME_OUT, frameBox, TINT, tintBox, type Box } from "./column-layers";
+import { playHaunt, playUnhaunt, type Moment, type Reveal } from "./haunt-moment";
 import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud";
+import { pageTheme } from "./page-theme";
 import { watchReducedMotion } from "./reduced-motion";
-import { buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
+import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
+import { LAYOUT } from "./tokens";
 import trackerJson from "../../data/trackers.json";
 import { resolveNeighborhood } from "../../data/neighborhood";
 import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
@@ -38,6 +41,8 @@ type Costume = {
   /** The slot for the tombstone visuals: called with the full dead list whenever it changes. */
   onTombstones?: (dead: DeadLink[]) => void;
   dead: () => DeadLink[];
+  /** The page-sheet layers (tint, frame) drawn now, for the wipe. */
+  reveals: () => Reveal[];
   moment?: Moment;
   leaving?: Promise<void>;
   rehaunt?: boolean;
@@ -80,6 +85,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
 
   const croot = el(doc, "crypt-root");
   const starfield = buildStarfield(doc);
+  const edgeFrame = buildEdgeFrame(doc);
+  starfield.append(edgeFrame);
   const bands = buildBands(doc, resolveNeighborhood(win.location.hostname));
   const hud = buildHud(doc);
   const tab = doc.createElement("button");
@@ -91,19 +98,48 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const markers = el(doc, "markers");
   croot.append(starfield, lanes, markers, bands, hud, cards, tab);
 
-  // Measure the page before the padding sheet moves anything.
-  let gutters: Column | null = null;
-  const measure = () => {
-    gutters = gutterWidths(computeContentColumn(doc), doc.documentElement.clientWidth || win.innerWidth);
-    layoutStarfield(starfield, gutters);
-    bands.style.top = `${topOffset(doc)}px`;
-    return sampleBottomLift(doc);
-  };
-  let lift = measure();
   root.append(croot);
   const page = addPageSheet(doc);
+  let lift = 0;
   const pad = () => page.update(Math.ceil(hud.offsetHeight), lift);
-  pad();
+
+  // Measure with the page sheet on: the restyle changes the page's fonts, so it moves the text.
+  // Full-overlay mode (no gutter of 64px) adds 12px inline padding, which narrows the column, so
+  // its gutters are judged as if that padding were not there, and the column is measured again.
+  let gutters: Column | null = null;
+  let overlay = false;
+  let drawn: { tint: Box | null; frame: Box | null } = { tint: null, frame: null };
+  const vw = () => doc.documentElement.clientWidth || win.innerWidth;
+  const measure = () => {
+    const theme = pageTheme(doc);
+    page.set({ theme });
+    bands.style.top = `${topOffset(doc)}px`;
+    lift = sampleBottomLift(doc);
+    pad();
+    let col = computeContentColumn(doc);
+    const inset = overlay ? LAYOUT.edgeFrame : 0;
+    const full = gutterWidths({ left: col.left - inset, right: col.right + inset }, vw()) === null;
+    if (full !== overlay) {
+      overlay = full;
+      page.set({ overlay });
+      col = computeContentColumn(doc);
+    }
+    gutters = overlay ? null : gutterWidths(col, vw());
+    layoutStarfield(starfield, gutters, FRAME_OUT);
+    edgeFrame.hidden = !overlay;
+    // Document x; in full-overlay mode the whole page is the column, so the tint spans it.
+    const width = vw() + win.scrollX;
+    const span = { ...(overlay ? { left: 0, right: width } : { left: col.left + win.scrollX, right: col.right + win.scrollX }), height: documentHeight(doc) };
+    const empty = col.right <= col.left;
+    drawn = {
+      tint: !empty && theme.tint ? tintBox(span, width) : null,
+      frame: !empty && !overlay ? frameBox(span, width) : null,
+    };
+    page.set(drawn);
+  };
+  measure();
+  const reveals = (): Reveal[] =>
+    ([[TINT, drawn.tint], [FRAME, drawn.frame]] as const).flatMap(([pseudo, b]) => (b ? [{ el: doc.documentElement, pseudo, left: b.left - win.scrollX }] : []));
 
   // Ghosts: one per tracker company, in the lanes between the bands and the HUD (offsets, not
   // rects, so the haunt moment's transforms do not move the slots).
@@ -218,11 +254,13 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const hide = hud.querySelector("button.hide") as HTMLButtonElement;
   hide.addEventListener("click", () => {
     croot.classList.add("costume-hidden");
+    page.set({ hidden: true }); // tint and frame fade; the restyle stays (haunt state is kept)
     tab.hidden = false;
     tab.focus();
   });
   tab.addEventListener("click", () => {
     croot.classList.remove("costume-hidden");
+    page.set({ hidden: false });
     tab.hidden = true;
     if (motion.matches) {
       line++;
@@ -239,8 +277,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     win.requestAnimationFrame(() => {
       queued = false;
       if (!croot.isConnected) return;
-      lift = measure();
-      pad();
+      measure();
       placeGhosts();
       tombs.place();
       badges.place();
@@ -252,6 +289,12 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     scheduleRescan();
   });
   mo.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style", "hidden"] });
+  // Light or dark can change with a class or style on <html> (theme switches) or the colour scheme.
+  mo.observe(doc.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+  const scheme = win.matchMedia?.("(prefers-color-scheme: dark)");
+  scheme?.addEventListener?.("change", relayout);
+  // Web fonts arriving change the text metrics, and so the column.
+  doc.fonts?.addEventListener?.("loadingdone", relayout);
   const ro = typeof win.ResizeObserver === "function" ? new win.ResizeObserver(pad) : undefined;
   ro?.observe(hud);
 
@@ -309,6 +352,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     addDead,
     onTombstones: tombs.update,
     dead: () => dead,
+    reveals,
   };
   costumes.set(doc, costume);
   // Curses: what is on the page now, then every clock that starts to tick.
@@ -330,6 +374,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
     page.remove();
     motion.stop();
     mo.disconnect();
+    scheme?.removeEventListener?.("change", relayout);
+    doc.fonts?.removeEventListener?.("loadingdone", relayout);
     ro?.disconnect();
     win.removeEventListener("resize", relayout);
     doc.removeEventListener("visibilitychange", onVisibility);
@@ -339,7 +385,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   // Nobody sees a wipe in a background tab: arrive settled there.
   const animate = !doc.hidden;
   showLine(animate && !motion.matches ? 1100 : 0);
-  if (animate) costume.moment = playHaunt(croot, motion.matches);
+  // The restyle lands at t=0 with the padding (one reflow); the tint and frame wipe in behind the ghost.
+  if (animate) costume.moment = playHaunt(croot, motion.matches, reveals());
   if (costume.moment) costume.moment.done.then(() => (settled = true));
   else settled = true;
   // Only inside the extension: unit tests (no chrome global) never touch the network.
@@ -384,7 +431,7 @@ export function leaveCostume(doc: Document = document): Promise<void> {
   c.stopScan();
   send({ type: "CLEAR_EXORCISE" });
   c.moment?.finish();
-  const played = doc.hidden ? Promise.resolve() : playUnhaunt(c.croot, c.reduced());
+  const played = doc.hidden ? Promise.resolve() : playUnhaunt(c.croot, c.reduced(), c.reduced() ? [] : c.reveals());
   c.leaving = played.then(() => {
     unhaunt(doc);
     if (c.rehaunt) renderCostume(doc);

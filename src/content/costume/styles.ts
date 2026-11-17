@@ -48,6 +48,18 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .right .edge { left: 0; }
 @keyframes hg-twinkle { from { opacity: .4; } to { opacity: 1; } }
 
+#edge-frame { position: absolute; inset: 0; pointer-events: none; }
+.ef { position: absolute; box-sizing: border-box; background-image: ${stars}; background-attachment: fixed; background-clip: content-box; opacity: .92; }
+.ef.top { top: 0; left: 0; right: 0; height: ${L.edgeFrame}px; padding-bottom: ${L.edgeDither}px; }
+.ef.bottom { bottom: 0; left: 0; right: 0; height: ${L.edgeFrame}px; padding-top: ${L.edgeDither}px; }
+.ef.left { top: 0; bottom: 0; left: 0; width: ${L.edgeFrame}px; padding-right: ${L.edgeDither}px; }
+.ef.right { top: 0; bottom: 0; right: 0; width: ${L.edgeFrame}px; padding-left: ${L.edgeDither}px; }
+.ef-dither { position: absolute; background-image: ${stars}; background-attachment: fixed; mask-image: ${checkerUrl(P.ink)}; mask-size: 4px 4px; }
+.top .ef-dither { left: 0; right: 0; bottom: 0; height: ${L.edgeDither}px; }
+.bottom .ef-dither { left: 0; right: 0; top: 0; height: ${L.edgeDither}px; }
+.left .ef-dither { top: 0; bottom: 0; right: 0; width: ${L.edgeDither}px; }
+.right .ef-dither { top: 0; bottom: 0; left: 0; width: ${L.edgeDither}px; }
+
 #neighborhood { display: flex; align-items: center; justify-content: space-between; height: ${L.neighborhoodBar}px; padding: 0 4px 0 10px; background: ${P.cryptViolet}; color: ${P.bone}; font: 13px ${TIMES}; box-shadow: inset 0 -1px 0 ${P.spectral}; white-space: nowrap; }
 #neighborhood b { letter-spacing: .5px; }
 #neighborhood .where { flex: none; }
@@ -169,5 +181,6 @@ button:focus-visible { ${ring} }
 
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }
 .reduced-motion .marquee-track { display: block; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; transform: none; }
+#edge-frame, #edge-frame * { animation: none !important; transition: none !important; }
 `;
 }
