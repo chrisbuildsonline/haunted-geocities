@@ -47,4 +47,14 @@ for (const width of WIDTHS) {
       await expect(popup).toHaveScreenshot(`popup-${screen}-${width}.png`, { fullPage: true });
     });
   }
+
+  test(`permissions @${width}`, async ({ context, extensionId }) => {
+    // The Win95 dialog on the teal desktop, before Chrome is asked.
+    const page = await context.newPage();
+    await prepare(page, width);
+    await page.goto(`chrome-extension://${extensionId}/permissions.html`);
+    await expect(page.getByRole("button", { name: "Allow link checks" })).toBeVisible();
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot(`permissions-${width}.png`);
+  });
 }

@@ -163,7 +163,7 @@ test("scripts caught fingerprinting become vampires; the page is not changed and
   await page.screenshot({ path: `${SHOTS}/desktop-1280-card-unlisted.png`, caret: "initial" });
   await page.keyboard.press("Escape");
 
-  // The popup lists them after the (zero) ghosts with Caught pills; Exorcise only for the tracker company.
+  // The popup lists them after the (zero) ghosts with Caught tags; Exorcise only for the tracker company.
   await popup.bringToFront();
   const rows = () =>
     popup.locator(".vampire-row").evaluateAll((rs) =>
@@ -173,15 +173,15 @@ test("scripts caught fingerprinting become vampires; the page is not changed and
     ["AdTheorent", "Caught", "Canvas readback · AudioContext · font probing", "Exorcise"],
     [VAMPIRE_HOSTS.unlisted, "Caught", "Canvas readback · AudioContext · font probing", null],
   ]);
-  // At 360px a person can read who was caught and what it did: no name or caught line is cut off, and the line stays muted.
+  // At 360px a person can read who was caught and what it did: no name or caught line is cut off, and the line keeps the #333333 sub-line colour.
   const cut = await popup.locator(".vampire-row").evaluateAll((rs) =>
     rs.flatMap((r) => [...r.querySelectorAll<HTMLElement>(".row-title, .row-sub")].filter((e) => e.scrollWidth > e.clientWidth).map((e) => `${e.className}: ${e.textContent}`)),
   );
   expect(cut).toEqual([]);
-  expect(await popup.locator(".vampire-row .row-sub").evaluateAll((ss) => ss.map((s) => getComputedStyle(s).color))).toEqual(["rgb(91, 97, 112)", "rgb(91, 97, 112)"]);
+  expect(await popup.locator(".vampire-row .row-sub").evaluateAll((ss) => ss.map((s) => getComputedStyle(s).color))).toEqual(["rgb(51, 51, 51)", "rgb(51, 51, 51)"]);
   await expect(popup.locator('[data-count="ghosts"] .num')).toHaveText("0");
   await expect(popup.locator('[data-count="vampires"] .num')).toHaveText("2");
-  expect(await popup.locator(".tag-pill.caught").first().evaluate((p) => [getComputedStyle(p).backgroundColor, getComputedStyle(p).color])).toEqual(["rgb(241, 236, 251)", "rgb(102, 51, 204)"]);
+  expect(await popup.locator(".tag-pill.caught").first().evaluate((p) => [getComputedStyle(p).backgroundColor, getComputedStyle(p).color])).toEqual(["rgb(204, 204, 255)", "rgb(51, 0, 153)"]);
   await popup.screenshot({ path: `${SHOTS}/popup-360.png`, fullPage: true });
 
   // The wrappers hand back exactly what the originals would.

@@ -49,7 +49,7 @@ The `.kiro/` folder holds what kiro-cli generated for the project. No MCP server
 
 - more than 1000 unit tests (`bun run test`), with happy-dom for the DOM parts.
 - more than 110 end-to-end tests (`bun run test:e2e`) that load the unpacked extension in headless Chromium and drive it on local fixture pages, including checks that un-haunting leaves the page byte for byte as it was.
-- 18 visual screenshot tests (`bun run test:visual`): the costume on seven fixture pages and the popup before and after haunting, each at 1280 and 375 pixels wide, compared with baselines made in the Playwright Docker image.
+- 20 visual screenshot tests (`bun run test:visual`): the costume on seven fixture pages, the popup before and after haunting and the `permissions.html` dialog, each at 1280 and 375 pixels wide, compared with baselines made in the Playwright Docker image.
 - `bun run lint:manifest` checks the shipping manifest: MV3, the four permissions and nothing more, no remote code, no `'unsafe-eval'`.
 - `bun run docker:test` runs all of the above in a clean Playwright image.
 

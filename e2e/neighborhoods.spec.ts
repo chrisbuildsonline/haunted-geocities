@@ -13,7 +13,7 @@ const WIDTHS = [1280, 375] as const;
 const SHOTS = "test-results/neighborhoods";
 const LOCAL = resolveNeighborhood("127.0.0.1");
 const TINTS = HEM_TINTS as readonly string[];
-const MUTED = "rgb(91, 97, 112)";
+const SUB = "rgb(51, 51, 51)"; // the #333333 sub-line colour
 const ON = "Link checks are on. You can close this tab.";
 const REFUSED = "Chrome didn't allow it. Link checks stay off.";
 const LINK_OFF = "Asks Chrome to visit linked sites. Off.";
@@ -230,7 +230,7 @@ for (const width of WIDTHS) {
       const line = popup.locator("h1 + p.address");
       await expect(line).toHaveText(LOCAL.address);
       await expect(popup.locator(".address")).toHaveCount(1);
-      expect(await line.evaluate((p) => [getComputedStyle(p).color, getComputedStyle(p).fontSize, p.scrollWidth <= p.clientWidth])).toEqual([MUTED, "13px", true]);
+      expect(await line.evaluate((p) => [getComputedStyle(p).color, getComputedStyle(p).fontSize, p.scrollWidth <= p.clientWidth])).toEqual([SUB, "12px", true]);
     });
 
     test("the idle popup shows no address", async ({ context, sw, extensionId }) => {
@@ -404,26 +404,26 @@ for (const width of WIDTHS) {
       expect(ctx.context.pages().filter((p) => p.url().endsWith("/permissions.html"))).toHaveLength(0);
     });
 
-    test("permissions.html looks like the popup design at 1280 and 375", async ({ context, sw, extensionId }) => {
+    test("permissions.html is a Win95 dialog on a teal desktop at 1280 and 375", async ({ context, sw, extensionId }) => {
       const ctx = { context, sw, extensionId };
       const { page, allow } = await permissionsPage(ctx, width, true);
       await page.screenshot({ path: `${SHOTS}/permissions-${width}-before.png` });
       const look = await page.evaluate(() => {
         const cs = (el: Element) => getComputedStyle(el);
-        const surface = document.querySelector(".surface")!;
+        const surface = document.querySelector(".dialog")!;
         return {
           canvas: cs(document.body).backgroundColor,
           surface: [cs(surface).backgroundColor, cs(surface).borderRadius],
-          buttons: [...document.querySelectorAll("button")].map((b) => [b.textContent, cs(b).backgroundColor, cs(b).color, b.classList.contains("pill")]),
+          buttons: [...document.querySelectorAll("button")].map((b) => [b.textContent, cs(b).backgroundColor, cs(b).color, b.classList.contains("primary")]),
           heading: document.querySelector("h1")!.textContent,
           scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth,
           animated: document.getAnimations().length,
         };
       });
       expect(look).toEqual({
-        canvas: "rgb(238, 240, 244)",
-        surface: ["rgb(255, 255, 255)", "18px"],
-        buttons: [["Allow link checks", "rgb(17, 19, 24)", "rgb(255, 255, 255)", true]],
+        canvas: "rgb(0, 128, 128)",
+        surface: ["rgb(192, 192, 192)", "0px"],
+        buttons: [["Allow link checks", "rgb(192, 192, 192)", "rgb(0, 0, 0)", true]],
         heading: "Check links to other sites",
         scroll: 0,
         animated: 0,
