@@ -180,7 +180,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   // docks every company in the strip. A company is never in both.
   const placeGhosts = () => {
     const opts = { exorcised, onOpen, rise: settled && !motion.matches };
-    graveyard.hidden = !overlay;
+    // Empty, it stays hidden: the HUD already says "No ghosts here", and a tracker-free phone page keeps its room.
+    graveyard.hidden = !overlay || scan.companies.length === 0;
     updateDocked(graveyard, overlay ? scan.companies : [], opts);
     const b = bounds();
     slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));

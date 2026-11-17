@@ -1,6 +1,6 @@
 // Tracker detector end to end on fixtures/trackers.html (Criteo ×3, Hotjar ×2, Taboola ×1 through
 // --host-resolver-rules): ghosts in the lanes, HUD counts, the popup list, Exorcise from the ghost
-// card, Let it back, narrow pages, reduced motion and a byte-identical page after un-haunt.
+// card, Let it back, narrow pages (the graveyard strip), reduced motion and a byte-identical page after un-haunt.
 import type { Page, Request } from "@playwright/test";
 import { expect, fixture, haunt, openPopup, shadowOf, tabIdOf, TRACKER_HOSTS, trackerUrl, test, type InShadow } from "./fixtures";
 
@@ -84,7 +84,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
   expect(look.focusable).toBe(true);
   expect(look.overlaps).toEqual([]);
   expect(look.lowest).toBeLessThanOrEqual(look.hudTop);
-  expect([look.ghostCount, look.emptyHidden, look.odometer]).toEqual(["1", true, "Souls counted: 000006"]); // Hotjar and Taboola score 2 for fingerprinting: known vampires, not ghosts
+  expect([look.ghostCount, look.emptyHidden, look.odometer]).toEqual(["1", true, "Souls counted: 000006, tracker requests blocked or seen"]); // Hotjar and Taboola score 2 for fingerprinting: known vampires, not ghosts
   await shot(page, "desktop-1280");
 
   // Open Criteo's card and exorcise it from the costume.
@@ -140,7 +140,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
   expect(await sw.evaluate(() => chrome.declarativeNetRequest.getSessionRules())).toEqual([]);
 });
 
-test("a 375px page has no lane: ghosts live in the HUD count only, nothing over text", async ({ context, sw }) => {
+test("a 375px page has no lane: the ghosts dock in the graveyard strip, none in the lanes", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 375, height: 740 });
   await page.goto(fixture("trackers.html"));
@@ -148,7 +148,11 @@ test("a 375px page has no lane: ghosts live in the HUD count only, nothing over 
   await page.waitForTimeout(2600);
   const look = await lanesLook(await shadowOf(page));
   expect(look.companies).toEqual([]);
-  expect([look.ghostCount, look.odometer]).toEqual(["1", "Souls counted: 000006"]); // Criteo only: Hotjar and Taboola are known vampires now
+  const docked = await (await shadowOf(page))(function () {
+    return [...this.querySelectorAll<HTMLElement>("#graveyard .stones > button")].map((g) => g.dataset.company);
+  });
+  expect(docked).toEqual(["Criteo", "Hotjar", "Taboola"]);
+  expect([look.ghostCount, look.odometer]).toEqual(["1", "Souls counted: 000006, tracker requests blocked or seen"]); // Criteo only: Hotjar and Taboola are known vampires now
   await shot(page, "narrow-375");
 });
 

@@ -49,7 +49,7 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
       vh: innerHeight,
     };
   });
-  expect(look.layers.slice(0, 6)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "cards"]);
+  expect(look.layers.slice(0, 7)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "graveyard", "cards"]);
   expect(look.fxGone).toBe(true);
   expect(look.gutters).toHaveLength(2);
   expect(look.gutters[0]).toBeGreaterThanOrEqual(64);
@@ -69,7 +69,8 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   expect(look.hud.shadow).toContain("rgb(0, 0, 0) 4px 4px 0px 0px");
   expect(look.hudText).toContain("Hide");
   expect(look.hudText).toContain("No ghosts here. Suspiciously clean.");
-  expect(look.hudText).toContain("Souls counted:");
+  expect(look.hudText).toContain("Souls counted");
+  expect(look.hudText).toContain("tracker requests blocked or seen");
   expect(look.hudText).toContain("« prev | Haunted WebRing | next »");
 });
 

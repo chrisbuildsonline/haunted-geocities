@@ -128,7 +128,7 @@ button:focus-visible { ${ring} }
 
 #graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 16px; padding: 0 6px 0 4px; color: ${P.bone}; font: 11px/16px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
 #graveyard .gy-icon svg { display: block; image-rendering: pixelated; }
-#graveyard .stones { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 14px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
+#graveyard .stones { display: flex; flex-wrap: nowrap; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
 #graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: 48px; height: 54px; justify-content: flex-end; }
 #graveyard .tag { display: none; }
 #graveyard .stamp { top: 14px; }

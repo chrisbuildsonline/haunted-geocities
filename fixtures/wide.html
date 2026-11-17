@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Harbour Board Notices</title>
+    <style>
+      /* A full-width page: the text runs edge to edge, so no gutter is 64px wide at any size. */
+      body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #222; background: #ffffff; }
+      main { padding: 16px 20px 24px; }
+      h1 { font-size: 2rem; margin: 0 0 0.5rem; }
+      p { margin: 0 0 1rem; }
+      form { display: flex; gap: 8px; margin: 1rem 0; }
+      input { flex: 1; min-width: 0; font: inherit; padding: 4px 8px; }
+      img { display: block; width: 1px; height: 1px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Harbour Board Notices</h1>
+      <p>The north slipway is closed for repairs from Monday until the end of the month. Boats due for the winter lift should book a slot on the south slipway with the harbour office, which is open every weekday morning, and bring their insurance papers along with the hull length and draught.</p>
+      <p>The fuel berth now takes cards only. Diesel and petrol are both available, and the pump on the outer pontoon has been replaced with one that reads in litres. Please do not leave vessels on the fuel berth overnight, as the early fishing boats need it from five in the morning.</p>
+      <p>Visitors' moorings are free for the first night during the off season. See the <a id="moorings" href="/index.html">moorings page</a> for the tide tables and the <a id="contact" href="/thanks.html">contact list</a> for the harbourmaster and the lifeboat station.</p>
+      <form action="/thanks.html">
+        <label for="q">Search notices</label>
+        <input id="q" name="q" />
+        <button id="go">Search</button>
+      </form>
+      <p>The annual dinner is on the second Saturday of December in the sailing club. Tickets are at the bar, and the raffle is in aid of the lifeboat crew, who were called out thirty-one times this year.</p>
+      <p id="last">Last line: the harbour office closes for the holidays on the twenty-third and opens again on the second of January.</p>
+
+      <!--
+        Third-party requests, by company: Criteo 2, AdTheorent 1, Hotjar 1, Taboola 1.
+        The e2e browser maps these real tracker domains to the local fixture server (e2e/fixtures.ts).
+      -->
+      <img alt="" src="http://criteo.com:4321/t/p.svg?n=w1" />
+      <img alt="" src="http://criteo.com:4321/t/p.svg?n=w2" />
+      <img alt="" src="http://adentifi.com:4321/t/p.svg?n=w1" />
+      <img alt="" src="http://hotjar.com:4321/t/p.svg?n=w1" />
+      <img alt="" src="http://taboola.com:4321/t/p.svg?n=w1" />
+    </main>
+  </body>
+</html>

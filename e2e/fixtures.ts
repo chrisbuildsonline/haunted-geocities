@@ -29,7 +29,19 @@ export const VAMPIRE_HOSTS = { tracker: "adentifi.com", unlisted: "nightowl-metr
  * ghosts that would all wear one colour without assignTints.
  */
 export const TINT_HOSTS = { Chartbeat: "chartbeat.net", Quantcast: "quantcount.com" } as const;
-const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
+/**
+ * Six more real tracker domains, six more companies (two ghosts, four known vampires), so
+ * e2e/graveyard.spec.ts can crowd the docked graveyard strip past the width of a phone.
+ */
+export const CROWD_HOSTS = {
+  comScore: "scorecardresearch.com",
+  Microsoft: "adnxs.com",
+  "Google Ads (Google)": "doubleclick.net",
+  Outbrain: "outbrain.com",
+  "Amazon.com": "amazon-adsystem.com",
+  PubMatic: "pubmatic.com",
+} as const;
+const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS), ...Object.values(CROWD_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
 
 type Fixtures = { context: BrowserContext; sw: Worker; extensionId: string; consoleErrors: string[] };
 
