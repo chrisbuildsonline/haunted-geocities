@@ -319,6 +319,22 @@ describe("popup costume (1998)", () => {
     expect(root.querySelector(".client")!.contains(root.querySelector("h1"))).toBe(true);
   });
 
+  test("one Nothing found box comes first in the list, so its lines are on screen before any list scrolls", async () => {
+    // Ghost and vampire found, no tombstones or curses: the empty lines lead, the lists follow.
+    const some = await mount({ state: { ...FULL, tombstones: [], curses: [] } });
+    expect(legends(some.root)).toEqual(["Found on this page", "Nothing found", "Ghosts (1)", "Vampires (1)", "Settings"]);
+    // Only tombstones: the empty kinds on both sides of it share the one box, in kind order.
+    const tombsOnly = await mount({ state: { ...FULL, ghosts: [], curses: [] } });
+    expect(legends(tombsOnly.root)).toEqual(["Found on this page", "Nothing found", "Tombstones (1)", "Settings"]);
+    expect([...tombsOnly.root.querySelectorAll(".found-none p")].map(text)).toEqual([
+      "No ghosts here. Suspiciously clean.",
+      "Trackers that load later will appear here.",
+      "No vampires. Your blood is safe.",
+      "No curses. This page plays fair.",
+    ]);
+    expect(tombsOnly.root.querySelector(".list > .found-none")).toBe(tombsOnly.root.querySelector(".list")!.firstElementChild);
+  });
+
   test("idle screen has one primary push button labelled Haunt this page", async () => {
     const { root } = await mount();
     expect([...root.querySelectorAll("button.primary")].map(text)).toEqual(["Haunt this page"]);

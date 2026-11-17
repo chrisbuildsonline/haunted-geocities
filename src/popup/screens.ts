@@ -236,8 +236,9 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
     // The lanes' tints for the same order, so a company wears one hem colour everywhere.
     const tints = assignTints(ghosts.map((g) => g.company));
     const listBox = (rows: HTMLElement[]) => h(doc, "ul", { class: "rows listbox" }, ...rows);
-    // Each kind is a group box with a list box, or a line saying there are none. Lines of
-    // neighbouring empty kinds share one "Nothing found" box, so a clean page stays short.
+    // Each kind is a group box with a list box, or a line saying there are none. The lines of
+    // every empty kind share one "Nothing found" box at the head of the list, so a clean page
+    // stays short and the lines are on screen as the popup opens, whatever the lists below hold.
     const ghostList = ghosts.length
       ? group(doc, listHead(doc, "Ghosts", "ghosts-head", ghosts.length), "", listBox(ghosts.map((g, i) => ghostRow(doc, g, tints[i]!, state.exorcised.includes(g.company), onExorcise))))
       : vampires.length
@@ -260,18 +261,10 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
     const curseList = curses.length
       ? group(doc, listHead(doc, "Curses", "curses-head", curses.length), "", listBox(curses.map((c) => curseRow(doc, c))))
       : [h(doc, "p", { class: "muted no-curses" }, "No curses. This page plays fair.")];
-    const boxes: HTMLElement[] = [];
-    let empty: HTMLElement[] = [];
-    for (const part of [ghostList, vampireList, tombList, curseList]) {
-      if (Array.isArray(part)) {
-        empty.push(...part);
-        continue;
-      }
-      if (empty.length) boxes.push(group(doc, "Nothing found", "found-none", ...empty));
-      empty = [];
-      boxes.push(part);
-    }
-    if (empty.length) boxes.push(group(doc, "Nothing found", "found-none", ...empty));
+    const parts: (HTMLElement | HTMLElement[])[] = [ghostList, vampireList, tombList, curseList];
+    const empty = parts.filter((p) => Array.isArray(p)).flat();
+    const found = parts.flatMap((p) => (Array.isArray(p) ? [] : [p]));
+    const boxes = [...(empty.length ? [group(doc, "Nothing found", "found-none", ...empty)] : []), ...found];
     groups = [
       group(doc, "Found on this page", "", tiles, primary("Un-haunt"), alert),
       h(doc, "div", { class: "list", role: "group", "aria-label": "Ghosts, vampires, tombstones and curses" }, ...boxes),
