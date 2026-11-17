@@ -30,8 +30,10 @@ describe("badge art and CSS (req 40, 45, 59)", () => {
     expect(svg).toContain('width="12" height="12" viewBox="0 0 12 12"');
     expect(svg).toContain('shape-rendering="crispEdges"');
   });
-  test("CSS: 18px badge, #ff9900 ground, black 1px border, 2px hard shadow, bold 11px Comic Sans", () => {
-    expect(css).toMatch(/\.curse-badge \{[^}]*position: absolute;[^}]*height: 18px;[^}]*background: #ff9900;[^}]*color: #000000;[^}]*border: 1px solid #000000;[^}]*box-shadow: 2px 2px 0 #000000;[^}]*font: bold 11px\/16px "Comic Sans MS"/);
+  test("CSS: 18px badge, #ff9900 ground, black 1px border, 2px hard shadow, bold 12px Comic Sans", () => {
+    expect(css).toMatch(/\.curse-badge \{[^}]*position: absolute;[^}]*height: 18px;[^}]*background: #ff9900;[^}]*color: #000000;[^}]*border: 1px solid #000000;[^}]*box-shadow: 2px 2px 0 #000000;[^}]*font: bold 12px\/16px "Comic Sans MS"/);
+    // The compact badge: the skull alone, the word kept for screen readers (the aria-label) only.
+    expect(css).toMatch(/\.curse-badge\.compact span \{[^}]*position: absolute;[^}]*clip-path: inset\(50%\)/);
     expect(css).toMatch(/\.curse-badge \{[^}]*pointer-events: auto;/);
     expect(css).toMatch(/\.curse-badge svg \{[^}]*image-rendering: pixelated;/);
     expect(css).toMatch(/\.curse-card \.quote \{[^}]*overflow-wrap: anywhere;/);
@@ -57,6 +59,15 @@ describe("curseSpot (req 41, 42)", () => {
   });
   test("spot b when a would leave the viewport", () => {
     expect(curseSpot(last, last, 80, 450, [last], [])).toEqual({ x: 100, y: 178 });
+  });
+  test("compact spot a: the skull alone stays on the last line when the full badge would leave the viewport", () => {
+    expect(curseSpot(last, last, 80, 450, [last], [], 22)).toEqual({ x: 404, y: 201, compact: true });
+    // the full badge still wins where it fits
+    expect(curseSpot(last, last, 80, 1280, [last], [], 22)).toEqual({ x: 404, y: 201 });
+  });
+  test("spot b when neither the full nor the compact badge fits beside the last line", () => {
+    expect(curseSpot(last, last, 80, 420, [last], [], 22)).toEqual({ x: 100, y: 178 });
+    expect(curseSpot(last, last, 80, 1280, [last, R(410, 195, 100, 30)], [], 22)).toEqual({ x: 100, y: 178 });
   });
   test("spot b when a would cross text", () => {
     const text = [last, R(410, 195, 100, 30)];

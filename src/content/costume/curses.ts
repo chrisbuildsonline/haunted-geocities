@@ -25,14 +25,25 @@ export const firstLine = (rects: readonly Rect[]): Rect => rects.reduce((a, r) =
 export const lastLine = (rects: readonly Rect[]): Rect => rects.reduce((a, r) => (r.bottom > a.bottom || (r.bottom === a.bottom && r.right > a.right) ? r : a));
 
 /**
- * Where a badge `w` wide goes: (a) 4px right of the last line box, centred on it; (b) 4px above the
- * first line box, left edges aligned; (c) the gutter lane slot that holds the last line's y, on the
- * edge nearest the element; otherwise nowhere. Whole pixels, inside the viewport, over no page text.
+ * Where a badge `w` wide goes: (a) 4px right of the last line box, centred on it; (a') the same spot
+ * for the compact badge (the skull alone, `compactW` wide) when only that fits, so on a narrow page
+ * the badge stays on its sentence's line; (b) 4px above the first line box, left edges aligned;
+ * (c) the gutter lane slot that holds the last line's y, on the edge nearest the element; otherwise
+ * nowhere. Whole pixels, inside the viewport, over no page text.
  */
-export function curseSpot(first: Rect, last: Rect, w: number, viewportWidth: number, text: readonly Rect[], slots: readonly Slot[]): { x: number; y: number } | null {
-  const fits = (x: number, y: number) => x >= 0 && y >= 0 && x + w <= viewportWidth && !text.some((r) => r.left < x + w && r.right > x && r.top < y + H && r.bottom > y);
+export function curseSpot(
+  first: Rect,
+  last: Rect,
+  w: number,
+  viewportWidth: number,
+  text: readonly Rect[],
+  slots: readonly Slot[],
+  compactW?: number,
+): { x: number; y: number; compact?: true } | null {
+  const fits = (x: number, y: number, bw = w) => x >= 0 && y >= 0 && x + bw <= viewportWidth && !text.some((r) => r.left < x + bw && r.right > x && r.top < y + H && r.bottom > y);
   const a = { x: Math.round(last.right + GAP), y: Math.round((last.top + last.bottom) / 2 - H / 2) };
   if (fits(a.x, a.y)) return a;
+  if (compactW && compactW < w && fits(a.x, a.y, compactW)) return { ...a, compact: true };
   const b = { x: Math.round(first.left), y: Math.round(first.top - GAP - H) };
   if (fits(b.x, b.y)) return b;
   let best: { x: number; y: number } | null = null;
@@ -76,11 +87,15 @@ export function mountCurses(markers: HTMLElement, opts: CurseOptions): CurseBadg
     const slots = opts.slots();
     const cache = new Map<Element, Rect[]>();
     for (const e of entries) {
-      e.el.style.display = ""; // measure the width before placing
+      e.el.style.display = ""; // measure both widths before placing
+      e.el.classList.add("compact");
+      const compactW = e.el.offsetWidth;
+      e.el.classList.remove("compact");
       const w = e.el.offsetWidth;
       const lines = e.onScreen && e.pattern.element.isConnected ? lineRects(e.pattern.element) : [];
-      const spot = lines.length ? curseSpot(firstLine(lines), lastLine(lines), w, vw, textNear(e.pattern.element, cache), slots) : null;
+      const spot = lines.length ? curseSpot(firstLine(lines), lastLine(lines), w, vw, textNear(e.pattern.element, cache), slots, compactW) : null;
       if (spot) Object.assign(e.el.style, { left: `${spot.x}px`, top: `${spot.y}px` });
+      e.el.classList.toggle("compact", !!spot?.compact);
       e.el.style.display = spot ? "" : "none";
     }
   };
