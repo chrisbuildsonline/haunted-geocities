@@ -76,7 +76,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
   await shot(popup, "popup-haunted");
 
   await page.bringToFront();
-  await page.waitForTimeout(2600); // the haunt moment settles
+  await page.waitForTimeout(3100); // the haunt moment settles
   const inShadow = await shadowOf(page);
   const look = await lanesLook(inShadow);
   expect(look.companies).toEqual(["Criteo", "Hotjar", "Taboola"]);
@@ -145,7 +145,7 @@ test("a 375px page has no lane: the ghosts dock in the graveyard strip, none in 
   await page.setViewportSize({ width: 375, height: 740 });
   await page.goto(fixture("trackers.html"));
   await haunt(sw, page);
-  await page.waitForTimeout(2600);
+  await page.waitForTimeout(3100);
   const look = await lanesLook(await shadowOf(page));
   expect(look.companies).toEqual([]);
   const docked = await (await shadowOf(page))(function () {
@@ -184,7 +184,7 @@ test("the open ghost card's seen count rises live when another request arrives, 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("trackers.html"));
   await haunt(sw, page);
-  await page.waitForTimeout(2600); // the haunt moment settles
+  await page.waitForTimeout(3100); // the haunt moment settles
   const inShadow = await shadowOf(page);
   const g = await center(inShadow, '#lanes .ghost[data-company="Criteo"]');
   await page.mouse.click(g.x, g.y);

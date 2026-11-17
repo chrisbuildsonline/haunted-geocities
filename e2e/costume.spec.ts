@@ -14,7 +14,7 @@ const center = async (inShadow: InShadow, selector: string) =>
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }, selector);
 
-const settle = (page: Page) => page.waitForTimeout(2600);
+const settle = (page: Page) => page.waitForTimeout(3100);
 
 test("haunt renders the starfield gutters, top bands and HUD inside the closed shadow root", async ({ context, sw }) => {
   const page = await context.newPage();
@@ -187,17 +187,18 @@ test("un-haunt from the popup plays out, then restores the page byte for byte", 
 });
 
 test("the Webmaster's Ghost wipe: mid-wipe and settled screenshots at 1280×800", async ({ context, sw }) => {
+  test.setTimeout(60_000);
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("index.html"));
-  // Slow the page's animation clock 20× so ~650ms into the wipe can be caught reliably.
+  // Slow the page's animation clock 20× so ~450ms into the wipe (1150ms into the moment) can be caught reliably.
   const cdp = await context.newCDPSession(page);
   await cdp.send("Animation.enable");
   await cdp.send("Animation.setPlaybackRate", { playbackRate: 0.05 });
   const start = Date.now();
   await haunt(sw, page);
   const inShadow = await shadowOf(page);
-  await page.waitForTimeout(Math.max(0, 650 * 20 - (Date.now() - start)));
+  await page.waitForTimeout(Math.max(0, 1150 * 20 - (Date.now() - start)));
   const mid = await inShadow(function () {
     const ghost = this.querySelector(".webmaster")!.getBoundingClientRect();
     const anims = this.getAnimations().filter((a) => !(a as CSSAnimation).animationName);

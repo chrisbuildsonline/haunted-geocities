@@ -79,8 +79,8 @@ export interface GhostOptions {
 
 const place = (el: HTMLElement, s: Slot) => Object.assign(el.style, { left: `${s.x}px`, top: `${s.y}px`, width: `${s.w}px` });
 
-export const riseIn = (el: Element, delay = 0) =>
-  el.animate([{ transform: "translateY(16px)", opacity: 0 }, { transform: "translateY(0px)", opacity: 1 }], { delay, duration: M.slow, easing: M.easeOut, fill: "backwards" });
+export const riseIn = (el: Element, delay = 0, dy = 16, duration: number = M.slow) =>
+  el.animate([{ transform: `translateY(${dy}px)`, opacity: 0 }, { transform: "translateY(0px)", opacity: 1 }], { delay, duration, easing: M.easeOut, fill: "backwards" });
 
 /**
  * A vampire arrives: fade and rise 8px over 300ms, then (caught ones only) one glow swell from no

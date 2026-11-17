@@ -94,7 +94,7 @@ const barLook = (inShadow: InShadow) =>
 
 /** A picture of the bar once the haunt moment has settled. */
 const barShot = async (page: Page, inShadow: InShadow, name: string) => {
-  await page.waitForTimeout(2600);
+  await page.waitForTimeout(3100);
   const top = await inShadow(function () { return this.getElementById("neighborhood")!.getBoundingClientRect().top; });
   const vw = page.viewportSize()!.width;
   await page.screenshot({ path: `${SHOTS}/${name}.png`, clip: { x: 0, y: Math.max(0, top - 4), width: vw, height: 64 } });
@@ -442,7 +442,7 @@ for (const width of WIDTHS) {
         const { page } = await threeGhosts(ctx, width);
         expect(new Set(ORDER.map(hemTint)).size).toBe(1); // without assignTints all three would match
         await page.bringToFront();
-        await page.waitForTimeout(2600); // the haunt moment settles
+        await page.waitForTimeout(3100); // the haunt moment settles
         const lane = await (await shadowOf(page))(function () {
           return [...this.querySelectorAll<HTMLElement>("#lanes .ghost")].map((g) => [g.dataset.company!, g.querySelector(".sprite")!.innerHTML]);
         });
@@ -457,7 +457,7 @@ for (const width of WIDTHS) {
         const ctx = { context, sw, extensionId };
         const { page, popup } = await threeGhosts(ctx, width);
         await page.bringToFront();
-        await page.waitForTimeout(2600);
+        await page.waitForTimeout(3100);
         const lane = await (await shadowOf(page))(function () {
           return [...this.querySelectorAll<HTMLElement>("#lanes .ghost")].map((g) => [g.dataset.company!, g.querySelector(".sprite")!.innerHTML]);
         });
@@ -510,7 +510,7 @@ for (const width of WIDTHS) {
       test("the ghost card footnote is exact", async ({ context, sw, extensionId }) => {
         const ctx = { context, sw, extensionId };
         const { page } = await hauntedPage(ctx, width, "trackers.html");
-        await page.waitForTimeout(2600);
+        await page.waitForTimeout(3100);
         const inShadow = await shadowOf(page);
         const at = await inShadow(function () {
           const r = this.querySelector('#lanes .ghost[data-company="Criteo"]')!.getBoundingClientRect();

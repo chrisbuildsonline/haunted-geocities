@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { LAYOUT, PAGE } from "../../src/content/costume/tokens";
+import { LAYOUT, MOTION, PAGE, PALETTE } from "../../src/content/costume/tokens";
 import { designTokens } from "./helpers";
 
 const webSafe = (h: string) => /^#(?:00|33|66|99|cc|ff){3}$/.test(h);
@@ -15,6 +15,20 @@ test("page tokens match DESIGN.md costume.page", () => {
   expect(PAGE).toEqual(t.costume.page);
   expect(LAYOUT).toEqual(t.costume.layout);
   expect(LAYOUT).toMatchObject({ frameBevel: 6, edgeFrame: 12, edgeDither: 4, darkLuminance: 0.4, minContrast: 4.5 });
+});
+
+test("phosphor is web-safe #ccffff", () => {
+  expect(PALETTE.phosphor).toBe("#ccffff");
+  expect(webSafe(PALETTE.phosphor)).toBe(true);
+  expect(designTokens().costume.palette.phosphor).toBe("#ccffff");
+});
+
+test("hero haunt motion values match DESIGN.md", () => {
+  expect(MOTION.haunt).toBe(3000);
+  expect(MOTION.hero).toEqual(designTokens().motion.hero);
+  expect(MOTION.hero).toMatchObject({ scanIn: 150, lidsClose: [150, 450], line: [450, 600], lidsOpen: [600, 800], wipeStart: 700, fxOut: [1600, 1900] });
+  expect(MOTION.hero).toMatchObject({ riseStart: 1700, riseStagger: 250, riseMs: 400, risePx: 48, tagDelay: 200, tagMs: 200 });
+  expect(MOTION.hero).toMatchObject({ hud: 1900, odometer: [2200, 2800], vampires: 2300, markers: 2800 });
 });
 
 test("graveyardGap is 4 and matches DESIGN.md", () => {

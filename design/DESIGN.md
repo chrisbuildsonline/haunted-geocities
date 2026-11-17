@@ -391,27 +391,33 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 ## Haunt moment
 
-**"The Webmaster's Ghost wipe."**
+**"The page dies into 1998."** (Hero haunt moment, `MOTION.hero` in the tokens.)
 
-- **The idea:** a 96px pixel ghost glides across the viewport. Behind it the page is 1998; ahead of it the page is still modern. Its trailing edge is a strip of dithered ectoplasm.
-- **The screenshot:** the mid-wipe frame, half modern site and half GeoCities crypt, with the ghost at the seam.
-- **Total: 2500ms.**
-- **How it is built:** the Web Animations API on transform, opacity and clip-path only, all inside the shadow root. The page is untouched.
+- **The idea:** the modern page switches off like a 1998 CRT: scanlines, the picture closes to a bright line, the line shrinks to a dot. The tube comes back on, and a 96px pixel ghost glides across the viewport. Behind it the page is 1998; ahead of it the page is still modern. Its trailing edge is a strip of dithered ectoplasm. Then the tracker ghosts rise out of the page one by one, each with its company name tag.
+- **The clip:** it reads in three seconds: dark line, wipe, ghosts rising with names.
+- **Total: 3000ms** with up to four ghost companies. Each ghost after the 4th adds 250ms (8 ghosts end at 3850ms).
+- **How it is built:** the Web Animations API on transform, opacity and clip-path only, all inside the shadow root. The page is untouched. `#fx` carries `data-phase`: `crt`, then `wipe` at 700ms, then `rise` at 1700ms, moved by two marker animations that animate nothing (no timers).
 
 | t (ms) | Layer | What happens | Easing |
 |--------|-------|--------------|--------|
+| 0-150 | FX scanlines | A full-viewport tile of 1px `#000033` lines every 3px (a 4×3 pixel tile, no gradient) fades in | linear |
 | 0-200 | FX vignette | Radial `#000033` from transparent centre to 40% at edges fades in | `cubic-bezier(.2,.8,.2,1)` |
-| 200-1100 | FX ghost + layers 1 and 4 | The 96×96 Webmaster's Ghost travels `translateX(-96px → 100vw)` at mid-viewport height, with one ±6px vertical bob (a single 900ms cycle). The gutter starfield (or edge frame), the parchment tint, the guestbook frame and the top bands reveal behind it via `clip-path: inset(0 calc(100% - X) 0 0)`. Ghost and clip share one timing object, so they stay synced. A 32px strip trails the ghost: a 2×2 checker of `#66ff99`/transparent, the dither seam. | `cubic-bezier(.45,0,.2,1)` |
-| 1100-1400 | FX | Ghost leaves the right edge. Vignette fades 40% → 0. Marquee starts scrolling. | `cubic-bezier(.2,.8,.2,1)` |
-| 1400-2000 | Lanes | Tracker ghosts rise 16px into their slots and fade 0 → 1, each 300ms, staggered 60ms (first 8; the rest arrive with the 8th). | `cubic-bezier(.2,.8,.2,1)` |
-| 1400-1700 | HUD | Slides up from `translateY(100%)` to its lifted position | `cubic-bezier(.2,.8,.2,1)` |
-| 1700-2300 | HUD odometer | Digits roll from 000000 to the count as continuous `translateY` strips, right digit first, 600ms | `cubic-bezier(.2,.8,.2,1)` |
-| 1800-2100 | Vampires | Fade in, then a single glow swell, `drop-shadow` 0 → 6px. One swell, no pulsing. | `cubic-bezier(.2,.8,.2,1)` |
-| 2300-2500 | Markers | Tombstones and curse badges fade in, 200ms | linear |
+| 150-450 | FX lids | Two `#000000` lids, each half the viewport, slide in from the top and bottom (`translateY(∓100%)` → 0) and meet at mid-height | `cubic-bezier(.45,0,.2,1)` |
+| 450-600 | FX phosphor line | A 2px `#ccffff` line across the middle shrinks `scaleX(1)` → `scaleX(0)`, to a dot. It is only there in this window. | `cubic-bezier(.2,.8,.2,1)` |
+| 600-800 | FX lids | The lids slide open again on the page | `cubic-bezier(.45,0,.2,1)` |
+| 700-1600 | FX ghost + layers 1 and 4 | The 96×96 Webmaster's Ghost travels `translateX(-96px → 100vw)` at mid-viewport height, with one ±6px vertical bob (a single 900ms cycle). The gutter starfield (or edge frame), the parchment tint, the guestbook frame and the top bands reveal behind it via `clip-path: inset(0 calc(100% - X) 0 0)`. Ghost and clip share one timing object, so they stay synced. A 32px strip trails the ghost: a 2×2 checker of `#66ff99`/transparent, the dither seam. | `cubic-bezier(.45,0,.2,1)` |
+| 1600-1900 | FX | Ghost leaves the right edge. Scanlines 1 → 0 and vignette 40% → 0. | `cubic-bezier(.2,.8,.2,1)` |
+| 1700 + 250·i | Lanes | Tracker ghost i rises 48px into its slot and fades 0 → 1 over 400ms, one by one in lane order (first 8; the rest arrive with the 8th). | `cubic-bezier(.2,.8,.2,1)` |
+| ghost start + 200 | Name tags | The ghost's company name tag pops in: opacity 0 → 1, `scale(.6)` → `scale(1)` from its top edge, 200ms. A tag never shows before its ghost. | `cubic-bezier(.2,.8,.2,1)` |
+| 1900-2200 | HUD | Slides up from `translateY(100%)` to its lifted position (the graveyard strip with it) | `cubic-bezier(.2,.8,.2,1)` |
+| 2200-2800 | HUD odometer | Digits roll from 000000 to the count as continuous `translateY` strips, right digit first, 600ms | `cubic-bezier(.2,.8,.2,1)` |
+| 2300-2900 | Vampires | Fade in (300ms), then a single glow swell, `drop-shadow` 0 → 6px. One swell, no pulsing. | `cubic-bezier(.2,.8,.2,1)` |
+| 2800-3000 | Markers | Tombstones and curse badges fade in, 200ms | linear |
 
-- **Flash safety:** every change is monotonic, and nothing toggles back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
+- **Flash safety:** the screen goes dark once (the lids, 150-450ms) and comes back once (600-800ms): one dark-then-light change over 800ms, not a flicker. Every other change is monotonic, and nothing toggles back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
+- **Graveyard strip:** on pages where the sprites dock above the HUD, they slide up with it and do not rise; the CRT and the wipe still play.
 - **Audio:** muted by default. If the user has turned sound on, the popup plays a 900ms band-passed noise "whoosh" from the Haunt click itself, so it runs alongside the wipe. The page plays nothing during the haunt moment.
-- **Cost:** 1 sprite, 1 dither strip, 1 vignette div. The FX layer is removed at 2500ms.
+- **Cost:** 1 sprite, 1 dither strip, 1 vignette, 1 scanline tile, 2 lids, 1 line. The FX layer is removed when the moment ends.
 
 **Un-haunt (reverse), 1100ms:**
 
@@ -426,7 +432,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 **prefers-reduced-motion: reduce**
 
 - **Haunt:**
-  - No ghost, no wipe, no rise, no roll.
+  - No CRT (no scanlines, lids or line), no ghost, no wipe, no rise, no stagger, no roll, no `#fx`. Name tags show at once.
   - The whole overlay root cross-fades opacity 0 → 1 over 300ms, linear.
   - The odometer shows its final value and the marquee is static.
 - **Un-haunt:** a 200ms opacity fade, then removal.
@@ -440,7 +446,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | fast | 120 | Hover, press |
 | base | 200 | Card open/close, Hide/Show, fades |
 | slow | 300 | HUD slide, sprite rise |
-| haunt | 2500 | Haunt moment |
+| haunt | 3000 | Haunt moment (up to four ghosts) |
 | unhaunt | 1100 | Un-haunt |
 
 - **Easings:**
@@ -493,7 +499,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "ink": "#000000",
       "bevelLight": "#ccccff",
       "bevelDark": "#333366",
-      "hudBevelLight": "#9999cc"
+      "hudBevelLight": "#9999cc",
+      "phosphor": "#ccffff"
     },
     "page": {
       "link": "#0000ff",
@@ -590,7 +597,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
     "fast": 120,
     "base": 200,
     "slow": 300,
-    "haunt": 2500,
+    "haunt": 3000,
     "unhaunt": 1100,
     "reducedHaunt": 300,
     "reducedUnhaunt": 200,
@@ -599,7 +606,25 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
     "ghostBob": { "px": 4, "ms": 4000 },
     "ghostSway": { "px": 6, "ms": 7000 },
     "marqueePxPerSec": 60,
-    "twinkleMs": 2000
+    "twinkleMs": 2000,
+    "hero": {
+      "scanIn": 150,
+      "lidsClose": [150, 450],
+      "line": [450, 600],
+      "lidsOpen": [600, 800],
+      "wipeStart": 700,
+      "fxOut": [1600, 1900],
+      "riseStart": 1700,
+      "riseStagger": 250,
+      "riseMs": 400,
+      "risePx": 48,
+      "tagDelay": 200,
+      "tagMs": 200,
+      "hud": 1900,
+      "odometer": [2200, 2800],
+      "vampires": 2300,
+      "markers": 2800
+    }
   }
 }
 ```

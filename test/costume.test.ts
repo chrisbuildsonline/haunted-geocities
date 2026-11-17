@@ -500,14 +500,14 @@ describe("haunt moment", () => {
     const vignette = animsOn(recs, fx.querySelector(".vignette"));
     expect(vignette.map((r) => [r.keyframes.map((k) => k.opacity), r.opts.delay ?? 0, r.opts.duration, r.opts.easing])).toEqual([
       [[0, 0.4], 0, 200, E.out],
-      [[0.4, 0], 1100, 300, E.out],
+      [[0.4, 0], 1600, 300, E.out],
     ]);
 
     const [sweep] = animsOn(recs, fx.querySelector(".sweep"));
     expect(sweep!.keyframes.map((k) => k.transform)).toEqual(["translateX(-96px)", "translateX(100vw)"]);
-    expect([sweep!.opts.delay, sweep!.opts.duration, sweep!.opts.easing]).toEqual([200, 900, E.inOut]);
+    expect([sweep!.opts.delay, sweep!.opts.duration, sweep!.opts.easing]).toEqual([700, 900, E.inOut]);
     const [bob] = animsOn(recs, fx.querySelector(".webmaster"));
-    expect([bob!.opts.delay, bob!.opts.duration]).toEqual([200, 900]);
+    expect([bob!.opts.delay, bob!.opts.duration]).toEqual([700, 900]);
     expect(bob!.keyframes.map((k) => k.transform)).toContain("translateY(-6px)");
     expect(bob!.keyframes.map((k) => k.transform)).toContain("translateY(6px)");
 
@@ -515,23 +515,23 @@ describe("haunt moment", () => {
       const [clip] = animsOn(recs, byId(root, id));
       expect(props(clip!)).toEqual(["clipPath", "clipPath"]);
       expect(clip!.keyframes[1]!.clipPath).toMatch(/^inset\(0 calc\(100% - 100vw/);
-      expect([clip!.opts.delay, clip!.opts.duration, clip!.opts.easing]).toEqual([200, 900, E.inOut]);
+      expect([clip!.opts.delay, clip!.opts.duration, clip!.opts.easing]).toEqual([700, 900, E.inOut]);
     }
 
     const [hud] = animsOn(recs, byId(root, "hud"));
     expect(hud!.keyframes[0]!.transform).toMatch(/^translateY\(\d+px\)$/);
-    expect([hud!.opts.delay, hud!.opts.duration, hud!.opts.easing]).toEqual([1400, 300, E.out]);
+    expect([hud!.opts.delay, hud!.opts.duration, hud!.opts.easing]).toEqual([1900, 300, E.out]);
 
     const strips = [...byId(root, "hud")!.querySelectorAll(".strip")];
     const rolls = strips.map((s) => animsOn(recs, s)[0]!);
     expect(rolls.every((r) => r && props(r).every((p) => p === "transform"))).toBe(true);
     const delays = rolls.map((r) => r.opts.delay!);
-    expect(delays[5]).toBe(1700);
+    expect(delays[5]).toBe(2200);
     for (let i = 0; i < 5; i++) expect(delays[i]!).toBeGreaterThan(delays[i + 1]!); // right digit first
-    for (const r of rolls) expect(r.opts.delay! + (r.opts.duration as number)).toBe(2300);
+    for (const r of rolls) expect(r.opts.delay! + (r.opts.duration as number)).toBe(2800);
 
     const [markers] = animsOn(recs, byId(root, "markers"));
-    expect([markers!.opts.delay, markers!.opts.duration, markers!.opts.easing]).toEqual([2300, 200, "linear"]);
+    expect([markers!.opts.delay, markers!.opts.duration, markers!.opts.easing]).toEqual([2800, 200, "linear"]);
 
     const end = Math.max(...recs.map((r) => (r.opts.delay ?? 0) + (r.opts.duration as number)));
     expect(end).toBe(T.MOTION.haunt);

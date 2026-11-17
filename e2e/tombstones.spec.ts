@@ -51,7 +51,7 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
   await page.bringToFront();
   const inShadow = await shadowOf(page);
 
-  // 17.2: after the 2300ms markers phase, one focusable stone per dead link, 4px after its link's last
+  // 17.2: after the 2800ms markers phase, one focusable stone per dead link, 4px after its link's last
   // line box, centred on it, over no page text.
   const markers = () =>
     inShadow(function () {
@@ -268,7 +268,7 @@ test("every open stone card keeps at least 8px from both viewport edges at 1280 
   await page.bringToFront();
   const inShadow = await shadowOf(page);
   await expect.poll(() => inShadow(function () { return this.querySelectorAll(".tomb-marker").length; })).toBe(3);
-  await page.waitForTimeout(2600); // the haunt moment settles
+  await page.waitForTimeout(3100); // the haunt moment settles
   await page.screenshot({ path: `${SHOTS}/edge-1280-haunted.png` });
 
   for (const width of [1280, 375]) {

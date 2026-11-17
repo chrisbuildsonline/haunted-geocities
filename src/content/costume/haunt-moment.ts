@@ -1,8 +1,11 @@
-// "The Webmaster's Ghost wipe" (2500ms) and its reverse (1100ms): Web Animations on transform,
-// opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
+// The haunt moment (3000ms: the page dies like a CRT, the Webmaster's Ghost wipes 1998 in, the
+// tracker ghosts rise one by one with their name tags) and its reverse (1100ms): Web Animations on
+// transform, opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
 import { mapToPx, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
 import { riseIn, vampireIn } from "./ghosts";
 import { MOTION as M, PIXEL } from "./tokens";
+
+const H = M.hero;
 
 export type Moment = { done: Promise<void>; finish(): void };
 
@@ -10,11 +13,16 @@ const settle = (anims: Animation[]) => Promise.all(anims.map((a) => a.finished.c
 
 const ghostSvg = () => svgMarkup(mapToPx(WEBMASTER, WEBMASTER_LEGEND, PIXEL.spriteScale), 96, 96);
 
-function buildFx(croot: HTMLElement): HTMLElement {
+const SWEEP = () => `<div class="sweep"><div class="ectoplasm"></div><div class="webmaster">${ghostSvg()}</div></div>`;
+
+/** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette and ghost. */
+function buildFx(croot: HTMLElement, crt: boolean): HTMLElement {
   const fx = croot.ownerDocument.createElement("div");
   fx.id = "fx";
   fx.setAttribute("aria-hidden", "true");
-  fx.innerHTML = `<div class="vignette"></div><div class="sweep"><div class="ectoplasm"></div><div class="webmaster">${ghostSvg()}</div></div>`;
+  fx.innerHTML = crt
+    ? `<div class="scan"></div><div class="vignette"></div>${SWEEP()}<div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`
+    : SWEEP();
   croot.append(fx);
   return fx;
 }
@@ -46,20 +54,45 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
     const fade = croot.animate([{ opacity: 0 }, { opacity: 1 }], { duration: M.reducedHaunt, easing: "linear" });
     return { done: settle([fade]), finish: () => fade.finish() };
   }
-  const fx = buildFx(croot);
-  const vignette = fx.querySelector(".vignette") as HTMLElement;
+  const fx = buildFx(croot, true);
+  const q = (sel: string) => fx.querySelector(sel)!;
   const hud = layer(croot, "hud");
   const anims: Animation[] = [];
   const run = (el: Element, kf: Keyframe[], o: KeyframeAnimationOptions) => anims.push(el.animate(kf, { fill: "backwards", ...o }));
-  const wipe = { delay: 200, duration: 900, easing: M.easeInOut };
+  const at = ([from, to]: readonly [number, number]) => ({ delay: from, duration: to - from });
+  const wipe = { delay: H.wipeStart, duration: 900, easing: M.easeInOut };
 
-  run(vignette, [{ opacity: 0 }, { opacity: 0.4 }], { duration: 200, easing: M.easeOut });
-  run(vignette, [{ opacity: 0.4 }, { opacity: 0 }], { delay: 1100, duration: 300, easing: M.easeOut, fill: "forwards" });
-  run(fx.querySelector(".sweep")!, [{ transform: "translateX(-96px)" }, { transform: "translateX(100vw)" }], { ...wipe, fill: "both" });
+  // The phase follows two marker animations that animate nothing, never a timer, and never goes back.
+  fx.dataset.phase = "crt";
+  const phases = ["crt", "wipe", "rise"];
+  const enter = (phase: string) => () => {
+    if (phases.indexOf(phase) > phases.indexOf(fx.dataset.phase!)) fx.dataset.phase = phase;
+  };
+  for (const [phase, ms] of [["wipe", H.wipeStart], ["rise", H.riseStart]] as const) {
+    const marker = fx.animate([], { duration: ms });
+    anims.push(marker);
+    marker.finished.then(enter(phase), () => undefined);
+  }
+
+  // CRT death: scanlines in, the lids close on a phosphor line that shrinks to a dot, the lids open.
+  run(q(".scan"), [{ opacity: 0 }, { opacity: 1 }], { duration: H.scanIn, easing: "linear" });
+  run(q(".vignette"), [{ opacity: 0 }, { opacity: 0.4 }], { duration: 200, easing: M.easeOut });
+  for (const [fade, kf] of [[q(".scan"), [1, 0]], [q(".vignette"), [0.4, 0]]] as const) {
+    run(fade, kf.map((opacity) => ({ opacity })), { ...at(H.fxOut), easing: M.easeOut, fill: "forwards" });
+  }
+  for (const [cls, off] of [["top", "-100%"], ["bottom", "100%"]] as const) {
+    const lid = q(`.lid.${cls}`);
+    run(lid, [{ transform: `translateY(${off})` }, { transform: "translateY(0%)" }], { ...at(H.lidsClose), easing: M.easeInOut, fill: "both" });
+    run(lid, [{ transform: "translateY(0%)" }, { transform: `translateY(${off})` }], { ...at(H.lidsOpen), easing: M.easeInOut, fill: "forwards" });
+  }
+  // At rest the line is opacity 0, so it is only there while it shrinks.
+  run(q(".phosphor"), [{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(0)", opacity: 1 }], { ...at(H.line), easing: M.easeOut, fill: "none" });
+
+  run(q(".sweep"), [{ transform: "translateX(-96px)" }, { transform: "translateX(100vw)" }], { ...wipe, fill: "both" });
   run(
-    fx.querySelector(".webmaster")!,
+    q(".webmaster"),
     ["translateY(0px)", "translateY(-6px)", "translateY(0px)", "translateY(6px)", "translateY(0px)"].map((transform) => ({ transform, easing: "ease-in-out" })),
-    { delay: 200, duration: 900 },
+    { delay: H.wipeStart, duration: 900 },
   );
   for (const id of ["starfield", "top-bands"]) {
     run(layer(croot, id), [{ clipPath: clipAt("-80px") }, { clipPath: clipAt("100vw - 16px") }], wipe);
@@ -67,18 +100,25 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   for (const r of reveal) {
     run(r.el, [{ clipPath: pseudoClip("-80px", r.left) }, { clipPath: pseudoClip("(100vw - 16px)", r.left) }], { ...wipe, pseudoElement: r.pseudo });
   }
-  // Tracker ghosts rise 16px into their slots, 60ms apart; the 9th onward arrive with the 8th.
-  croot.querySelectorAll("#lanes > :not(.vampire)").forEach((g, i) => anims.push(riseIn(g, 1400 + Math.min(i, 7) * 60)));
-  // Vampires fade in at 1800ms, then the caught ones swell into their hot glow once.
-  croot.querySelectorAll<HTMLElement>("#lanes > .vampire").forEach((v) => anims.push(...vampireIn(v, 1800)));
-  for (const box of bottomBoxes(croot)) run(box, [{ transform: `translateY(${hudDrop(box)}px)` }, { transform: "translateY(0px)" }], { delay: 1400, duration: M.slow, easing: M.easeOut });
-  // Odometer: each strip rolls from 0 to its digit, the right-hand digit first, all landing at 2300ms.
+  // Tracker ghosts rise 48px out of the page one by one, 250ms apart (the 9th onward with the 8th),
+  // and each name tag pops in 200ms after its ghost starts.
+  croot.querySelectorAll("#lanes > :not(.vampire)").forEach((g, i) => {
+    const start = H.riseStart + Math.min(i, 7) * H.riseStagger;
+    anims.push(riseIn(g, start, H.risePx, H.riseMs));
+    const tag = g.querySelector(".tag");
+    if (tag) run(tag, [{ opacity: 0, transform: "scale(0.6)" }, { opacity: 1, transform: "scale(1)" }], { delay: start + H.tagDelay, duration: H.tagMs, easing: M.easeOut });
+  });
+  // Vampires fade in after the first ghosts, then the caught ones swell into their hot glow once.
+  croot.querySelectorAll<HTMLElement>("#lanes > .vampire").forEach((v) => anims.push(...vampireIn(v, H.vampires)));
+  for (const box of bottomBoxes(croot)) run(box, [{ transform: `translateY(${hudDrop(box)}px)` }, { transform: "translateY(0px)" }], { delay: H.hud, duration: M.slow, easing: M.easeOut });
+  // Odometer: each strip rolls from 0 to its digit, the right-hand digit first, all landing together.
+  const [rollFrom, rollTo] = H.odometer;
   const strips = [...hud.querySelectorAll<HTMLElement>(".strip")];
   strips.forEach((s, i) => {
-    const delay = 1700 + (strips.length - 1 - i) * 40;
-    run(s, [{ transform: "translateY(0px)" }, { transform: s.style.transform || "translateY(0px)" }], { delay, duration: 2300 - delay, easing: M.easeOut });
+    const delay = rollFrom + (strips.length - 1 - i) * 40;
+    run(s, [{ transform: "translateY(0px)" }, { transform: s.style.transform || "translateY(0px)" }], { delay, duration: rollTo - delay, easing: M.easeOut });
   });
-  run(layer(croot, "markers"), [{ opacity: 0 }, { opacity: 1 }], { delay: 2300, duration: 200, easing: "linear" });
+  run(layer(croot, "markers"), [{ opacity: 0 }, { opacity: 1 }], { delay: H.markers, duration: 200, easing: "linear" });
 
   return { done: settle(anims).then(() => fx.remove()), finish: () => anims.forEach((a) => a.finish()) };
 }
@@ -88,8 +128,7 @@ export function playUnhaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal
   if (reduced) return settle([run(croot, [{ opacity: 1 }, { opacity: 0 }], { duration: M.reducedUnhaunt, easing: "linear" })]);
   croot.querySelector("#fx")?.remove();
   croot.classList.add("leaving");
-  const fx = buildFx(croot);
-  fx.querySelector(".vignette")!.remove();
+  const fx = buildFx(croot, false);
   const back = { delay: 500, duration: 600, easing: M.easeInOut };
   // The page-sheet layers shrink away too; their held end state is dropped in the same task as the
   // sheet (no frame is drawn in between), so no finished animation is left on the page's <html>.

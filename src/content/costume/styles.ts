@@ -7,6 +7,8 @@ const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cur
 const TIMES = `"Times New Roman", Times, serif`;
 
 /** An 8×8 strip of moss pixels (2px each): tufts over a solid bed, repeated along the stone's base. */
+/** CRT scanlines: a 1px line every 3px, as a pixel tile (no CSS gradients in the costume). */
+export const scanUrl = () => svgUrl([{ x: 0, y: 0, w: 4, h: 1, color: P.crypt }], 4, 3);
 const mossUrl = () => svgUrl(mapToPx([".M..", "MM.M", "MMMM", "MMMM"], { M: P.moss }, 2), 8, 8);
 
 const signsUrl = () =>
@@ -110,7 +112,7 @@ button:focus-visible { ${ring} }
 .sprite svg { display: block; image-rendering: pixelated; }
 @keyframes hg-bob { from { transform: translateY(-${M.ghostBob.px}px); } to { transform: translateY(${M.ghostBob.px}px); } }
 @keyframes hg-sway { from { transform: translateX(-${M.ghostSway.px}px); } to { transform: translateX(${M.ghostSway.px}px); } }
-.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 11px/14px ${COMIC}; }
+.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 11px/14px ${COMIC}; transform-origin: 50% 0; }
 .stack { position: absolute; display: flex; align-items: center; justify-content: center; height: 48px; margin: 0; padding: 0; font: bold 13px ${COMIC}; box-shadow: ${HARD_SHADOW}; }
 .exorcised .sprite { opacity: .4; }
 .exorcised .tag { color: ${P.hudBevelLight}; }
@@ -174,6 +176,11 @@ button:focus-visible { ${ring} }
 .tombstone-card .host { font-size: 11px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tombstone-card .moss { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; }
 
+.scan { position: absolute; inset: 0; background-image: ${scanUrl()}; background-size: 4px 3px; }
+.lid { position: absolute; left: 0; right: 0; height: 50%; background: ${P.ink}; }
+.lid.top { top: 0; transform: translateY(-100%); }
+.lid.bottom { bottom: 0; transform: translateY(100%); }
+.phosphor { position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px; background: ${P.phosphor}; opacity: 0; }
 .vignette { position: absolute; inset: 0; opacity: .4; background: radial-gradient(ellipse at center, transparent 45%, ${P.crypt} 100%); }
 .sweep { position: absolute; top: 0; bottom: 0; left: 0; width: 96px; }
 .webmaster { position: absolute; left: 0; top: calc(50% - 48px); width: 96px; height: 96px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }

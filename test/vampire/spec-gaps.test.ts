@@ -120,7 +120,7 @@ describe("10.1 / 10.2 haunt moment vampire phase", () => {
   }
   const on = (recs: Rec[], el: Element | null) => recs.filter((r) => r.el === el);
 
-  test("vampires fade in over 300ms from 8px low at 1800ms, once", () => {
+  test("vampires fade in over 300ms from 8px low at 2300ms, once", () => {
     const c = croot();
     try {
       playHaunt(c.el, false);
@@ -129,7 +129,7 @@ describe("10.1 / 10.2 haunt moment vampire phase", () => {
         const fade = on(c.recs, v);
         expect(fade).toHaveLength(1);
         expect(fade[0]!.kf).toEqual([{ transform: "translateY(8px)", opacity: 0 }, { transform: "translateY(0px)", opacity: 1 }]);
-        expect([fade[0]!.o.delay, fade[0]!.o.duration, fade[0]!.o.iterations]).toEqual([1800, 300, undefined]);
+        expect([fade[0]!.o.delay, fade[0]!.o.duration, fade[0]!.o.iterations]).toEqual([2300, 300, undefined]);
       }
     } finally {
       c.restore();
@@ -142,7 +142,7 @@ describe("10.1 / 10.2 haunt moment vampire phase", () => {
       playHaunt(c.el, false);
       const swell = on(c.recs, c.el.querySelector('.vampire[data-company="Caught"] .sprite'));
       expect(swell).toHaveLength(1);
-      expect([swell[0]!.o.delay, swell[0]!.o.duration, swell[0]!.o.iterations, swell[0]!.o.direction]).toEqual([2100, 300, undefined, undefined]);
+      expect([swell[0]!.o.delay, swell[0]!.o.duration, swell[0]!.o.iterations, swell[0]!.o.direction]).toEqual([2600, 300, undefined, undefined]);
       expect(swell[0]!.kf.map((k) => k.filter)).toEqual(["drop-shadow(0 0 0px #ff0033) drop-shadow(0 0 0px #ff9999)", "drop-shadow(0 0 6px #ff0033) drop-shadow(0 0 2px #ff9999)"]);
       expect(on(c.recs, c.el.querySelector('.vampire[data-company="Known"] .sprite'))).toHaveLength(0);
     } finally {
@@ -156,7 +156,7 @@ describe("10.1 / 10.2 haunt moment vampire phase", () => {
       playHaunt(c.el, false);
       const rise = on(c.recs, c.el.querySelector(".ghost"));
       expect(rise).toHaveLength(1);
-      expect(rise[0]!.o.delay).toBeLessThan(1800);
+      expect(rise[0]!.o.delay).toBeLessThan(2300);
     } finally {
       c.restore();
     }

@@ -39,7 +39,7 @@ async function haunted({ context, sw, extensionId }: Ctx, path: string, init?: (
   expect(await popup.evaluate((id) => chrome.runtime.sendMessage({ type: "HAUNT", tabId: id }), tabId)).toMatchObject({ haunted: true });
   await page.bringToFront();
   await expect(page.locator("hg-crypt")).toHaveCount(1);
-  await page.waitForTimeout(2600); // the haunt moment settles
+  await page.waitForTimeout(3100); // the haunt moment settles
   const inShadow = await shadowOf(page);
   return { page, popup, tabId, audio, inShadow };
 }

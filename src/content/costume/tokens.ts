@@ -20,6 +20,7 @@ export const PALETTE = {
   bevelLight: "#ccccff",
   bevelDark: "#333366",
   hudBevelLight: "#9999cc",
+  phosphor: "#ccffff",
 } as const;
 
 /** The content column restyle (page sheet): link colours, the parchment tint and the guestbook frame. */
@@ -80,7 +81,7 @@ export const MOTION = {
   fast: 120,
   base: 200,
   slow: 300,
-  haunt: 2500,
+  haunt: 3000,
   unhaunt: 1100,
   reducedHaunt: 300,
   reducedUnhaunt: 200,
@@ -90,4 +91,23 @@ export const MOTION = {
   ghostSway: { px: 6, ms: 7000 },
   marqueePxPerSec: 60,
   twinkleMs: 2000,
+  /** The hero haunt moment (ms, [start, end] pairs): CRT death, wipe, ghosts rising with name tags. */
+  hero: {
+    scanIn: 150,
+    lidsClose: [150, 450],
+    line: [450, 600],
+    lidsOpen: [600, 800],
+    wipeStart: 700,
+    fxOut: [1600, 1900],
+    riseStart: 1700,
+    riseStagger: 250,
+    riseMs: 400,
+    risePx: 48,
+    tagDelay: 200,
+    tagMs: 200,
+    hud: 1900,
+    odometer: [2200, 2800],
+    vampires: 2300,
+    markers: 2800,
+  },
 } as const;

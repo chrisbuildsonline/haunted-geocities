@@ -71,7 +71,7 @@ describe("no tombstone animation period under 333ms", () => {
     }
   });
 
-  test("the haunt moment shows the markers layer with one 200ms opacity fade after 2300ms, no repeat", () => {
+  test("the haunt moment shows the markers layer with one 200ms opacity fade after 2800ms, no repeat", () => {
     const p = page();
     try {
       const croot = p.doc.body.appendChild(p.doc.createElement("div"));
@@ -80,7 +80,7 @@ describe("no tombstone animation period under 333ms", () => {
       const layer = p.recs.filter((r) => r.el === croot.querySelector("#markers"));
       expect(layer).toHaveLength(1);
       expect(layer[0]!.kf).toEqual([{ opacity: 0 }, { opacity: 1 }]);
-      expect([layer[0]!.o.delay, layer[0]!.o.duration, layer[0]!.o.iterations, layer[0]!.o.direction]).toEqual([2300, 200, undefined, undefined]);
+      expect([layer[0]!.o.delay, layer[0]!.o.duration, layer[0]!.o.iterations, layer[0]!.o.direction]).toEqual([2800, 200, undefined, undefined]);
     } finally {
       p.restore();
     }

@@ -14,7 +14,7 @@ async function hauntAt(context: BrowserContext, sw: Worker, width: number, path:
   await page.goto(fixture(path));
   const before = await page.evaluate(() => document.documentElement.outerHTML);
   const tabId = await haunt(sw, page);
-  await page.waitForTimeout(reduced ? 400 : 2600); // the haunt moment settles
+  await page.waitForTimeout(reduced ? 400 : 3100); // the haunt moment settles
   return { page, tabId, before, inShadow: await shadowOf(page) };
 }
 
@@ -147,7 +147,7 @@ test("exorcise from a docked card stamps the sprite and the popup agrees", async
   await popup.getByRole("button", { name: "Haunt this page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
-  await page.waitForTimeout(2600);
+  await page.waitForTimeout(3100);
   const inShadow = await shadowOf(page);
   const at = await spriteCenter(inShadow, "Criteo");
   await page.mouse.click(at.x, at.y);
