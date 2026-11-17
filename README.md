@@ -8,6 +8,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 
 ## What it does
 
+- Haunting is a three-second show: the page switches off like an old CRT (scanlines, the picture closes to a bright line, then a dot), the Webmaster's Ghost flies across and leaves 1998 behind it, and then the tracker ghosts rise out of the page one by one, each with its company's name tag. With reduced motion on, it skips straight to the haunted page.
 - Haunt and un-haunt any page from the toolbar popup. The page is restyled (fonts, link colours, a parchment tint and a guestbook frame around the content column) by one adopted stylesheet, and the starfield, HUD and marquee sit in a closed shadow root over it. On a phone or a full-width page the whole page is tinted inside a 12px starfield edge. Un-haunting removes it all and the page is byte for byte as it was.
 - Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card. On a phone or a full-width page, where there is no room beside the text, the ghosts and vampires stand in a graveyard strip just above the HUD instead, and scroll sideways when there are many.
 - The HUD hit counter is labelled `Souls counted`: the number of tracker requests blocked or seen on the page.
@@ -19,6 +20,8 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - The popup is dressed for the same year as the page: a Windows 95 window with a navy title bar, bevelled buttons, green-on-black hit counters, checkboxes and a status bar. It lists the ghosts, vampires, tombstones and curses found on the page.
 - While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 - Sound is off by default. Turn on **Sound effects** in the popup and the Haunt click plays a short whoosh, and opening a card plays a short sound for its kind: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and an organ stab for a vampire. The sounds are made in code with the Web Audio API (`src/audio/sound.ts`), with no audio files, and nothing plays until you click.
+
+![The haunt moment on a news page: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
 
 ![The popup on a haunted page, drawn as a Windows 95 window: hit counters, one ghost, two vampires and their Exorcise buttons](docs/screenshots/popup.png)
 
@@ -61,6 +64,7 @@ It serves them on `http://127.0.0.1:4321` (`scripts/fixture-server.ts`, an optio
 | `article.html` | A plain white article with code, an icon and a form: the restyle, the tint and the guestbook frame. |
 | `dark.html` | A dark page: no tint, light-blue links. |
 | `trackers.html` | Ghosts (Criteo), plus Hotjar and Taboola as known vampires. Try Exorcise on the card or in the popup. At a phone width they stand in the graveyard strip above the HUD. |
+| `news.html` | A small-town news front page with four tracker ghosts (Criteo, Chartbeat, Quantcast, comScore) and two known vampires: the page the haunt moment GIF is made on. |
 | `wide.html` | A full-width page with trackers: no room beside the text at any width, so the ghosts and vampires stand in the graveyard strip. |
 | `vampires.html` | Two scripts that fingerprint the visitor when you click into the email field. After that they show up as caught vampires. |
 | `links.html` | Three dead links (404, 410 and a long path) that get tombstones. |
@@ -70,7 +74,7 @@ It serves them on `http://127.0.0.1:4321` (`scripts/fixture-server.ts`, an optio
 The tracker and vampire pages load scripts from real tracker domains. Chrome has to send those names to the local server, so start a separate Chrome with a host-resolver flag, and load the extension in that one:
 
 ```
-google-chrome --user-data-dir=/tmp/hg-profile --host-resolver-rules="MAP criteo.com 127.0.0.1,MAP hotjar.com 127.0.0.1,MAP taboola.com 127.0.0.1,MAP adentifi.com 127.0.0.1,MAP nightowl-metrics.test 127.0.0.1"
+google-chrome --user-data-dir=/tmp/hg-profile --host-resolver-rules="MAP criteo.com 127.0.0.1,MAP hotjar.com 127.0.0.1,MAP taboola.com 127.0.0.1,MAP adentifi.com 127.0.0.1,MAP nightowl-metrics.test 127.0.0.1,MAP chartbeat.net 127.0.0.1,MAP quantcount.com 127.0.0.1,MAP scorecardresearch.com 127.0.0.1"
 ```
 
 `index.html`, `clean.html`, `column.html`, `article.html`, `dark.html`, `links.html`, `dark-patterns.html` and `forms.html` work in any Chrome. The tracker and vampire pages need the flag, because otherwise the tracker hosts do not resolve and nothing is seen.
@@ -113,7 +117,7 @@ bun run docker:test
 
 `test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint, the e2e run and the visual check in a clean Playwright image.
 
-The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`.
+The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`. The haunt moment GIF is made from a burst of frames by `ffmpeg` (6 fps, 560px wide, 128 colours), so that run needs `ffmpeg` on the path.
 
 ### lint:manifest
 

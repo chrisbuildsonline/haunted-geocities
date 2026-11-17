@@ -65,6 +65,16 @@ describe("README.md", () => {
     for (const s of named) expect({ s, exists: existsSync(join(root, s)) }).toEqual({ s, exists: true });
   });
 
+  test("the haunt moment GIF is shown in What it does: 560px wide, at most 2 MB, made by the shots script", () => {
+    const section = readme.split(/^## What it does\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toMatch(/!\[[^\]]+\]\(docs\/screenshots\/haunt\.gif\)/);
+    const gif = readFileSync(join(root, "docs", "screenshots", "haunt.gif"));
+    expect(gif.subarray(0, 6).toString("latin1")).toBe("GIF89a");
+    expect(gif.readUInt16LE(6)).toBe(560);
+    expect(gif.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+    expect(readFileSync(join(root, "e2e", "readme.shots.ts"), "utf8")).toContain("haunt.gif");
+  });
+
   test("README popup screenshot exists and is referenced", () => {
     const shot = join(root, "docs", "screenshots", "popup.png");
     expect(existsSync(shot)).toBe(true);
