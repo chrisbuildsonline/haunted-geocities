@@ -109,22 +109,22 @@ Implementation checklist for the kiro-hooks spec. Each task lists the requiremen
 
 ## 8. Distinct triggers and the costume-reviewer agent
 
-- [ ] 8.1 Change `era-accuracy.kiro.hook` to `agentStop` with no `patterns`, and rewrite the prompt to review `git diff` on `src/content/costume/` and `src/popup/` (one line and stop if empty), with the same five rules, still read-only.
+- [x] 8.1 Change `era-accuracy.kiro.hook` to `agentStop` with no `patterns`, and rewrite the prompt to review `git diff` on `src/content/costume/` and `src/popup/` (one line and stop if empty), with the same five rules, still read-only.
   - Req: 71
   - Check: `bun test ./test/hooks.test.ts`.
 
-- [ ] 8.2 Change `baseline-refresh.kiro.hook` to `userTriggered` with no `patterns`, and reword the start of the prompt so it no longer says a file was just edited.
+- [x] 8.2 Change `baseline-refresh.kiro.hook` to `userTriggered` with no `patterns`, and reword the start of the prompt so it no longer says a file was just edited.
   - Req: 72
   - Check: `bun test ./test/hooks.test.ts`.
 
-- [ ] 8.3 Add the overlap tests to `test/hooks.test.ts`: no shared event and patterns, no file that sets off two hooks on one file event, and a costume save that sets off only `visual-regression`.
+- [x] 8.3 Add the overlap tests to `test/hooks.test.ts`: no shared event and patterns, no file that sets off two hooks on one file event, and a costume save that sets off only `visual-regression`.
   - Req: 70, 73
   - Check: `bun test ./test/hooks.test.ts`.
 
-- [ ] 8.4 Create `.kiro/agents/costume-reviewer.json` and `test/kiro-agents.test.ts`.
+- [x] 8.4 Create `.kiro/agents/costume-reviewer.json` and `test/kiro-agents.test.ts`.
   - Req: 74 to 76
   - Check: `bun test ./test/kiro-agents.test.ts`.
 
-- [ ] 8.5 Run `bun run typecheck` and `bun run test`. Both pass.
+- [x] 8.5 Run `bun run typecheck` and `bun run test`. Both pass.
   - Req: 70 to 76
   - Check: command output.
