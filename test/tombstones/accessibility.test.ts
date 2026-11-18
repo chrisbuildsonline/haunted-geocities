@@ -33,11 +33,18 @@ const dead: DeadLink = { url: "https://haunt.example/missing.html", path: "/miss
 const css = costumeCss({ stars: "", twinkle: "" });
 
 describe("no tombstone animation period under 333ms", () => {
-  test("no CSS rule for a marker or the stone card animates or transitions", () => {
+  test("no CSS rule for a marker or the stone card animates or transitions, bar the stone's one-shot drop", () => {
     const rules = [...css.matchAll(/([^{}]*)\{([^{}]*)\}/g)].filter(([, sel]) => /tomb/.test(sel!));
     expect(rules.length).toBeGreaterThan(8);
-    for (const [, sel, body] of rules) expect({ [sel!.trim()]: /animation|transition/.test(body!) }).toEqual({ [sel!.trim()]: false });
+    const drop = ".tombstone-card.drop-in";
+    for (const [, sel, body] of rules) if (sel!.trim() !== drop) expect({ [sel!.trim()]: /animation|transition/.test(body!) }).toEqual({ [sel!.trim()]: false });
     expect(css).not.toMatch(/@keyframes hg-tomb/);
+    // the drop plays once (no infinite, no alternate) over 300ms: opacity rises 0 → 1 a single time
+    const body = rules.find(([, sel]) => sel!.trim() === drop)![2]!;
+    expect(body).toMatch(/animation: hg-drop 300ms linear both;/);
+    expect(body).not.toMatch(/infinite|alternate/);
+    const kf = css.match(/@keyframes hg-drop \{[\s\S]*?\}\s*\}/)![0];
+    expect([...kf.matchAll(/opacity: ([\d.]+)/g)].map((m) => Number(m[1]))).toEqual([0, 1, 1]);
   });
 
   test("a new marker fades in once, over 200ms, opacity only, with no repeat or alternation", () => {

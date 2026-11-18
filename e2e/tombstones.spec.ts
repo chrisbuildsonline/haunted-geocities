@@ -150,7 +150,7 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
   expect(card.pathText).toBe(BLOG);
   expect(card.pathTitle).toBe(BLOG); // the full path on hover
   expect(card.wbr).toBe(3);
-  expect(card.look).toEqual(["176px", "rgb(204, 204, 204)", "88px", "rgb(255, 255, 255)", "rgb(102, 102, 102)", "rgb(0, 0, 0)", `"Times New Roman"`]);
+  expect(card.look).toEqual(["208px", "rgb(204, 204, 204)", "104px", "rgb(255, 255, 255)", "rgb(102, 102, 102)", "rgb(0, 0, 0)", `"Times New Roman"`]);
   expect(card.pathLines).toBeLessThanOrEqual(3);
   expect(card.segs.map((s) => s.text)).toEqual(["/", "blog/", "2019/", "the-very-long-haunted-filename-that-must-not-break.html"]);
   for (const s of card.segs) expect(s.next).toBe(s.text!.endsWith("/") ? "WBR" : null);
@@ -276,6 +276,65 @@ test("req 35, 61-62: under reduced motion the markers appear with the cross-fade
   });
   expect(anims).toBe(0);
 });
+
+/** The open stone card's drop: its class, its running CSS animations, and where it is now. */
+const dropState = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
+  inShadow(function () {
+    const card = this.querySelector<HTMLElement>("#cards .tombstone-card");
+    if (!card) return null;
+    const cs = getComputedStyle(card);
+    const close = card.querySelector(".close")!.getBoundingClientRect();
+    const r = card.getBoundingClientRect();
+    return {
+      drop: card.classList.contains("drop-in"),
+      anims: card.getAnimations().map((a) => [(a as CSSAnimation).animationName ?? "waapi", a.playState]),
+      opacity: cs.opacity,
+      transform: cs.transform,
+      top: r.top,
+      // the [x] sits inside the arch: its top-right corner is within the 104px circle of the stone's top
+      closeInArch: Math.hypot(close.right - (r.left + r.width / 2), close.top - (r.top + r.width / 2)) <= r.width / 2,
+      titlePx: parseFloat(getComputedStyle(card.querySelector(".here-lies")!).fontSize),
+    };
+  });
+
+for (const reduced of [false, true]) {
+  test(`the stone card ${reduced ? "is simply there under reduced motion" : "drops in, falls 48px and lands"} at 1280 and 375`, async ({ context, sw }) => {
+    const page = await context.newPage();
+    if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(fixture("links.html"));
+    await haunt(sw, page);
+    await page.bringToFront();
+    const inShadow = await shadowOf(page);
+    await expect.poll(() => inShadow(function () { return this.querySelectorAll(".tomb-marker").length; })).toBe(3);
+    await page.waitForTimeout(3100); // the haunt moment settles
+    for (const width of [1280, 375]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expect.poll(() => inShadow(function () { return [...this.querySelectorAll<HTMLElement>(".tomb-marker")].some((m) => getComputedStyle(m).display !== "none"); })).toBe(true);
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Animation.enable");
+      await cdp.send("Animation.setPlaybackRate", { playbackRate: 0.1 }); // 300ms becomes 3s, so the fall can be seen
+      await inShadow(function () { [...this.querySelectorAll<HTMLElement>(".tomb-marker")].find((m) => getComputedStyle(m).display !== "none")!.click(); });
+      const first = (await dropState(inShadow))!;
+      await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 });
+      if (reduced) {
+        expect(first).toMatchObject({ drop: false, anims: [], opacity: "1", transform: "none" });
+      } else {
+        expect(first.drop).toBe(true);
+        expect(first.anims).toEqual([["hg-drop", "running"]]);
+      }
+      await expect.poll(async () => (await dropState(inShadow))!.anims.filter(([, s]) => s === "running")).toEqual([]);
+      const landed = (await dropState(inShadow))!;
+      expect([landed.opacity, landed.transform === "none" || landed.transform === "matrix(1, 0, 0, 1, 0, 0)"]).toEqual(["1", true]);
+      if (!reduced) expect(landed.top).toBeGreaterThan(first.top); // it fell into place
+      expect(landed.closeInArch).toBe(true);
+      expect(landed.titlePx).toBe(16);
+      await page.screenshot({ path: `${SHOTS}/stone-${reduced ? "still" : "drop"}-${width}.png` });
+      await page.keyboard.press("Escape");
+      await cdp.detach();
+    }
+  });
+}
 
 test("every open stone card keeps at least 8px from both viewport edges at 1280 and 375", async ({ context, sw }) => {
   const page = await context.newPage();

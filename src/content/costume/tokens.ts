@@ -62,7 +62,7 @@ export const LAYOUT = {
   hudMaxWidth: 720,
   hudWrapBelow: 400,
   cardWidth: 248,
-  tombstoneWidth: 176,
+  tombstoneWidth: 208,
   starTile: 64,
   minText: 12,
   frameBevel: 6,

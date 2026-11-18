@@ -65,21 +65,49 @@ describe("the stone card (req 36-43)", () => {
     const { cards, opener } = setup();
     openCard(cards, { company: "Criteo", domains: ["criteo.com"], count: 2, categories: ["Advertising"], fingerprinting: 0 }, opener, { exorcised: false, send: () => undefined, bounds });
     openTombstoneCard(cards, BLOG, opener, { bounds });
-    expect([...cards.querySelectorAll(".card")].map((c) => c.className)).toEqual(["card tombstone-card"]);
+    expect([...cards.querySelectorAll(".card")].map((c) => c.className)).toEqual(["card tombstone-card drop-in"]);
     openCard(cards, { company: "Criteo", domains: ["criteo.com"], count: 2, categories: ["Advertising"], fingerprinting: 0 }, opener, { exorcised: false, send: () => undefined, bounds });
     expect([...cards.querySelectorAll(".card")].map((c) => c.className)).toEqual(["card"]);
   });
 
-  test("CSS: 176px #cccccc slab, 88px arch, #ffffff/#666666 bevel, Times New Roman #000000 inscription pinned 16px in", () => {
+  test("CSS: 208×248 #cccccc slab, 104px arch, #ffffff/#666666 bevel, Times New Roman #000000 inscription pinned 64px down and 32px in", () => {
     const css = costumeCss({ stars: "", twinkle: "" });
     const stone = css.match(/\.card\.tombstone-card \{[^}]*\}/)![0];
-    for (const d of ["width: 176px", "background: #cccccc", "border-radius: 88px 88px 0 0", "border-color: #ffffff #666666 #666666 #ffffff", "box-shadow: 4px 4px 0 #000000"]) expect(stone).toContain(d);
+    for (const d of ["width: 208px", "height: 248px", "background: #cccccc", "border-radius: 104px 104px 0 0", "border-color: #ffffff #666666 #666666 #ffffff", "box-shadow: 4px 4px 0 #000000"]) expect(stone).toContain(d);
     const ins = css.match(/\.tombstone-card \.inscription \{[^}]*\}/)![0];
-    for (const d of ["position: absolute", "inset: 16px", "color: #000000", `"Times New Roman"`]) expect(ins).toContain(d);
-    expect(css).toMatch(/\.tombstone-card \.here-lies \{[^}]*font-size: 12px;[^}]*letter-spacing: 2px;/);
+    for (const d of ["position: absolute", "inset: 64px 32px 28px", "color: #000000", `"Times New Roman"`]) expect(ins).toContain(d);
+    // the [x] sits inside the arch: 32px down, 40px in from the right
+    expect(css).toMatch(/\.tombstone-card \.close \{[^}]*top: 32px; right: 40px;/);
+    // the title is carved: bold 16px, 3px tracking, a 1px #ffffff highlight under-right of each letter,
+    // over a carved rule (a #666666 groove with a #ffffff lip)
+    expect(css).toMatch(/\.tombstone-card \.here-lies \{[^}]*border-bottom: 1px solid #666666; box-shadow: 0 1px 0 #ffffff;/);
+    expect(css).toMatch(/\.tombstone-card \.here-lies \{[^}]*font-size: 16px;[^}]*font-weight: bold;[^}]*letter-spacing: 3px;[^}]*text-shadow: 1px 1px 0 #ffffff;/);
     expect(css).toMatch(/\.tombstone-card \.status \{[^}]*font-size: 12px;/);
     expect(css).toMatch(/\.tombstone-card \.host \{[^}]*font-size: 12px;/);
     expect(css).toMatch(/\.tombstone-card \.moss \{[^}]*%23336633/); // moss pixels: an inline SVG strip in the moss token
+  });
+
+  test("the stone drops in (class drop-in, no scale fade); under reduced motion it is simply there", () => {
+    const { doc, cards, opener } = setup();
+    let animated = 0;
+    (doc.defaultView!.Element.prototype as unknown as { animate: unknown }).animate = () => {
+      animated++;
+      return { finished: Promise.resolve(), cancel() {}, finish() {} };
+    };
+    const moving = openTombstoneCard(cards, BLOG, opener, { bounds });
+    expect(moving.classList.contains("drop-in")).toBe(true);
+    expect(animated).toBe(0); // the CSS drop replaces the shared scale-in
+    const still = openTombstoneCard(cards, BLOG, opener, { bounds, reduced: true });
+    expect(still.classList.contains("drop-in")).toBe(false);
+    expect(animated).toBe(0);
+  });
+
+  test("CSS: the drop is 300ms, falls 48px, lands with a 4px bounce, and is off under reduced motion", () => {
+    const css = costumeCss({ stars: "", twinkle: "" });
+    expect(css).toMatch(/\.tombstone-card\.drop-in \{ animation: hg-drop 300ms linear both; \}/);
+    const kf = css.match(/@keyframes hg-drop \{[\s\S]*?\}\s*\}/)![0];
+    for (const s of ["translateY(-48px)", "opacity: 0", "translateY(-4px)", "translateY(0)", "opacity: 1"]) expect(kf).toContain(s);
+    expect(css).toMatch(/\.reduced-motion \*[^{]*\{ animation: none !important;/);
   });
 
   test("fitPath: a segment taller than its box loses its start to '…' until it fits; a path past 3 lines goes tight", () => {

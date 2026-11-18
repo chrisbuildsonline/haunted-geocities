@@ -1,5 +1,5 @@
 // The ghost (or vampire) card: a Win95 window in #cards, one at a time, beside its sprite toward the page centre.
-// The tombstone card is the stone itself, in the same slot and placement.
+// The tombstone card is the stone itself, in the same slot and placement; it drops in rather than scaling.
 import type { SoundKind } from "../../audio/sound";
 import type { CompanyHit, ContentRequest, Curse, DeadLink } from "../../data/types";
 import { KIND_INFO } from "../dark-patterns";
@@ -138,7 +138,10 @@ function show(cards: HTMLElement, card: HTMLElement, opener: HTMLElement, width:
   const top = Math.min(g.top, opts.bounds.bottom - 8 - card.offsetHeight);
   card.style.left = `${Math.max(8, Math.min(left, win.innerWidth - 8 - SHADOW - width))}px`; // the 4px hard shadow keeps 8px off the edge too
   card.style.top = `${Math.max(opts.bounds.top + 8, top)}px`;
-  if (!opts.reduced) card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
+  if (opts.reduced) return;
+  // The stone drops into place (CSS hg-drop); the other cards scale in.
+  if (card.classList.contains("tombstone-card")) card.classList.add("drop-in");
+  else card.animate([{ opacity: 0, transform: "scale(.96)" }, { opacity: 1, transform: "scale(1)" }], { duration: M.fast, easing: M.easeOut });
 }
 
 /** The curse card: the default frame, titled for the trick, quoting the page's own words. All strings are set as text. */
