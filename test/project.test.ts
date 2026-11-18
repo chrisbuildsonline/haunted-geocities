@@ -45,6 +45,12 @@ describe("Dockerfile", () => {
     const [maj, min] = Bun.version.split(".");
     expect(df()).toMatch(new RegExp(`npm install -g bun@${maj}\\.${min}\\.\\d+`));
   });
+  test("installs Comic Neue (OFL, metric-close to Comic Sans) and fails the build if fontconfig cannot find it", () => {
+    expect(df()).toMatch(/RUN apt-get update && apt-get install -y --no-install-recommends fonts-comic-neue/);
+    expect(df()).toContain(`fc-list : family | grep -q "^Comic Neue"`);
+    // installed in the base stage, so the baselines and the checks see the same font
+    expect(df().indexOf("fonts-comic-neue")).toBeLessThan(df().indexOf("AS visual-update"));
+  });
   test("bakes in typecheck, test and test:e2e as RUN steps", () => {
     for (const s of ["typecheck", "test", "test:e2e"]) {
       expect(df()).toContain(`RUN bun run ${s}\n`);

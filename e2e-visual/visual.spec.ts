@@ -10,6 +10,38 @@ const WIDTHS = [1280, 375] as const;
 // wide: a full-width page with trackers, so the graveyard strip is docked above the HUD at both widths.
 const FIXTURES = ["index", "trackers", "links", "dark-patterns", "column", "article", "dark", "wide"] as const;
 
+test("the image has Comic Neue, so the costume's Comic Sans stack draws a comic face, not a fallback", async ({ context, sw, extensionId }) => {
+  // A face is there when text set in it measures differently from the generic fallback alone.
+  const page = await context.newPage();
+  await prepare(page, 1280);
+  await page.goto(visualUrl("index.html"));
+  const widths = await page.evaluate(() => {
+    const ctx = document.createElement("canvas").getContext("2d")!;
+    const w = (font: string) => {
+      ctx.font = font;
+      return ctx.measureText("~*~ Welcome to my haunted homepage!!! ~*~").width;
+    };
+    return { comic: w('14px "Comic Neue", monospace'), mono: w("14px monospace"), comicSerif: w('14px "Comic Neue", serif'), serif: w("14px serif") };
+  });
+  expect(widths.comic).not.toBe(widths.mono);
+  expect(widths.comicSerif).not.toBe(widths.serif);
+  // and the costume resolves to it: the HUD's text renders in Comic Neue
+  await hauntThroughPopup(context, sw, extensionId, page);
+  await page.bringToFront();
+  await waitForHaunted(page);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("DOM.enable");
+  await cdp.send("CSS.enable");
+  const { root } = await cdp.send("DOM.getDocument", { depth: -1, pierce: true });
+  type N = { nodeId: number; localName?: string; attributes?: string[]; children?: N[]; shadowRoots?: N[] };
+  const find = (n: N): N | undefined =>
+    n.attributes?.includes("empty") && n.attributes.includes("class") ? n : [...(n.children ?? []), ...(n.shadowRoots ?? [])].map(find).find(Boolean);
+  const empty = find(root as N);
+  expect(empty, "the HUD's empty line").toBeDefined();
+  const { fonts } = await cdp.send("CSS.getPlatformFontsForNode", { nodeId: empty!.nodeId });
+  expect(fonts.map((f) => f.familyName)).toContain("Comic Neue");
+});
+
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
     test(`costume ${name} @${width}`, async ({ context, sw, extensionId }) => {

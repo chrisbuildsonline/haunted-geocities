@@ -6,6 +6,11 @@ FROM mcr.microsoft.com/playwright:v1.64.1-noble AS base
 # bun from npm (the image ships node + npm), so the build needs no second registry pull.
 RUN npm install -g bun@1.4.2 && bun --version
 
+# Comic Neue (SIL OFL): the open comic face in the costume's "Comic Sans MS" stack, so the shots
+# show the copy's font, not a serif fallback. The build stops here if fontconfig cannot find it.
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-comic-neue && rm -rf /var/lib/apt/lists/* \
+ && fc-list : family | grep -q "^Comic Neue"
+
 ENV CI=1
 WORKDIR /app
 
