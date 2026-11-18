@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "rule-factory",
+  "description": "When a dark-pattern list or the neighborhood data is edited, ask the agent to check that the new entry has a test, a fixture or an example and era-accurate copy, then run bun run test.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/content/dark-patterns.ts", "src/data/neighborhoods.json"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "src/content/dark-patterns.ts or src/data/neighborhoods.json was just edited. Find the new entry in the edit: a regex in a dark-pattern list, a kind, a neighborhood, or a neighborhood rule. Check three things. (1) Test: a new regex has a positive test and a near-miss test under test/dark-patterns/; a new neighborhood or rule has a data test and a resolver test under test/neighborhoods/. (2) Fixture or example: there is a line in fixtures/dark-patterns.html, or an example phrase or host in a test, that shows the entry working. (3) Copy: any new tagline, suburb, KIND_INFO name, title or trick follows .kiro/steering/era-accuracy.md, with plain words a 1998 GeoCities page would have had and no third-party trademark. Then run bun run test and say whether it passed. For each missing item, give the file, the line and what is missing. If nothing is missing and the tests pass, say so in one line. This is a check only: do not edit, create or delete any file."
+  }
+}
