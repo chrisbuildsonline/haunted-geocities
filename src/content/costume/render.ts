@@ -160,9 +160,12 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   let timers: DarkPattern[] = [];
   let curses: Curse[] = [];
   let lastSent = "";
-  const renderCounts = () => {
-    const vampires = scan.companies.filter((c) => c.vampire).length;
-    setCounts(hud, { ghosts: scan.companies.length - vampires, vampires, tombstones: dead.length, curses: curses.length });
+  // Ghosts and vampires count the companies still haunting: Exorcise lowers them, Let it back raises them.
+  const renderCounts = (tick = false) => {
+    const haunting = scan.companies.filter((c) => !exorcised.has(c.company));
+    const vampires = haunting.filter((c) => c.vampire).length;
+    const counts = { ghosts: haunting.length - vampires, vampires, tombstones: dead.length, curses: curses.length };
+    setCounts(hud, counts, { tick, found: scan.companies.length > 0 });
   };
   const refresh = () => {
     scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
@@ -235,6 +238,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   };
   const setExorcised = (companies: string[]) => {
     exorcised = new Set(companies);
+    renderCounts(settled && !motion.matches);
     placeGhosts();
     setCardExorcised(cards, exorcised);
   };

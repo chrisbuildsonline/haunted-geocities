@@ -610,6 +610,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
     "unhaunt": 1100,
     "reducedHaunt": 300,
     "reducedUnhaunt": 200,
+    "exorcise": 400,
     "easeOut": "cubic-bezier(.2,.8,.2,1)",
     "easeInOut": "cubic-bezier(.45,0,.2,1)",
     "ghostBob": { "px": 4, "ms": 4000 },

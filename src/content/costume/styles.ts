@@ -212,6 +212,7 @@ button:focus-visible { ${ring} }
 }
 
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }
+.reduced-motion .sprite { transition: none !important; }
 .reduced-motion .marquee-track { display: block; width: fit-content; max-width: 100%; box-sizing: border-box; padding: 0; overflow: hidden; text-overflow: ellipsis; transform: none; }
 #edge-frame, #edge-frame * { animation: none !important; transition: none !important; }
 `;

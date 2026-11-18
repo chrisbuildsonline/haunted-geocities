@@ -85,6 +85,8 @@ export const MOTION = {
   unhaunt: 1100,
   reducedHaunt: 300,
   reducedUnhaunt: 200,
+  /** The exorcise moment: the sprite spirals once to its 40% look; the stamp slams on in the second half. */
+  exorcise: 400,
   easeOut: "cubic-bezier(.2,.8,.2,1)",
   easeInOut: "cubic-bezier(.45,0,.2,1)",
   ghostBob: { px: 4, ms: 4000 },

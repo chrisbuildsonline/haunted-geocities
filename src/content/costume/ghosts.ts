@@ -95,6 +95,33 @@ export function vampireIn(el: HTMLElement, delay = 0): Animation[] {
   return anims;
 }
 
+const STAMP_TILT = "translateX(-50%) rotate(-12deg)"; // the stamp's resting transform (styles.ts)
+
+/**
+ * The exorcise moment: the sprite spirals once (a full turn, shrinking to half and back) while it
+ * fades from its look to 40%, and the EXORCISED stamp slams on over the second half. Played once,
+ * only on the change; the fade never goes back up.
+ */
+export function exorciseOut(el: HTMLElement): Animation[] {
+  const from = el.classList.contains("known") ? 0.6 : 1;
+  const sprite = el.querySelector(".sprite")!;
+  const stamp = el.querySelector(".stamp")!;
+  return [
+    sprite.animate(
+      [
+        { transform: "rotate(0deg) scale(1)", opacity: from },
+        { transform: "rotate(180deg) scale(.5)", opacity: (from + 0.4) / 2 },
+        { transform: "rotate(360deg) scale(1)", opacity: 0.4 },
+      ],
+      { duration: M.exorcise, easing: M.easeInOut },
+    ),
+    stamp.animate(
+      [{ transform: `${STAMP_TILT} scale(2)`, opacity: 0 }, { transform: `${STAMP_TILT} scale(1)`, opacity: 1 }],
+      { delay: M.exorcise / 2, duration: M.exorcise / 2, easing: M.easeOut, fill: "backwards" },
+    ),
+  ];
+}
+
 const kindOf = (hit: CompanyHit) => (hit.vampire ? "vampire" : "ghost");
 const byName = (a: CompanyHit, b: CompanyHit) => (a.company < b.company ? -1 : a.company > b.company ? 1 : 0);
 
@@ -154,13 +181,18 @@ export function spriteFor(doc: Document, old: Map<string, HTMLElement>, hit: Com
   const key = `${kindOf(hit)}:${hit.company}`;
   let el = old.get(key);
   old.delete(key);
+  const drawn = !!el;
   if (!el) el = makeSprite(doc, hit, tint, opts);
   else if (tint && el.dataset.tint !== tint) {
     // The order changed under it: redraw only the sprite; the button, its focus and label stay.
     el.dataset.tint = tint;
     el.querySelector(".sprite")!.innerHTML = ghostSvg(tint);
   }
-  applyState(el, hit, opts.exorcised.has(hit.company));
+  const was = el.classList.contains("exorcised");
+  const now = opts.exorcised.has(hit.company);
+  applyState(el, hit, now);
+  // Exorcised while on screen: its moment plays (never for a sprite drawn already exorcised).
+  if (drawn && now && !was && opts.rise) exorciseOut(el);
   return el;
 }
 

@@ -1,7 +1,7 @@
 // The HUD: Hide, the counts (or the empty state), the hit counter and the web ring.
 import { ICON_LEGEND, ICONS, mapToPx, svgMarkup } from "./art";
 import { pinnedBoxes } from "./sample";
-import { PIXEL } from "./tokens";
+import { MOTION as M, PALETTE as P, PIXEL } from "./tokens";
 
 export type Counts = { ghosts: number; vampires: number; tombstones: number; curses: number };
 
@@ -36,10 +36,24 @@ export function buildHud(doc: Document): HTMLElement {
   return hud;
 }
 
-/** Show the counts, or the empty state when nothing was found. */
-export function setCounts(hud: HTMLElement, c: Counts): void {
-  for (const [kind] of KINDS) hud.querySelector(`.count.${kind} .n`)!.textContent = String(c[kind]);
-  const empty = KINDS.every(([kind]) => c[kind] === 0);
+/**
+ * Show the counts, or the empty state when nothing was found. `found`: something was found (all of
+ * it exorcised still shows the zeros, not "clean"). `tick`: each number that changed drops in.
+ */
+export function setCounts(hud: HTMLElement, c: Counts, opts: { tick?: boolean; found?: boolean } = {}): void {
+  for (const [kind] of KINDS) {
+    const n = hud.querySelector(`.count.${kind} .n`)!;
+    const value = String(c[kind]);
+    if (n.textContent === value) continue;
+    n.textContent = value;
+    if (opts.tick) {
+      n.animate(
+        [{ transform: "translateY(-8px)", opacity: 0, color: P.ectoplasm }, { transform: "translateY(0px)", opacity: 1, color: P.bone }],
+        { duration: M.slow, easing: M.easeOut },
+      );
+    }
+  }
+  const empty = !opts.found && KINDS.every(([kind]) => c[kind] === 0);
   (hud.querySelector(".counts") as HTMLElement).hidden = empty;
   (hud.querySelector(".empty") as HTMLElement).hidden = !empty;
 }
