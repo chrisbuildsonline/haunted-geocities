@@ -2,7 +2,7 @@
 
 Every UI feature cites this file. There are two worlds, and they are deliberately different:
 
-- **The costume:** a 1998 GeoCities crypt drawn over any page. Only the 216 web-safe colours, Comic Sans MS / Times New Roman, original pixel art, bevels and hard edges.
+- **The costume:** a 1998 GeoCities crypt drawn over any page. Only the 216 web-safe colours, Comic Sans MS / Times New Roman, original pixel art, bevels and hard edges. The comic stack is `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`; Comic Neue (SIL OFL, close to Comic Sans in shape and width) is installed in the test Docker image (`fonts-comic-neue`, the build fails without it), so the visual baselines show a comic face where the copy says Comic Sans, never a serif fallback.
 - **The popup:** a Windows 95 window, 360px wide: the same era as the crypt, kept clean and scannable.
 
 Both worlds share the web-safe violet `#6633cc`. In the costume it is the spectral glow. In the popup it is only the focus ring. Exact values are in the `## Tokens` JSON. Where prose and JSON disagree, the JSON wins.
@@ -101,6 +101,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - Middle: the neighborhood's tagline (e.g. `Where the webmasters code all night.`), same colour and font as the address, 12px from each side. It takes the space left, stays on one line and is cut with an ellipsis. Hidden under 480px wide.
   - Right side: the 48×24 under-construction sign. It is static, or 2 frames at 1 Hz with motion allowed.
 - **Marquee (24px):** `#000033` ground, Comic Sans MS 14px, `#66ff99` text. It cycles lines such as `~*~ Welcome to my haunted homepage!!! ~*~ 7 ghosts are watching you ~*~ Best viewed at 800x600 ~*~`. Implemented as a CSS `translateX` keyframe. Never `<marquee>`.
+  - **Stars never touch the text:** the band carries the starfield tile, but the line rides on a solid `#000033` plaque: the text box plus an 8px `#000033` border at each end (`background-clip: content-box`, so the 100% lead-in padding stays clear and the band's stars show around the line). Under reduced motion the plaque shrinks to the line, flush left, cut with an ellipsis.
 - **Placement:** the bands sit at `top: 0`. If page UI is fixed or sticky at y=0 (sampled with `elementsFromPoint` along the top row), the bands sit just below it.
 
 ### HUD (guestbook / hit-counter strip)
@@ -169,11 +170,12 @@ On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires sta
 ### Tombstones (dead links)
 
 - **Marker:** a 16×20 stone placed just after the link's last line box (beside it, never over it). If there is no room there, it goes in the nearest gutter lane at the same y.
-- **Card is the stone:** a 176px-wide `#cccccc` slab with a 88px top radius (arched headstone, no blur), a 2px bevel `#ffffff`/`#666666`, and moss pixels `#336633` along the base. The inscription is pinned to the stone face (absolute, 16px inset) in Times New Roman `#000000`:
-  - `HERE LIES` (12px, letter-spacing 2px).
+- **Card is the stone:** a 208×248 `#cccccc` slab with a 104px top radius (a full arched headstone, no blur), a 2px bevel `#ffffff`/`#666666`, a hard shadow `4px 4px 0 #000000`, and moss pixels `#336633` along the base. It is the costume's one big light object on the dark crypt, so it is the high-contrast moment of a dead-link click. The inscription is pinned to the stone face (absolute: 64px from the top, 32px from each side, 28px from the base) in Times New Roman `#000000`:
+  - `HERE LIES`: bold 16px/20px, letter-spacing 3px, carved: a 1px `#ffffff` highlight under-right of each letter (`text-shadow: 1px 1px 0`) over a carved rule (1px `#666666` groove with a 1px `#ffffff` lip, 12px in from each side, 6px under the letters).
   - The path, e.g. `/blog/2019/old-post.html`, at 13px. The minimum anywhere is 12px.
   - `404 · Not Found` (12px).
-  - The inscription starts 52px down the stone, under the 24×24 `[x]` close button (24px from the top, 32px from the right, inside the arch).
+  - The inscription sits under the 24×24 `[x]` close button (32px from the top, 40px from the right, so its corner stays inside the arch).
+- **Drop-in:** the stone falls into place instead of the cards' scale-in: class `drop-in`, `hg-drop` over 300ms (`slow`), played once. It falls 48px while fading 0 → 1 (ease-in, the first 60%), bounces 4px up and settles (ease-out then ease-in), landing with the stone thud. Under reduced motion there is no class and no animation: the stone is simply there in its final place, opacity 1.
 - **Path wrapping:** the path clamps at 3 lines of 13px/17px (`-webkit-line-clamp: 3`, `max-height: 51px`). Insert `<wbr>` after every `/`. Set `overflow-wrap: normal; word-break: keep-all`, and make each segment one atomic box, so lines break at `/` and a segment that fits a line is never broken.
 - **A segment wider than a line** (a long filename) wraps inside itself onto at most 2 lines (at its hyphens, else anywhere). If it needs more, its start is cut: characters are dropped from the front behind a `…` until it fits, so the end (`…long-haunted-filename-` / `that-must-not-break.html`) stays readable. If the path would then run past 3 lines, the segment gets 1 line instead of 2. The whole segment stays in a visually hidden copy for screen readers, and the path element carries `title` with the full path for hover.
 
@@ -460,7 +462,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
   - `inOut` = `cubic-bezier(.45,0,.2,1)`, for the wipe.
   - `linear`, for the marquee and fades.
   - `steps(2)` for the 2-frame under-construction sign.
-- **Card open:** opacity 0 → 1 and `scale(.96 → 1)` over 120ms `out`. Close is 120ms, opacity only.
+- **Card open:** opacity 0 → 1 and `scale(.96 → 1)` over 120ms `out`. Close is 120ms, opacity only. The tombstone card drops in instead (see "Tombstones"): 300ms, once, a 48px fall and a 4px bounce.
 - **Ghost drift:**
   - Bob ±4px vertical over 4000ms, ease-in-out alternate.
   - Sway ±6px horizontal over 7000ms.
@@ -477,7 +479,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 - `animation: none` on every costume layer.
 - Transitions are limited to opacity, 200ms or less.
-- The marquee is static. Its first line is shown and truncated with an ellipsis. Lines advance only on Hide/Show.
+- The marquee is static. Its first line is shown on its plaque and truncated with an ellipsis. Lines advance only on Hide/Show.
+- Cards open in place: no scale-in, and the tombstone card has no drop.
 - Ghosts and vampires sit still at their slot centres. Twinkles are off. The sign shows frame 1.
 - The haunt and un-haunt sequences are replaced by the cross-fades above.
 - The popup has no motion to reduce; its `prefers-reduced-motion: reduce` block stays as a guard.
@@ -541,7 +544,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "hudMaxWidth": 720,
       "hudWrapBelow": 400,
       "cardWidth": 248,
-      "tombstoneWidth": 176,
+      "tombstoneWidth": 208,
       "starTile": 64,
       "minText": 12,
       "frameBevel": 6,
