@@ -333,13 +333,13 @@ describe("HUD", () => {
     expect(hud.querySelector(".empty")!.hasAttribute("hidden")).toBe(false);
   });
 
-  test("the odometer shows 000000 and positions each digit strip in 16px steps", () => {
+  test("the odometer starts at 0 (captioned) and positions each digit strip in 16px steps", () => {
     const { win, doc } = setup();
     windows.push(win);
     const hud = byId(renderCostume(doc), "hud")!;
     const strips = () => [...hud.querySelectorAll(".cell .strip")].map((s) => (s as HTMLElement).style.transform);
     expect(strips()).toEqual(Array(6).fill("translateY(0px)"));
-    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 000000, tracker requests blocked or seen");
+    expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: none yet, tracker requests blocked or seen");
     setOdometer(hud, 1234);
     expect(strips()).toEqual(["translateY(0px)", "translateY(0px)", "translateY(-16px)", "translateY(-32px)", "translateY(-48px)", "translateY(-64px)"]);
     expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 001234, tracker requests blocked or seen");

@@ -91,6 +91,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .hits .label, .hits .sub { overflow: hidden; text-overflow: ellipsis; }
 .hits .sub { color: ${P.bevelLight}; font-size: 12px; }
 .odo { display: flex; flex: none; gap: 2px; padding: 2px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; }
+.hits .none { flex: none; padding: 2px 4px; background: ${P.ink}; border: 1px solid; border-color: ${P.bevelDark} ${P.hudBevelLight} ${P.hudBevelLight} ${P.bevelDark}; color: ${P.ectoplasm}; font: 12px/16px ${COMIC}; }
 .cell { display: block; width: 10px; height: 16px; overflow: hidden; background: ${P.ink}; }
 .strip { display: block; width: 10px; height: 160px; background-image: ${digitsUrl()}; }
 .ring { display: flex; align-items: center; gap: 4px; flex: none; min-width: 0; font: 13px ${TIMES}; white-space: nowrap; }

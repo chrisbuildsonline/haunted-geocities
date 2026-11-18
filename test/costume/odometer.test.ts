@@ -23,13 +23,35 @@ test("label reads 'Souls counted' with the sub-label", () => {
   // the sub-label sits under the label, and both stay decorative: the accessible name is the aria-label
   expect(hits.querySelector(".hits-label")!.contains(hits.querySelector(".sub"))).toBe(true);
   expect(hits.querySelector(".hits-label")!.getAttribute("aria-hidden")).toBe("true");
-  expect(hits.getAttribute("role")).toBe("img");
+  // a named group, not an image: the counter is a number with a label, not a picture
+  expect(hits.getAttribute("role")).toBe("group");
 });
 
 test("title and aria-label say tracker requests blocked or seen", () => {
   const hits = hud().querySelector(".hits")!;
   expect(hits.getAttribute("title")).toBe(SUB);
-  expect(hits.getAttribute("aria-label")).toBe(`Souls counted: 000000, ${SUB}`);
+  expect(hits.getAttribute("aria-label")).toBe(`Souls counted: none yet, ${SUB}`);
+});
+
+test("at zero the odometer is captioned 'No souls yet.' instead of six zeros", () => {
+  const h = hud();
+  const odo = h.querySelector<HTMLElement>(".odo")!;
+  const none = h.querySelector<HTMLElement>(".hits .none")!;
+  expect(none.textContent).toBe("No souls yet.");
+  expect(none.getAttribute("aria-hidden")).toBe("true"); // the group's aria-label says it
+  expect([odo.hidden, none.hidden]).toEqual([true, false]);
+  setOdometer(h, 3);
+  expect([odo.hidden, none.hidden]).toEqual([false, true]);
+  setOdometer(h, 0);
+  expect([odo.hidden, none.hidden]).toEqual([true, false]);
+  expect(h.querySelector(".hits")!.getAttribute("aria-label")).toBe(`Souls counted: none yet, ${SUB}`);
+});
+
+test("the caption is at least 12px and 4.5:1 on its black cell", () => {
+  const none = rule(css, ".hits .none");
+  expect(Number(none.match(/font:[^;]*?(\d+)px/)?.[1])).toBeGreaterThanOrEqual(LAYOUT.minText);
+  expect(none).toContain(`background: ${PALETTE.ink}`);
+  expect(contrastRatio(none.match(/(?:^|;)\s*color:\s*(#[0-9a-f]{6})/)![1]!, PALETTE.ink)).toBeGreaterThanOrEqual(4.5);
 });
 
 test("aria-label keeps the six digits", () => {

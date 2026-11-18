@@ -212,11 +212,41 @@ test("odometer says tracker requests blocked or seen", async ({ context, sw }) =
       const h = this.querySelector<HTMLElement>("#hud .hits")!;
       const sub = h.querySelector<HTMLElement>(".sub")!.getBoundingClientRect();
       const hud = this.getElementById("hud")!.getBoundingClientRect();
-      return { title: h.title, aria: h.getAttribute("aria-label"), label: h.querySelector(".label")!.textContent, subShown: sub.width > 1, hudHeight: hud.height };
+      const shown = (sel: string) => h.querySelector<HTMLElement>(sel)!.getBoundingClientRect().width > 0;
+      return { role: h.getAttribute("role"), title: h.title, aria: h.getAttribute("aria-label"), label: h.querySelector(".label")!.textContent, subShown: sub.width > 1, odo: shown(".odo"), none: shown(".none"), hudHeight: hud.height };
     });
-    expect(hits).toMatchObject({ title: SUB, aria: `Souls counted: 000006, ${SUB}`, label: "Souls counted", subShown: width > 400 });
+    expect(hits).toMatchObject({ role: "group", title: SUB, aria: `Souls counted: 000006, ${SUB}`, label: "Souls counted", subShown: width > 400, odo: true, none: false });
     expect(hits.hudHeight).toBeLessThanOrEqual(88); // never more than two rows
     await page.screenshot({ path: `${SHOTS}/odometer-${width}.png` });
+    await page.close();
+  }
+});
+
+test("a page with no souls captions the odometer instead of showing 000000", async ({ context, sw }) => {
+  for (const width of [1280, 375]) {
+    const { page, inShadow } = await hauntAt(context, sw, width, "clean.html");
+    const hits = await inShadow(function () {
+      const h = this.querySelector<HTMLElement>("#hud .hits")!;
+      const none = h.querySelector<HTMLElement>(".none")!;
+      const r = none.getBoundingClientRect();
+      const cs = getComputedStyle(none);
+      return {
+        role: h.getAttribute("role"),
+        aria: h.getAttribute("aria-label"),
+        odo: h.querySelector<HTMLElement>(".odo")!.getBoundingClientRect().width,
+        caption: none.textContent,
+        shown: r.width > 0 && cs.visibility === "visible",
+        px: parseFloat(cs.fontSize),
+        clipped: none.scrollWidth > none.clientWidth,
+        hudHeight: this.getElementById("hud")!.getBoundingClientRect().height,
+        empty: this.querySelector<HTMLElement>("#hud .empty")!.textContent,
+      };
+    });
+    expect(hits).toMatchObject({ role: "group", aria: `Souls counted: none yet, ${SUB}`, odo: 0, caption: "No souls yet.", shown: true, clipped: false, empty: "No ghosts here. Suspiciously clean." });
+    expect(hits.px).toBeGreaterThanOrEqual(12);
+    expect(hits.hudHeight).toBeLessThanOrEqual(88);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: `${SHOTS}/odometer-empty-${width}.png` });
     await page.close();
   }
 });
