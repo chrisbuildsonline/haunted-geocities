@@ -2,8 +2,9 @@
 // the named hooks, read-only era-accuracy and rule-factory prompts, patterns that point at real paths,
 // and no two hooks that fire on the same save.
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 
 const root = join(import.meta.dir, "..");
 const hooksDir = join(root, ".kiro", "hooks");
@@ -38,10 +39,15 @@ const OTHER_EVENTS = ["userTriggered", "agentStop", "promptSubmit"];
 
 type HookLike = { name?: unknown; when?: { type?: unknown; patterns?: unknown } };
 
-/** Every repo file git knows about, as repo-relative paths. */
-function repoFiles(): string[] {
-  const r = Bun.spawnSync(["git", "ls-files"], { cwd: root, stdout: "pipe" });
-  return r.stdout.toString().split("\n").filter(Boolean);
+/** Top-level folders that hold dependencies, builds, git internals or scratch, not repo files. */
+const NOT_REPO = new Set(["node_modules", "dist", "dist-e2e", ".git", "prototype", ".backups", "test-results", "playwright-report", ".claude", ".omc"]);
+
+/** Every file in the repo folder, as repo-relative paths. Walks the disk, so it works without .git (the Docker build). */
+function repoFiles(dir: string = root): string[] {
+  const all = new Bun.Glob("**/*");
+  return readdirSync(dir, { withFileTypes: true })
+    .filter((e) => !NOT_REPO.has(e.name))
+    .flatMap((e) => (e.isDirectory() ? [...all.scanSync({ cwd: join(dir, e.name), dot: true })].map((p) => `${e.name}/${p}`) : e.isFile() ? [e.name] : []));
 }
 
 /**
@@ -131,6 +137,22 @@ describe("no two hooks overlap", () => {
     const paths = repoFiles();
     expect(paths).toContain("src/content/costume/render.ts");
     expect(overlapProblems(hooks.map((h) => h.hook), paths)).toEqual([]);
+  });
+
+  test("repoFiles walks the folder without git and skips build, dependency and scratch folders", () => {
+    // The Docker build copies the repo without .git, so this must not lean on git history.
+    const dir = mkdtempSync(join(tmpdir(), "hooks-repo-"));
+    try {
+      const keep = ["src/content/costume/render.ts", ".kiro/hooks/a.kiro.hook", "README.md"];
+      const skip = ["node_modules/x/index.js", "dist/a.js", "dist-e2e/a.js", ".git/HEAD", "prototype/a.html", ".backups/a.ts"];
+      for (const p of [...keep, ...skip]) {
+        mkdirSync(dirname(join(dir, p)), { recursive: true });
+        writeFileSync(join(dir, p), "");
+      }
+      expect(repoFiles(dir).sort()).toEqual([...keep].sort());
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test("a costume save sets off exactly one hook", () => {
