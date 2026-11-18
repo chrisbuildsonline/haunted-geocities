@@ -23,7 +23,8 @@ export default defineConfig({
   forbidOnly: true,
   retries: 0,
   timeout: 60_000,
-  // A missing baseline fails and is not written; only `bun run test:visual:update` (--update-snapshots) writes them.
+  // A missing baseline fails and is not written; only `bun run test:visual:update` (--update-snapshots=all) writes them,
+  // every one of them, so a change under the tolerance below (a HUD label, one digit) still lands in the baseline.
   updateSnapshots: "none",
   expect: {
     toHaveScreenshot: {
