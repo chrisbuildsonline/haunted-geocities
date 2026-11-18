@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "baseline-refresh",
+  "description": "When a costume file is edited, ask the agent to regenerate the visual baselines in Docker and summarise which screenshots changed.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/content/costume/**"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A file under src/content/costume/ was just edited, so the visual baselines must be regenerated. First check that Docker is running. If it is not, say so and stop. Otherwise run bun run visual:baselines, which builds the baselines target of the Dockerfile so the PNGs are made in Docker with the same fonts and anti-aliasing as the authoritative check, and writes them into e2e-visual/__screenshots__. Then use git: run git status and git diff --stat on e2e-visual/__screenshots__ and list which PNGs were added, changed or removed. Look at each changed PNG and summarise the diffs: for each changed shot, give the file name, which page and width it covers, and whether the change looks intended given the costume edit. Flag any change that looks unrelated to the edit. Look at the changed PNGs before anyone commits them. Do not commit anything, and do not edit, create or delete any file other than what bun run visual:baselines writes."
+  }
+}
