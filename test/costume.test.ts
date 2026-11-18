@@ -331,6 +331,20 @@ describe("HUD", () => {
     expect(ringButtons).toEqual(["« prev", "next »"]);
   });
 
+  test("web ring: 'Haunted' is a word of its own that the ≤400px HUD drops, so the name reads WebRing there", () => {
+    const { win, doc } = setup();
+    windows.push(win);
+    const ring = byId(renderCostume(doc), "hud")!.querySelector(".ring")!;
+    expect(ring.getAttribute("aria-label")).toBe("Haunted WebRing");
+    const name = ring.querySelector(".ring-name")!;
+    expect(name.textContent).toBe("Haunted WebRing");
+    expect(name.querySelector(".ring-haunted")!.textContent).toBe("Haunted ");
+    const css = costumeCss({ stars: "a", twinkle: "b" });
+    const narrow = css.slice(css.indexOf("@media (max-width: 400px)"));
+    expect(narrow).toMatch(/\.ring-haunted\s*\{[^}]*display:\s*none/);
+    expect(css.slice(0, css.indexOf("@media (max-width: 400px)"))).not.toMatch(/\.ring-haunted\s*\{[^}]*display:\s*none/);
+  });
+
   test("setCounts swaps the empty state for the counts once anything is found", () => {
     const { win, doc } = setup();
     windows.push(win);

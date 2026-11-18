@@ -31,7 +31,7 @@ export function buildHud(doc: Document): HTMLElement {
     `<span class="odo" aria-hidden="true">${`<span class="cell"><span class="strip"></span></span>`.repeat(6)}</span>` +
     `<span class="none" aria-hidden="true">No souls yet.</span></div>` +
     `<nav class="ring" aria-label="Haunted WebRing"><button class="prev" type="button">« prev</button> | ` +
-    `<span class="ring-name">Haunted WebRing</span> | <button class="next" type="button">next »</button></nav>`;
+    `<span class="ring-name"><span class="ring-haunted">Haunted </span>WebRing</span> | <button class="next" type="button">next »</button></nav>`;
   setOdometer(hud, 0);
   return hud;
 }

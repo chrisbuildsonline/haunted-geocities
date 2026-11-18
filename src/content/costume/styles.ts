@@ -208,6 +208,7 @@ button:focus-visible { ${ring} }
   .hits .sub { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   #graveyard { left: 4px; right: 4px; bottom: calc(4px + var(--hg-lift, 0px) + var(--hg-hud-h, ${L.hudMinHeight}px) + ${L.graveyardGap}px); }
   .ring { flex: 1 0 0; }
+  .ring-haunted { display: none; }
   #show-tab { right: 4px; bottom: calc(4px + var(--hg-lift, 0px)); }
 }
 

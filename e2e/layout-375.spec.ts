@@ -125,6 +125,26 @@ test("a crowded graveyard keeps its tags apart and inside the row", async ({ con
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test("the web ring's name is whole between prev and next at 375, 700 and 1280", async ({ context, sw }) => {
+  // trackers.html: the counts and the six-digit odometer, the HUD at its fullest.
+  for (const width of [375, 700, 1280]) {
+    const { page, inShadow } = await hauntAt(context, sw, width, "trackers.html");
+    await expect.poll(() => inShadow(function () { return !(this.querySelector("#hud .odo") as HTMLElement).hidden; })).toBe(true);
+    const ring = await inShadow(function () {
+      const name = this.querySelector<HTMLElement>("#hud .ring-name")!;
+      const ring = this.querySelector<HTMLElement>("#hud .ring")!;
+      const hud = this.querySelector<HTMLElement>("#hud")!.getBoundingClientRect();
+      return {
+        text: ring.innerText.replace(/\s+/g, " ").trim(),
+        cut: name.scrollWidth > name.clientWidth,
+        inHud: ring.getBoundingClientRect().right <= hud.right + 0.5,
+      };
+    });
+    expect({ width, ...ring }).toEqual({ width, text: expect.stringMatching(/^« prev \| (Haunted )?WebRing \| next »$/), cut: false, inHud: true });
+    await page.close();
+  }
+});
+
 async function hauntedPopup(context: BrowserContext, sw: Worker, extensionId: string, size: { width: number; height: number }): Promise<Page> {
   const page = await context.newPage();
   await page.goto(fixture(`trackers.html?w=${size.width}`)); // a URL of its own: tabIdOf finds the tab by URL
