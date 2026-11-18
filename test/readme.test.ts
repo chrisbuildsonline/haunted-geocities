@@ -75,6 +75,22 @@ describe("README.md", () => {
     expect(readFileSync(join(root, "e2e", "readme.shots.ts"), "utf8")).toContain("haunt.gif");
   });
 
+  test("the exorcise moment GIF is shown in What it does: 375px wide (a phone), at most 2 MB, made by the shots script", () => {
+    const section = readme.split(/^## What it does\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toMatch(/!\[[^\]]*Exorcise[^\]]*\]\(docs\/screenshots\/exorcise\.gif\)/);
+    const gif = readFileSync(join(root, "docs", "screenshots", "exorcise.gif"));
+    expect(gif.subarray(0, 6).toString("latin1")).toBe("GIF89a");
+    expect(gif.readUInt16LE(6)).toBe(375);
+    expect(gif.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+    expect(readFileSync(join(root, "e2e", "readme.shots.ts"), "utf8")).toContain("exorcise.gif");
+  });
+
+  test("the README shots are made in the Docker image (Comic Neue), by a package script", () => {
+    expect(scripts["docs:screenshots"]).toBe("docker build --target shots --output docs/screenshots .");
+    expect(readFileSync(join(root, "Dockerfile"), "utf8")).toMatch(/FROM base AS shots-run[\s\S]*ffmpeg[\s\S]*bun run screenshots[\s\S]*FROM scratch AS shots/);
+    expect(readme).toContain("bun run docs:screenshots");
+  });
+
   test("README popup screenshot exists and is referenced", () => {
     const shot = join(root, "docs", "screenshots", "popup.png");
     expect(existsSync(shot)).toBe(true);

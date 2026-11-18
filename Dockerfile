@@ -26,6 +26,14 @@ RUN bun run test:visual:update
 FROM scratch AS baselines
 COPY --from=visual-update /app/e2e-visual/__screenshots__/ /
 
+# README screenshots and haunt.gif (docs/screenshots/), made in this image so they show Comic Neue:
+#   bun run docs:screenshots
+FROM base AS shots-run
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN bun run screenshots
+FROM scratch AS shots
+COPY --from=shots-run /app/docs/screenshots/ /
+
 FROM base
 RUN bun run typecheck
 RUN bun run test

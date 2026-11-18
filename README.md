@@ -12,7 +12,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - Haunt and un-haunt any page from the toolbar popup. The page is restyled (fonts, link colours, a parchment tint and a guestbook frame around the content column) by one adopted stylesheet, and the starfield, HUD and marquee sit in a closed shadow root over it. On a phone or a full-width page the whole page is tinted inside a 12px starfield edge. Un-haunting removes it all and the page is byte for byte as it was.
 - Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card. On a phone or a full-width page, where there is no room beside the text, the ghosts and vampires stand in a graveyard strip just above the HUD instead, and scroll sideways when there are many.
 - The HUD hit counter is labelled `Souls counted`: the number of tracker requests blocked or seen on the page.
-- Exorcise blocks a company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
+- Exorcise blocks a company for the current tab with declarativeNetRequest session rules. Its ghost spirals out to a faded look as an EXORCISED stamp slams on, and the HUD count of ghosts still haunting the page ticks down. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - Scripts caught fingerprinting at runtime (canvas, audio or font probing) become vampires. Companies that Tracker Radar already rates as fingerprinters are listed as known vampires.
 - Dead links get a tombstone beside them. The extension sends a HEAD request, and a 404 or 410 answer makes a tombstone. Clicking one opens a stone card with the path and the status.
 - Dark patterns get a CURSED! badge beside them: fake scarcity ("Only 2 left"), countdown text, ticking timers, confirmshaming and pre-checked opt-in boxes. Clicking a badge opens a card that quotes the page's own words and names the trick. The pre-checked box is only labelled, never unticked.
@@ -22,6 +22,8 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - Sound is off by default. Turn on **Sound effects** in the popup and the Haunt click plays a short whoosh, and opening a card plays a short sound for its kind: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and an organ stab for a vampire. The sounds are made in code with the Web Audio API (`src/audio/sound.ts`), with no audio files, and nothing plays until you click.
 
 ![The haunt moment on a news page: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
+
+![Exorcise on a phone: the Criteo ghost in the graveyard strip spirals out to its faded look as the EXORCISED stamp slams on, and the HUD ghost count ticks from 1 to 0](docs/screenshots/exorcise.gif)
 
 ![The popup on a haunted page, drawn as a Windows 95 window: hit counters, one ghost, two vampires and their Exorcise buttons](docs/screenshots/popup.png)
 
@@ -117,7 +119,7 @@ bun run docker:test
 
 `test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint, the e2e run and the visual check in a clean Playwright image.
 
-The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`. The haunt moment GIF is made from a burst of frames by `ffmpeg` (6 fps, 560px wide, 128 colours), so that run needs `ffmpeg` on the path.
+The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`. The haunt moment GIF is made from a burst of frames by `ffmpeg` (6 fps, 560px wide, 128 colours), and the exorcise GIF the same way (12 fps, 375px wide), so that run needs `ffmpeg` on the path. The committed ones come from the Docker image, where Comic Neue is installed, so the comic headings show as they do in the visual baselines: `bun run docs:screenshots` runs the same script there and writes the files to `docs/screenshots/`.
 
 ### lint:manifest
 
