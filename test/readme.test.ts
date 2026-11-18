@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dir, "..");
@@ -93,7 +93,7 @@ describe("README.md", () => {
   test("names every Kiro hook, each of which exists in .kiro/hooks/, and nothing is still to come", () => {
     const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
     expect(section).toContain(".kiro/hooks/");
-    for (const name of ["manifest-lint", "visual-regression", "era-accuracy", "rule-factory"]) {
+    for (const name of ["manifest-lint", "visual-regression", "era-accuracy", "rule-factory", "baseline-refresh"]) {
       expect({ name, inReadme: section.includes(`\`${name}\``) }).toEqual({ name, inReadme: true });
       expect({ name, file: existsSync(join(root, ".kiro", "hooks", `${name}.kiro.hook`)) }).toEqual({ name, file: true });
     }
@@ -136,6 +136,22 @@ describe("README.md", () => {
   test("Load it says the test build is dist.zip on the GitHub release", () => {
     const section = readme.split(/^## Load it\s*$/m)[1]?.split(/^## /m)[0] ?? "";
     expect(section).toMatch(/`dist\.zip`[^\n]*GitHub release|GitHub release[^\n]*`dist\.zip`/);
+  });
+
+  test("How Kiro was used counts and names every spec and hook on disk", () => {
+    const section = readme.split(/^## How Kiro was used\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    const specs = readdirSync(join(root, ".kiro", "specs"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name);
+    const hooks = readdirSync(join(root, ".kiro", "hooks")).filter((f) => f.endsWith(".kiro.hook")).map((f) => f.replace(/\.kiro\.hook$/, ""));
+    expect(section).toContain(`${specs.length} specs`);
+    expect(section).toContain(`${hooks.length} hooks`);
+    for (const name of [...specs, ...hooks]) expect({ name, found: section.includes(`\`${name}\``) }).toEqual({ name, found: true });
+  });
+
+  test("the Kiro hooks section states the hook count in words", () => {
+    const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    const n = readdirSync(join(root, ".kiro", "hooks")).filter((f) => f.endsWith(".kiro.hook")).length;
+    const word = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"][n];
+    expect(section).toContain(`${word} Kiro IDE hooks`);
   });
 
   test("lists the neighborhoods spec under How Kiro was used", () => {

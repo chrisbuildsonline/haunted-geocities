@@ -127,6 +127,7 @@ describe("the named hooks", () => {
     },
     { name: "era-accuracy", patterns: ["src/content/costume/**"], then: { type: "askAgent" } },
     { name: "rule-factory", patterns: ["src/content/dark-patterns.ts", "src/data/neighborhoods.json"], then: { type: "askAgent" } },
+    { name: "baseline-refresh", patterns: ["src/content/costume/**"], then: { type: "askAgent" } },
   ];
 
   test.each(table)("$name exists with its patterns and action", ({ name, patterns, then }) => {
@@ -169,6 +170,32 @@ describe("the named hooks", () => {
       expect(prompt).toContain("do not edit, create or delete any file");
       for (const bad of ["bun test", "fix it", "apply", "rewrite", "update the file"]) {
         expect({ bad, found: prompt.toLowerCase().includes(bad) }).toEqual({ bad, found: false });
+      }
+      expect(hook?.then && "command" in hook.then).toBe(false);
+    });
+  });
+
+  describe("baseline-refresh prompt", () => {
+    const hook = byName("baseline-refresh");
+    const prompt: string = hook?.then?.prompt ?? "";
+
+    test("file exists and is valid JSON", () => {
+      const path = join(hooksDir, "baseline-refresh.kiro.hook");
+      expect(existsSync(path)).toBe(true);
+      expect(() => JSON.parse(readFileSync(path, "utf8"))).not.toThrow();
+    });
+
+    test("regenerates the baselines with the docker script and summarises what changed", () => {
+      expect(Object.hasOwn(scripts, "visual:baselines")).toBe(true);
+      expect(scripts["visual:baselines"]).toContain("docker");
+      for (const word of ["bun run visual:baselines", "Docker", "e2e-visual/__screenshots__", "git", "summar"]) {
+        expect({ word, found: prompt.includes(word) }).toEqual({ word, found: true });
+      }
+    });
+
+    test("never writes baselines from the host's fonts or runs bun test", () => {
+      for (const bad of ["test:visual:update", "bun test", "--update-snapshots"]) {
+        expect({ bad, found: prompt.includes(bad) }).toEqual({ bad, found: false });
       }
       expect(hook?.then && "command" in hook.then).toBe(false);
     });
