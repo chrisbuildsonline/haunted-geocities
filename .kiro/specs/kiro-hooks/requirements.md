@@ -113,3 +113,13 @@ Hooks run when a file is edited and saved in Kiro IDE. They are a local safety n
 67. The README's "Checks" section shall list `lint:manifest` and `test:visual`.
 68. The README's line "Kiro hooks are still to come." shall be removed.
 69. The README's "How Kiro was used" section shall mention `.kiro/hooks/` and the `kiro-hooks` spec.
+
+### Distinct triggers and the costume-reviewer agent
+
+70. A save of a file under `src/content/costume/` shall set off exactly one hook, `visual-regression`.
+71. `era-accuracy` shall fire on `agentStop` with no `patterns`. Its prompt shall run `git diff` on `src/content/costume/` and `src/popup/`, say so in one line and stop if nothing changed there, and otherwise review the changed lines against the same five rules as before. It shall stay read-only.
+72. `baseline-refresh` shall fire on `userTriggered` with no `patterns`, and its prompt shall not say a file was just edited. Making baselines is a choice, so it is run by hand.
+73. `test/hooks.test.ts` shall fail if two hooks share an event and pattern list, or if one repo file sets off two hooks on the same file event.
+74. The repo shall contain the kiro-cli agent `.kiro/agents/costume-reviewer.json`: a read-only era-accuracy reviewer with `tools` and `allowedTools` of `["fs_read"]` only, the era-accuracy steering and `design/DESIGN.md` as resources, no MCP servers, and an `agentSpawn` hook that runs `git diff -- src/content/costume src/popup`.
+75. The agent prompt shall name the five rules, ask for file and line for each problem, and contain `do not edit, create or delete any file`.
+76. `test/kiro-agents.test.ts` shall check requirements 74 and 75 and that every `file://` resource exists.

@@ -255,3 +255,17 @@ This README change is a task for a later pass. This spec creation changes `.kiro
 - **Font fallback.** The costume uses Comic Sans MS, which is usually missing on Linux. The fallback font is the same in the Docker image every time, which is why baselines come from there.
 - **Slow hook.** See Cost above.
 - **Hook patterns vs. file moves.** The pattern check in `hooks.test.ts` catches a moved directory.
+
+## Distinct triggers and the costume-reviewer agent (req 70 to 76)
+
+Three hooks used to fire on one costume save: `visual-regression`, `era-accuracy` and `baseline-refresh`. Each now has its own trigger.
+
+| Hook | Event | When it runs |
+| --- | --- | --- |
+| `visual-regression` | `fileEdited` on costume, popup and `design/DESIGN.md` | Every costume save. Unchanged. |
+| `era-accuracy` | `agentStop` | After the agent finishes a turn. Reads `git diff` on `src/content/costume/` and `src/popup/` and stops with one line if there is no diff. |
+| `baseline-refresh` | `userTriggered` | By hand, after a costume change you meant. Docker, `bun run visual:baselines`, then a git summary. |
+
+`agentStop` and `userTriggered` carry no `patterns`, and the hook test already allows that. The overlap check in `test/hooks.test.ts` compares the event and sorted patterns of every pair of hooks, and expands each file-event pattern with `Bun.Glob` over `git ls-files` to catch a file that sets off two hooks on the same event. A separate test pins that a costume save sets off only `visual-regression`.
+
+`.kiro/agents/costume-reviewer.json` is the same era review as a kiro-cli agent you start on demand. It reads only: `fs_read` is its one tool and its one pre-approved tool, so it cannot write, run shell commands or reach AWS. The `agentSpawn` hook gives it the costume and popup diff before the first turn, and the era-accuracy steering and `design/DESIGN.md` load as resources. `test/kiro-agents.test.ts` holds it to that shape.
