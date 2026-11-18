@@ -29,7 +29,8 @@ const strip = (inShadow: InShadow) =>
     return {
       shown: !g.hidden && r.height > 0,
       companies: sprites.map((s) => s.dataset.company),
-      widths: [...new Set(sprites.map((s) => Math.round(s.getBoundingClientRect().width)))],
+      // each button is as wide as the wider of the 48px sprite and its tag (font-dependent: Comic Neue tags can pass 48)
+      widthsFit: sprites.every((s) => Math.abs(s.getBoundingClientRect().width - Math.max(48, s.querySelector(".tag")!.getBoundingClientRect().width)) <= 1),
       lanes: this.querySelectorAll("#lanes .ghost, #lanes .vampire").length,
       gap: Math.round(hud.top - r.bottom),
       sameInsets: Math.round(r.left) === Math.round(hud.left) && Math.round(r.right) === Math.round(hud.right),
@@ -63,7 +64,7 @@ test("375px: graveyard shows one sprite per company in lane order", async ({ con
   const s = await strip(inShadow);
   expect(s.shown).toBe(true);
   expect(s.companies).toEqual(["Criteo", "Hotjar", "Taboola"]); // the ghost by count, then the known vampires by name
-  expect(s.widths).toEqual([48]);
+  expect(s.widthsFit).toBe(true);
   expect(s.lanes).toBe(0);
   expect(s.gap).toBe(4);
   expect(s.sameInsets).toBe(true);
