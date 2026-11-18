@@ -50,6 +50,8 @@ export const SPRITES = {
   webmasterGhost: [96, 96],
   paradeGhost: [144, 144],
   paradeGhostFar: [96, 96],
+  paradeGhostPhone: [96, 96],
+  paradeGhostPhoneFar: [64, 64],
   tombstoneMarker: [16, 20],
   badgeIcon: [12, 12],
   hudIcon: [16, 16],

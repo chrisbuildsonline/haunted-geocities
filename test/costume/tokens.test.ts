@@ -34,7 +34,7 @@ test("hero haunt motion values match DESIGN.md", () => {
 
 test("the parade ghosts are drawn at 2x and 3x the lane ghost, and match DESIGN.md", () => {
   expect(SPRITES).toEqual(designTokens().costume.sprites);
-  expect(SPRITES).toMatchObject({ paradeGhost: [144, 144], paradeGhostFar: [96, 96] });
+  expect(SPRITES).toMatchObject({ paradeGhost: [144, 144], paradeGhostFar: [96, 96], paradeGhostPhone: [96, 96], paradeGhostPhoneFar: [64, 64] });
 });
 
 test("graveyardGap is 4 and matches DESIGN.md", () => {

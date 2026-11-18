@@ -3,7 +3,7 @@
 // transform, opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
 import { mapToPx, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
 import { ghostSvg as trackerGhostSvg, riseIn, vampireIn } from "./ghosts";
-import { HEM_TINTS, MOTION as M, PIXEL, SPRITES } from "./tokens";
+import { HEM_TINTS, LAYOUT as L, MOTION as M, PIXEL, SPRITES } from "./tokens";
 
 const H = M.hero;
 
@@ -17,7 +17,7 @@ const SWEEP = () => `<div class="sweep"><div class="ectoplasm"></div><div class=
 
 /**
  * The parade: six tracker ghosts, one per hem tint, drift up through the whole page in start order.
- * `x` is the share of the free width left of the sprite; near ones are 144px, far ones 96px and dimmer;
+ * `x` is the share of the free width left of the sprite; near ones are big, far ones smaller and dimmer;
  * `drift` is the sideways slide over the crossing, so the flock fans out as it rises.
  */
 const PARADE = [
@@ -29,7 +29,9 @@ const PARADE = [
   { x: 0.7, near: true, drift: -40 },
 ] as const;
 
-const paradeSize = (near: boolean) => (near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
+/** A parade ghost's side: 144/96px, or 96/64px on a phone (the HUD's wrap width), where 144px would crowd the screen. */
+const paradeSize = (near: boolean, vw: number) =>
+  (vw <= L.hudWrapBelow ? (near ? SPRITES.paradeGhostPhone : SPRITES.paradeGhostPhoneFar) : near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
 
 /** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette, the parade, the ghost and the roll. */
 function buildFx(croot: HTMLElement, crt: boolean): HTMLElement {
@@ -44,7 +46,8 @@ function buildFx(croot: HTMLElement, crt: boolean): HTMLElement {
     const vw = croot.ownerDocument.defaultView!.innerWidth;
     fx.querySelectorAll<HTMLElement>(".spirit").forEach((s, i) => {
       const p = PARADE[i]!;
-      s.style.left = `${Math.round(p.x * Math.max(0, vw - paradeSize(p.near)))}px`;
+      const size = paradeSize(p.near, vw);
+      Object.assign(s.style, { left: `${Math.round(p.x * Math.max(0, vw - size))}px`, width: `${size}px`, height: `${size}px` });
     });
   }
   croot.append(fx);
@@ -114,11 +117,11 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
 
   // The scene-wide part. As the tube comes back on, one band of scanlines rolls down the whole page (the
   // vertical hold slipping once); then six big tracker ghosts drift up through it, bottom edge to top edge.
-  const vh = croot.ownerDocument.defaultView!.innerHeight;
+  const { innerHeight: vh, innerWidth: vw } = croot.ownerDocument.defaultView!;
   run(q(".roll"), [{ transform: "translateY(-100%)" }, { transform: `translateY(${vh}px)` }], { ...at(H.roll), easing: "linear", fill: "both" });
   fx.querySelectorAll(".spirit").forEach((s, i) => {
     const p = PARADE[i]!;
-    run(s, [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${paradeSize(p.near)}px)` }], {
+    run(s, [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${paradeSize(p.near, vw)}px)` }], {
       delay: H.paradeStart + i * H.paradeStagger,
       duration: H.paradeMs,
       easing: "linear",

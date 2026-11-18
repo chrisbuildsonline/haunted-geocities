@@ -226,6 +226,24 @@ describe("hero haunt moment", () => {
     expect(H.paradeStart + 5 * H.paradeStagger + H.paradeMs).toBeLessThanOrEqual(MOTION.haunt);
   });
 
+  test("on a phone (400px or less) the parade is drawn smaller, 96px near and 64px far, and still fits the width", () => {
+    const s = setup({ width: 375 });
+    const el = s.doc.body.appendChild(s.doc.createElement("div"));
+    el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+    playHaunt(el, false);
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    expect(spirits.map((sp) => [sp.style.width, sp.style.height])).toEqual(
+      [96, 64, 96, 64, 64, 96].map((n) => [`${n}px`, `${n}px`]),
+    );
+    expect([SPRITES.paradeGhostPhone[0], SPRITES.paradeGhostPhoneFar[0]]).toEqual([96, 64]);
+    spirits.forEach((sp) => {
+      const size = parseFloat(sp.style.width);
+      expect(parseFloat(sp.style.left) + size).toBeLessThanOrEqual(375);
+      const [drift] = on(s.recs, sp);
+      expect(String(drift!.keyframes[1]!.transform)).toMatch(new RegExp(`, -${size}px\\)$`));
+    });
+  });
+
   test("the roll: one band of spectral scanlines rolls down the whole page as the tube comes back, 800-1400", () => {
     const { el, recs, win } = croot(3);
     playHaunt(el, false);

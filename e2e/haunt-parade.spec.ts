@@ -57,8 +57,10 @@ for (const width of [1280, 700, 375] as const) {
 
     const live = samples.filter((s) => s.fx);
     const { vh, vw } = samples[0]!;
-    // six spirits, the near ones 144px and the far ones 96px, all inside the page's width
-    expect(live[0]!.spirits.map((b) => Math.round(b.width)).sort()).toEqual([144, 144, 144, 96, 96, 96].sort());
+    // six spirits, the near ones 144px and the far ones 96px (96 and 64 on a phone), all inside the page's width
+    const [near, far] = width <= 400 ? [96, 64] : [144, 96];
+    expect(live[0]!.spirits.map((b) => Math.round(b.width)).sort()).toEqual([near, near, near, far, far, far].sort());
+    for (const b of live[0]!.spirits) expect(b.left + b.width).toBeLessThanOrEqual(vw + 48);
     // each one is seen low on the page and later high on it: a crossing of the whole height
     for (let i = 0; i < 6; i++) {
       const tops = live.map((s) => s.spirits[i]!.top);

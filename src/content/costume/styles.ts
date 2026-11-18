@@ -1,7 +1,7 @@
 // The costume stylesheet, adopted inside the shadow root. Colours only from tokens.
 import { checkerUrl, DIGITS, mapToPx, SIGN_LEGEND, signFrame, svgUrl, type Px } from "./art";
 import { VAMPIRE_GLOW, VAMPIRE_GLOW_HI } from "./ghosts";
-import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL, SPRITES as S } from "./tokens";
+import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL } from "./tokens";
 
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;
 const TIMES = `"Times New Roman", Times, serif`;
@@ -201,9 +201,9 @@ button:focus-visible { ${ring} }
 .leaving .webmaster svg { transform: scaleX(-1); }
 .ectoplasm { position: absolute; top: 0; bottom: 0; left: -16px; width: 32px; background-image: ${checkerUrl(P.ectoplasm)}; background-size: 4px 4px; }
 .parade { position: absolute; inset: 0; isolation: isolate; }
-.spirit { position: absolute; top: 0; left: 0; width: ${S.paradeGhost[0]}px; height: ${S.paradeGhost[1]}px; transform: translateY(-200%); filter: drop-shadow(0 0 8px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
+.spirit { position: absolute; top: 0; left: 0; transform: translateY(-200%); filter: drop-shadow(0 0 8px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
 .spirit.near { z-index: 1; opacity: .92; }
-.spirit.far { width: ${S.paradeGhostFar[0]}px; height: ${S.paradeGhostFar[1]}px; opacity: .6; }
+.spirit.far { opacity: .6; }
 .spirit svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .roll { position: absolute; left: 0; right: 0; top: 0; height: 48px; transform: translateY(-100%); background-image: ${rollUrl()}; background-size: 4px 3px; border-bottom: 2px solid ${P.ectoplasm}; opacity: .7; }
 .leaving .ectoplasm { left: 80px; }

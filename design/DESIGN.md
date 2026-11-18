@@ -55,7 +55,7 @@ Layers, bottom to top:
 | Ghost | 16×16 | 48×48 |
 | Vampire | 16×18 | 48×54 |
 | Webmaster's Ghost (haunt moment) | 32×32 | 96×96 |
-| Parade ghost, near / far (haunt moment only) | 16×16 | 144×144 / 96×96 (9 and 6 CSS px per art pixel, the only exception to the 3px rule) |
+| Parade ghost, near / far (haunt moment only) | 16×16 | 144×144 / 96×96; 96×96 / 64×64 at 400px or less (9, 6 and 4 CSS px per art pixel, the only exception to the 3px rule) |
 | Tombstone marker | 8×10 | 16×20 |
 | Curse badge icon | 6×6 | 12×12 |
 | HUD icons | 8×8 | 16×16 |
@@ -405,7 +405,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 - **The idea:** the modern page switches off like a 1998 CRT: scanlines, the picture closes to a bright line, the line shrinks to a dot. The tube comes back on with its picture rolling once, and a 96px pixel ghost glides across the viewport. Behind it the page is 1998; ahead of it the page is still modern. Its trailing edge is a strip of dithered ectoplasm. While it crosses, the whole page is overrun: six big tracker ghosts (the parade) stream up through it from the bottom edge to the top. Then the tracker ghosts rise into their lanes one by one, each with its company name tag.
 - **The clip:** it reads in three seconds: dark line, wipe with the parade streaming through the page, ghosts rising with names.
-- **The parade (the scene-wide beat):** six 16×16 tracker ghosts, one per hem tint, drawn big: three near ones at 144×144 (9 CSS px per art pixel, opacity .92) and three far ones at 96×96 (6 CSS px, opacity .6), so the flock has depth. They are the only sprites off the 3px grid: a close-up, still on integer pixels with `image-rendering: pixelated`. Each starts just below the viewport and ends just above it, sliding 32-40px sideways as it rises so the flock fans out; their x positions spread over the whole width (6%, 74%, 40%, 96%, 22% and 70% of the free width, in start order). They wear the lane ghost's glow, a little wider (`drop-shadow(0 0 8px #6633cc) drop-shadow(0 0 2px #ccffff)`). They sit in `#fx` under the Webmaster's Ghost, so they cross the page text only while the moment plays; no resting ghost is ever over text.
+- **The parade (the scene-wide beat):** six 16×16 tracker ghosts, one per hem tint, drawn big: three near ones at 144×144 (9 CSS px per art pixel, opacity .92) and three far ones at 96×96 (6 CSS px, opacity .6), so the flock has depth. On a phone (400px wide or less, the HUD's wrap width) they are 96×96 and 64×64 (6 and 4 CSS px), so six ghosts never clump into one blob on a 375px screen. They are the only sprites off the 3px grid: a close-up, still on integer pixels with `image-rendering: pixelated`. Each starts just below the viewport and ends just above it, sliding 32-40px sideways as it rises so the flock fans out; their x positions spread over the whole width (6%, 74%, 40%, 96%, 22% and 70% of the free width, in start order). They wear the lane ghost's glow, a little wider (`drop-shadow(0 0 8px #6633cc) drop-shadow(0 0 2px #ccffff)`). They sit in `#fx` under the Webmaster's Ghost, so they cross the page text only while the moment plays; no resting ghost is ever over text.
 - **The roll:** as the lids open, one 48px band of 2px `#6633cc` scanlines every 3px (opacity .7) with a 2px `#66ff99` leading edge rolls down the whole page once: the vertical hold slipping as the tube warms up. The violet lines read on white pages and the green edge on dark ones.
 - **Total: 3000ms** with up to four ghost companies. Each ghost after the 4th adds 250ms (8 ghosts end at 3850ms).
 - **How it is built:** the Web Animations API on transform, opacity and clip-path only, all inside the shadow root. The page is untouched. `#fx` carries `data-phase`: `crt`, then `wipe` at 700ms, then `rise` at 1700ms, moved by two marker animations that animate nothing (no timers).
@@ -543,6 +543,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "webmasterGhost": [96, 96],
       "paradeGhost": [144, 144],
       "paradeGhostFar": [96, 96],
+      "paradeGhostPhone": [96, 96],
+      "paradeGhostPhoneFar": [64, 64],
       "tombstoneMarker": [16, 20],
       "badgeIcon": [12, 12],
       "hudIcon": [16, 16]
