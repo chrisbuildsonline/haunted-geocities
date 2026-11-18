@@ -73,7 +73,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .sign-strip { display: block; width: 96px; height: 24px; background-image: ${signsUrl()}; animation: hg-sign 1000ms steps(2) infinite; }
 @keyframes hg-sign { from { transform: translateX(0); } to { transform: translateX(-96px); } }
 #marquee { height: ${L.marquee}px; background-color: ${P.crypt}; background-image: ${stars}; color: ${P.ectoplasm}; font: 14px ${COMIC}; line-height: ${L.marquee}px; overflow: hidden; white-space: nowrap; text-shadow: 1px 1px 0 ${P.ink}; box-shadow: inset 0 -1px 0 ${P.ink}; }
-.marquee-track { display: inline-block; padding-left: 100%; animation: hg-marquee 20s linear 1 both; }
+.marquee-track { display: inline-block; padding-left: 100%; background-color: ${P.crypt}; background-clip: content-box; border: solid ${P.crypt}; border-width: 0 8px; animation: hg-marquee 20s linear 1 both; }
 @keyframes hg-marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 .tab-hidden *, .tab-hidden *::after { animation-play-state: paused !important; }
 
@@ -167,11 +167,18 @@ button:focus-visible { ${ring} }
 .curse-badge:focus-visible { outline: 2px dotted ${P.star}; outline-offset: 2px; box-shadow: 2px 2px 0 ${P.ink}, 0 0 0 5px ${P.ink}; }
 .curse-card .quote { margin-bottom: 8px !important; font-style: italic; overflow-wrap: anywhere; }
 
-.card.tombstone-card { display: block; width: ${L.tombstoneWidth}px; height: 208px; max-height: none; overflow: hidden; background: ${P.stone}; border: 2px solid; border-color: ${P.ghostWhite} ${P.stoneShadow} ${P.stoneShadow} ${P.ghostWhite}; border-radius: 88px 88px 0 0; box-shadow: ${HARD_SHADOW}; }
-.tombstone-card .close { position: absolute; top: 24px; right: 32px; z-index: 1; }
-.tombstone-card .inscription { position: absolute; inset: 16px; top: 52px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
+.card.tombstone-card { display: block; width: ${L.tombstoneWidth}px; height: 248px; max-height: none; overflow: hidden; background: ${P.stone}; border: 2px solid; border-color: ${P.ghostWhite} ${P.stoneShadow} ${P.stoneShadow} ${P.ghostWhite}; border-radius: ${L.tombstoneWidth / 2}px ${L.tombstoneWidth / 2}px 0 0; box-shadow: ${HARD_SHADOW}; }
+.tombstone-card.drop-in { animation: hg-drop ${M.slow}ms linear both; }
+@keyframes hg-drop {
+  0% { opacity: 0; transform: translateY(-48px); animation-timing-function: ease-in; }
+  60% { opacity: 1; transform: translateY(0); animation-timing-function: ease-out; }
+  80% { transform: translateY(-4px); animation-timing-function: ease-in; }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tombstone-card .close { position: absolute; top: 32px; right: 40px; z-index: 1; }
+.tombstone-card .inscription { position: absolute; inset: 64px 32px 28px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
 .tombstone-card p { margin: 0; }
-.tombstone-card .here-lies { font-size: 12px; line-height: 15px; letter-spacing: 2px; padding-left: 2px; }
+.tombstone-card .here-lies { margin: 0 12px 2px; padding-bottom: 6px; border-bottom: 1px solid ${P.stoneShadow}; box-shadow: 0 1px 0 ${P.ghostWhite}; font-size: 16px; line-height: 20px; font-weight: bold; letter-spacing: 3px; text-shadow: 1px 1px 0 ${P.ghostWhite}; padding-left: 3px; }
 .tombstone-card .path { margin: 6px 0; font-size: 13px; line-height: 17px; overflow-wrap: normal; word-break: keep-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; max-height: 51px; overflow: hidden; }
 .tombstone-card .seg { position: relative; display: inline-flex; flex-direction: column; justify-content: flex-end; max-width: 100%; max-height: 34px; overflow: hidden; vertical-align: top; }
 .tombstone-card .seg bdi { overflow-wrap: anywhere; }
@@ -205,7 +212,7 @@ button:focus-visible { ${ring} }
 }
 
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }
-.reduced-motion .marquee-track { display: block; padding: 0 10px; overflow: hidden; text-overflow: ellipsis; transform: none; }
+.reduced-motion .marquee-track { display: block; width: fit-content; max-width: 100%; box-sizing: border-box; padding: 0; overflow: hidden; text-overflow: ellipsis; transform: none; }
 #edge-frame, #edge-frame * { animation: none !important; transition: none !important; }
 `;
 }

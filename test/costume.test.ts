@@ -270,6 +270,16 @@ describe("top bands", () => {
     expect(marqueeSeconds(1500)).toBe(25);
   });
 
+  test("marquee stars stay off the text: the line rides on a #000033 plaque, 8px of it past each end", () => {
+    const css = costumeCss({ stars: "a", twinkle: "b" });
+    const track = css.match(/(?:^|\n)\.marquee-track \{[^}]*\}/)![0];
+    // the 100% lead-in padding stays clear (the band's stars show there); the text box and 8px borders are solid
+    for (const d of ["background-color: #000033", "background-clip: content-box", "border: solid #000033", "border-width: 0 8px"]) expect(track).toContain(d);
+    // static under reduced motion: the plaque shrinks to the line, flush left (cut with an ellipsis), not the whole band
+    const still = css.match(/\.reduced-motion \.marquee-track \{[^}]*\}/)![0];
+    for (const d of ["width: fit-content", "max-width: 100%", "box-sizing: border-box", "padding: 0;"]) expect(still).toContain(d);
+  });
+
   test("the marquee pauses while the tab is hidden", () => {
     const { win, doc } = setup();
     windows.push(win);

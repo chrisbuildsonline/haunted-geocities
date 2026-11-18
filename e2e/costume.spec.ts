@@ -74,6 +74,79 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   expect(look.hudText).toContain("« prev | Haunted WebRing | next »");
 });
 
+/**
+ * Pixels of the marquee's starfield showing inside the box of its text: a star is #ffffff or #ffff66,
+ * the text #66ff99 with a #000000 shadow on #000033, so any pixel with red over 150 is a star.
+ */
+async function starsOnMarqueeText(page: Page, inShadow: InShadow): Promise<{ text: string; boxes: number; stars: number }> {
+  const boxes = await inShadow(function () {
+    const track = this.querySelector(".marquee-track")!;
+    const range = document.createRange();
+    range.selectNodeContents(track);
+    const band = this.getElementById("marquee")!.getBoundingClientRect();
+    return [...range.getClientRects()]
+      .map((r) => ({ x: Math.max(r.left, band.left, 0), y: band.top, right: Math.min(r.right, band.right, innerWidth), bottom: band.bottom }))
+      .filter((r) => r.right - r.x >= 1)
+      .map((r) => ({ x: Math.floor(r.x), y: Math.floor(r.y), width: Math.floor(r.right - r.x), height: Math.floor(r.bottom - r.y) }));
+  });
+  let stars = 0;
+  for (const clip of boxes) {
+    const png = (await page.screenshot({ clip })).toString("base64");
+    stars += await page.evaluate(async (b64) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const c = document.createElement("canvas");
+      [c.width, c.height] = [img.width, img.height];
+      const ctx = c.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const d = ctx.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i]! > 150) n++;
+      return n;
+    }, png);
+  }
+  const text = await inShadow(function () { return this.querySelector(".marquee-track")!.textContent!; });
+  return { text, boxes: boxes.length, stars };
+}
+
+for (const width of [1280, 375]) {
+  test(`marquee stars never sit on its text, moving or still, at ${width}px`, async ({ context, sw }) => {
+    const page = await context.newPage();
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(fixture("index.html"));
+    await haunt(sw, page);
+    await settle(page);
+    const inShadow = await shadowOf(page);
+    // Moving: hold the marquee at a few points of its run, the line wholly or partly on screen.
+    for (const left of [width * 0.1, width * 0.5, -40]) {
+      await inShadow(function (x: number) {
+        const a = this.getAnimations().find((n) => (n as CSSAnimation).animationName === "hg-marquee")!;
+        const t = a.effect!.getComputedTiming();
+        const travel = this.querySelector<HTMLElement>(".marquee-track")!.getBoundingClientRect().width;
+        const vw = this.getElementById("marquee")!.clientWidth;
+        a.pause();
+        // the text starts at vw and moves left by `travel` over the run
+        a.currentTime = (a.effect!.getTiming().delay as number) + ((vw - x) / travel) * (t.duration as number);
+      }, left);
+      const moving = await starsOnMarqueeText(page, inShadow);
+      expect(moving.boxes, `marquee text at ${left}px`).toBeGreaterThan(0);
+      expect(moving.stars, `stars on the marquee text at ${left}px`).toBe(0);
+    }
+    await page.screenshot({ path: `test-results/costume/marquee-moving-${width}.png`, clip: { x: 0, y: 0, width, height: 48 } });
+    // Still (reduced motion): the first line, static, on its plaque flush left.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect.poll(() => inShadow(function () { return this.getElementById("crypt-root")!.classList.contains("reduced-motion"); })).toBe(true);
+    const still = await starsOnMarqueeText(page, inShadow);
+    expect(still.boxes).toBeGreaterThan(0);
+    expect(still.stars).toBe(0);
+    // the band keeps its stars beside the line
+    const band = await inShadow(function () { return getComputedStyle(this.getElementById("marquee")!).backgroundImage; });
+    expect(band).toMatch(/^url\("data:image\/png/);
+    await page.screenshot({ path: `test-results/costume/marquee-still-${width}.png`, clip: { x: 0, y: 0, width, height: 48 } });
+  });
+}
+
 test("body padding grows on haunt (bands + HUD + lift over a fixed cookie bar) and is restored on un-haunt", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
