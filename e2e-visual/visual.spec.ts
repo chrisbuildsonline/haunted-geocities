@@ -1,7 +1,7 @@
 // Screenshot comparisons for the costume and the popup, at 1280 and 375 wide, with reduced motion,
 // a fixed clock and disabled animations. Baselines live in __screenshots__/ and come from the
 // Playwright Docker image: `bun run test:visual:update`, then review the PNGs before committing.
-import { expect, shadowOf, test } from "../e2e/fixtures";
+import { expect, haunt, shadowOf, test } from "../e2e/fixtures";
 import { hauntThroughPopup, hudCount, openPreparedPopup, prepare, tickUntil, visualUrl, waitForHaunted, waitForPopupSettled } from "./helpers";
 
 const WIDTHS = [1280, 375] as const;
@@ -148,6 +148,42 @@ for (const width of WIDTHS) {
     await waitForHaunted(page);
     await page.mouse.move(0, 0);
     await expect(page).toHaveScreenshot(`exorcised-${width}.png`);
+  });
+
+  test(`haunt parade @${width}`, async ({ context, sw }) => {
+    // news.html mid-moment, motion on: every animation in the costume and on the page sheet is paused
+    // at 1500ms, so the six parade ghosts are half-way up the page and the wipe is near the right edge.
+    const page = await context.newPage();
+    await prepare(page, width);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto(visualUrl("news.html"));
+    await page.waitForLoadState("load");
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Animation.enable");
+    await cdp.send("Animation.setPlaybackRate", { playbackRate: 0 }); // the moment holds at its start until seeked
+    await haunt(sw, page);
+    const inShadow = await shadowOf(page);
+    await expect.poll(() => hudCount(page, "ghosts"), { timeout: 20_000 }).toBe(4);
+    let last = -1;
+    await expect
+      .poll(async () => {
+        const n = await inShadow(function () { return this.querySelectorAll("*").length; });
+        const still = n === last;
+        last = n;
+        return still;
+      }, { timeout: 20_000, intervals: [1000] })
+      .toBe(true);
+    const spirits = await inShadow(function () {
+      const all = new Set([...this.getAnimations(), ...document.getAnimations()]);
+      for (const a of all) {
+        a.pause();
+        a.currentTime = 1500;
+      }
+      return this.querySelectorAll("#fx .parade > .spirit").length;
+    });
+    expect(spirits).toBe(6);
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot(`haunt-parade-${width}.png`, { animations: "allow" });
   });
 
   if (width === 375) {
