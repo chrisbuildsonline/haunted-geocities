@@ -14,7 +14,7 @@ The old GeoCities pages were loud, but you could see everything they did. A mode
 
 - **Haunt and un-haunt** any page from the toolbar popup. The page itself is restyled as a 1998 page (Times New Roman text, Comic Sans headings, blue underlined links, a parchment tint and a ridged guestbook frame around the content column), and the night sky, a heads-up display along the bottom and a marquee sit in a closed shadow root over it. Un-haunting removes it and leaves the page's DOM as it was before.
 - **Ghosts.** Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card. On a phone or a full-width page they stand in a graveyard strip docked above the HUD, and the HUD hit counter says what it counts: souls counted, tracker requests blocked or seen.
-- **Exorcise** blocks a tracker company for the current tab with declarativeNetRequest session rules. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
+- **Exorcise** blocks a tracker company for the current tab with declarativeNetRequest session rules. Its ghost spirals out to a faded look as an EXORCISED stamp slams on, and the HUD count of ghosts still haunting ticks down. The block lasts until you un-haunt, reload or leave the page, or close the tab, and the popup can let it back in.
 - **Vampires.** Scripts caught fingerprinting while the page is haunted (canvas readback, AudioContext, font probing) become vampires. Companies Tracker Radar already rates as fingerprinters are listed as known vampires.
 - **Tombstones.** The extension sends a HEAD request for links on the page. A 404 or 410 answer puts a tombstone beside the link, and clicking it opens a stone card with the path and the status. Links to other sites are only checked if you switch that on in the popup and grant the optional host permission.
 - **Curses.** Dark patterns get a CURSED! badge: fake scarcity, countdown text, ticking timers, confirmshaming and pre-checked opt-in boxes. The card quotes the page's own words and names the trick. A pre-checked box is only labelled, never unticked.
@@ -51,7 +51,7 @@ The `.kiro/` folder holds what kiro-cli generated for the project. No MCP server
 
 - more than 1200 unit tests (`bun run test`), with happy-dom for the DOM parts.
 - more than 140 end-to-end tests (`bun run test:e2e`) that load the unpacked extension in headless Chromium and drive it on local fixture pages, including checks that un-haunting leaves the page byte for byte as it was.
-- 23 visual screenshot tests (`bun run test:visual`): the costume on eight fixture pages, the popup before and after haunting and the `permissions.html` dialog, each at 1280 and 375 pixels wide, plus the graveyard strip with an exorcised ghost and an open card at 375, compared with baselines made in the Playwright Docker image.
+- 25 visual screenshot tests (`bun run test:visual`): the costume on eight fixture pages, the popup before and after haunting, the `permissions.html` dialog and a ghost just exorcised (its stamp, its 40% look and the HUD ghost count at 0), each at 1280 and 375 pixels wide, plus the graveyard strip with an exorcised ghost and an open card at 375, compared with baselines made in the Playwright Docker image.
 - `bun run lint:manifest` checks the shipping manifest: MV3, the four permissions and nothing more, no remote code, no `'unsafe-eval'`.
 - `bun run docker:test` runs all of the above in a clean Playwright image.
 

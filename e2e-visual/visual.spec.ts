@@ -110,6 +110,28 @@ for (const width of WIDTHS) {
     await expect(page).toHaveScreenshot(`permissions-${width}.png`);
   });
 
+  test(`exorcised @${width}`, async ({ context, sw, extensionId }) => {
+    // trackers.html: Criteo exorcised from its card (a lane at 1280, the strip at 375), the card closed.
+    // Reduced motion: no spin, the 40% sprite and the stamp at once, and the HUD ghost count reads 0.
+    const page = await context.newPage();
+    await prepare(page, width);
+    await page.goto(visualUrl("trackers.html"));
+    await hauntThroughPopup(context, sw, extensionId, page);
+    await page.bringToFront();
+    await waitForHaunted(page);
+    const inShadow = await shadowOf(page);
+    await inShadow(function () { this.querySelector<HTMLElement>('[data-company="Criteo"]')!.click(); });
+    await inShadow(function () { this.querySelector<HTMLElement>("#cards .act")!.click(); });
+    await expect.poll(() => hudCount(page, "ghosts")).toBe(0);
+    await inShadow(function () {
+      this.querySelector<HTMLElement>("#cards .close")!.click();
+      (this.activeElement as HTMLElement | null)?.blur();
+    });
+    await waitForHaunted(page);
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot(`exorcised-${width}.png`);
+  });
+
   if (width === 375) {
     test(`graveyard exorcised with a card @${width}`, async ({ context, sw, extensionId }) => {
       // trackers.html: Criteo exorcised from its docked card, then Hotjar's card open above the strip.
