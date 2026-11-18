@@ -27,7 +27,7 @@ const textSizes = (inShadow: InShadow) =>
     return out;
   });
 
-test("375: every CURSED! badge sits on the last line box of its sentence", async ({ context, sw }) => {
+test("375: every CURSED! badge keeps its word and sits on its sentence's last line wherever the word fits", async ({ context, sw }) => {
   const { page, inShadow } = await hauntAt(context, sw, 375, "dark-patterns.html", 1800);
   await expect.poll(() => inShadow(function () { return this.querySelectorAll("#markers .curse-badge").length; }), { timeout: 10_000 }).toBe(6);
   await page.waitForTimeout(400);
@@ -38,18 +38,36 @@ test("375: every CURSED! badge sits on the last line box of its sentence", async
       range.selectNodeContents(document.querySelector(sels[i]!)!);
       const lines = [...range.getClientRects()].filter((x) => x.width > 0);
       const last = lines.reduce((a, x) => (x.bottom > a.bottom || (x.bottom === a.bottom && x.right > a.right) ? x : a));
+      const first = lines.reduce((a, x) => (x.top < a.top || (x.top === a.top && x.left < a.left) ? x : a));
       const cy = r.top + r.height / 2;
+      const word = b.querySelector("span")!;
+      const w = word.getBoundingClientRect();
+      // the narrowest labelled badge: the word without its skull
+      const compact = b.classList.contains("compact");
+      b.classList.add("compact");
+      const wordOnly = b.offsetWidth;
+      b.classList.toggle("compact", compact);
       return {
         el: sels[i],
         shown: getComputedStyle(b).display !== "none",
-        sameLine: cy >= last.top - 0.5 && cy <= last.bottom + 0.5,
-        after: Math.abs(r.left - (last.right + 4)) <= 0.5,
+        // beside the last line when the word fits there; above the first line (spot b) only when it cannot
+        beside: cy >= last.top - 0.5 && cy <= last.bottom + 0.5 && Math.abs(r.left - (last.right + 4)) <= 0.5,
+        above: Math.abs(r.left - first.left) <= 0.5 && Math.abs(r.bottom - (first.top - 4)) <= 1,
+        wordFits: last.right + 4 + wordOnly <= document.documentElement.clientWidth,
         inside: r.right <= window.innerWidth,
+        // the compact badge drops the skull, never the word: CURSED! is always a visible label inside the badge
+        label: word.textContent === "CURSED!" && w.width > 20 && w.left >= r.left && w.right <= r.right + 0.5,
+        skull: compact ? getComputedStyle(b.querySelector("svg")!).display === "none" : true,
         font: parseFloat(getComputedStyle(b).fontSize),
       };
     });
   }, ELEMENTS);
-  for (const g of geo) expect(g).toEqual({ el: g.el, shown: true, sameLine: true, after: true, inside: true, font: g.font });
+  for (const g of geo) {
+    expect(g).toMatchObject({ shown: true, inside: true, label: true, skull: true });
+    expect({ el: g.el, at: g.wordFits ? g.beside : g.above }).toEqual({ el: g.el, at: true });
+  }
+  // only the opt-in line ends too close to the edge for the word (its old skull-only badge was unlabelled)
+  expect(geo.filter((g) => !g.wordFits).map((g) => g.el)).toEqual(["#optin"]);
   for (const g of geo) expect(g.font).toBeGreaterThanOrEqual(12);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

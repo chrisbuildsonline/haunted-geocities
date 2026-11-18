@@ -26,7 +26,7 @@ export const lastLine = (rects: readonly Rect[]): Rect => rects.reduce((a, r) =>
 
 /**
  * Where a badge `w` wide goes: (a) 4px right of the last line box, centred on it; (a') the same spot
- * for the compact badge (the skull alone, `compactW` wide) when only that fits, so on a narrow page
+ * for the compact badge (the word without its skull, `compactW` wide) when only that fits, so on a narrow page
  * the badge stays on its sentence's line; (b) 4px above the first line box, left edges aligned;
  * (c) the gutter lane slot that holds the last line's y, on the edge nearest the element; otherwise
  * nowhere. Whole pixels, inside the viewport, over no page text.

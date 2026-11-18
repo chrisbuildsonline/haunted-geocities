@@ -163,7 +163,7 @@ button:focus-visible { ${ring} }
 
 .curse-badge { position: absolute; display: inline-flex; align-items: center; gap: 4px; box-sizing: border-box; height: 18px; margin: 0; padding: 0 4px; white-space: nowrap; cursor: pointer; pointer-events: auto; background: ${P.curse}; color: ${P.ink}; border: 1px solid ${P.ink}; box-shadow: 2px 2px 0 ${P.ink}; font: bold 12px/16px ${COMIC}; }
 .curse-badge svg { display: block; flex: none; image-rendering: pixelated; }
-.curse-badge.compact span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.curse-badge.compact svg { display: none; }
 .curse-badge:focus-visible { outline: 2px dotted ${P.star}; outline-offset: 2px; box-shadow: 2px 2px 0 ${P.ink}, 0 0 0 5px ${P.ink}; }
 .curse-card .quote { margin-bottom: 8px !important; font-style: italic; overflow-wrap: anywhere; }
 
