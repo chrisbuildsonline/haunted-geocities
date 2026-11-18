@@ -59,7 +59,7 @@ export const LAYOUT = {
   neighborhoodBar: 24,
   marquee: 24,
   hudMinHeight: 40,
-  hudMaxWidth: 720,
+  hudMaxWidth: 800,
   hudWrapBelow: 400,
   cardWidth: 248,
   tombstoneWidth: 208,

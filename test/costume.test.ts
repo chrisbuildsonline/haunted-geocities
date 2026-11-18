@@ -355,11 +355,11 @@ describe("HUD", () => {
     expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 001234, tracker requests blocked or seen");
   });
 
-  test("HUD CSS: fixed bottom with lift, 8px insets, max 720, min 40, bevel, hard shadow, 2-row wrap at ≤400px", () => {
+  test("HUD CSS: fixed bottom with lift, 8px insets, max 800, min 40, bevel, hard shadow, 2-row wrap at ≤400px", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const hud = css.match(/#hud\s*\{([^}]*)\}/)![1]!;
     for (const d of [
-      "position: fixed", "bottom: calc(8px + var(--hg-lift, 0px))", "left: 8px", "right: 8px", "max-width: 720px",
+      "position: fixed", "bottom: calc(8px + var(--hg-lift, 0px))", "left: 8px", "right: 8px", "max-width: 800px",
       "margin: 0 auto", "min-height: 40px", "z-index: 5", "background-color: #000033", "border: 1px solid #000000",
     ]) {
       expect({ d, ok: hud.includes(d) }).toEqual({ d, ok: true });

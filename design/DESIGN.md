@@ -106,7 +106,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 
 ### HUD (guestbook / hit-counter strip)
 
-- **Position:** fixed bottom, `left/right: 8px`, `bottom: calc(8px + var(--hg-lift))`, max-width 720px, centred, min-height 40px.
+- **Position:** fixed bottom, `left/right: 8px`, `bottom: calc(8px + var(--hg-lift))`, max-width 800px, centred, min-height 40px. 800 (not 720) so the empty state and the hit-counter labels are whole in a real comic face, which is wider than a serif fallback.
 - **Lift:** `--hg-lift` is the height of any page UI fixed to the bottom (cookie bars, chat buttons). It is sampled with `elementsFromPoint` along the bottom 80px and re-checked on resize and on mutation.
 - **Frame:**
   - Ground `#000033` with the starfield tile at 30%.
@@ -148,7 +148,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 
 On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires stand in a strip docked above the HUD, so a phone shows them too.
 
-- **Place:** `#graveyard`, a direct child of `#crypt-root` after `#hud`, layer 5 with the HUD (under the cards). Fixed, with the HUD's insets, max-width (720px) and centring, its bottom 4px (`LAYOUT.graveyardGap`) above the HUD's top: `bottom: calc(8px + var(--hg-lift) + var(--hg-hud-h) + 4px)`. `--hg-hud-h` is the HUD's measured height, so the strip follows the lift and the HUD's two-row wrap. Hidden in lane mode.
+- **Place:** `#graveyard`, a direct child of `#crypt-root` after `#hud`, layer 5 with the HUD (under the cards). Fixed, with the HUD's insets, max-width (800px) and centring, its bottom 4px (`LAYOUT.graveyardGap`) above the HUD's top: `bottom: calc(8px + var(--hg-lift) + var(--hg-hud-h) + 4px)`. `--hg-hud-h` is the HUD's measured height, so the strip follows the lift and the HUD's two-row wrap. Hidden in lane mode.
 - **Frame:** the HUD's: `#000033` ground (flat, no starfield, so the silhouettes read), 2px bevel `#9999cc`/`#333366`, 1px `#000000` line, hard shadow `4px 4px 0 #000000`. No radius, no blur.
 - **Label bar:** 16px tall: the 16px tombstone icon and `Graveyard` in Comic Sans MS 12px `#ffffcc`, a 1px `#333366` line under it.
 - **Stones row:** one `<button>` per company in the lane order (ghosts by requests then name, then vampires by name), 12px apart, 6px/18px padding, over a strip of `#336633` moss pixels along the base. Each docked sprite wears its name tag under it (the lane label, 4px below the sprite), and its button is as wide as the wider of the 48px sprite and the tag (at most 12ch, then an ellipsis), so neighbouring tags never touch: the 12px gap is always between them. Tags sit bottom-aligned on the moss and the row is one sprite and one tag tall, so no tag is clipped. When they do not fit, the row scrolls sideways (`overflow-x: auto`, `overscroll-behavior-x: contain`, never smooth), never the page, and Tab scrolls the focused sprite into view. No `+N` stack.
@@ -541,7 +541,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "neighborhoodBar": 24,
       "marquee": 24,
       "hudMinHeight": 40,
-      "hudMaxWidth": 720,
+      "hudMaxWidth": 800,
       "hudWrapBelow": 400,
       "cardWidth": 248,
       "tombstoneWidth": 208,

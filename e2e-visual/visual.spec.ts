@@ -42,6 +42,25 @@ test("the image has Comic Neue, so the costume's Comic Sans stack draws a comic 
   expect(fonts.map((f) => f.familyName)).toContain("Comic Neue");
 });
 
+for (const name of ["index", "trackers"] as const) {
+  test(`in the comic face the HUD copy is whole at 1280 (${name})`, async ({ context, sw, extensionId }) => {
+    // index.html: the empty state; trackers.html: the counts. No line ends in an ellipsis.
+    const page = await context.newPage();
+    await prepare(page, 1280);
+    await page.goto(visualUrl(`${name}.html`));
+    await hauntThroughPopup(context, sw, extensionId, page);
+    await page.bringToFront();
+    await waitForHaunted(page);
+    const inShadow = await shadowOf(page);
+    const cut = await inShadow(function () {
+      return [...this.querySelectorAll<HTMLElement>("#hud *")]
+        .filter((e) => e.offsetParent && getComputedStyle(e).textOverflow === "ellipsis" && e.scrollWidth > e.clientWidth)
+        .map((e) => e.textContent);
+    });
+    expect(cut).toEqual([]);
+  });
+}
+
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
     test(`costume ${name} @${width}`, async ({ context, sw, extensionId }) => {

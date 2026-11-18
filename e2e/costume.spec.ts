@@ -64,7 +64,7 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   expect(look.marquee).toEqual([24, 24, "rgb(0, 0, 51)", "rgb(102, 255, 153)"]);
   expect(look.marqueeRunning).toBe(true);
   expect(look.hud.bottom).toBe(look.vh - 8);
-  expect(look.hud.width).toBeLessThanOrEqual(720);
+  expect(look.hud.width).toBeLessThanOrEqual(800);
   expect(look.hud.height).toBeGreaterThanOrEqual(40);
   expect(look.hud.shadow).toContain("rgb(0, 0, 0) 4px 4px 0px 0px");
   expect(look.hudText).toContain("Hide");
