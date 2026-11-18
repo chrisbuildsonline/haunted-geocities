@@ -172,8 +172,10 @@ button:focus-visible { ${ring} }
 .tombstone-card .inscription { position: absolute; inset: 16px; top: 52px; bottom: 24px; display: flex; flex-direction: column; justify-content: center; color: ${P.ink}; font-family: ${TIMES}; text-align: center; }
 .tombstone-card p { margin: 0; }
 .tombstone-card .here-lies { font-size: 12px; line-height: 15px; letter-spacing: 2px; padding-left: 2px; }
-.tombstone-card .path { margin: 6px 0; font-size: 13px; line-height: 17px; overflow-wrap: normal; word-break: keep-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-.tombstone-card .seg { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; vertical-align: top; }
+.tombstone-card .path { margin: 6px 0; font-size: 13px; line-height: 17px; overflow-wrap: normal; word-break: keep-all; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; max-height: 51px; overflow: hidden; }
+.tombstone-card .seg { position: relative; display: inline-flex; flex-direction: column; justify-content: flex-end; max-width: 100%; max-height: 34px; overflow: hidden; vertical-align: top; }
+.tombstone-card .seg bdi { overflow-wrap: anywhere; }
+.tombstone-card .path.tight .seg { max-height: 17px; }
 .tombstone-card .status { font-size: 12px; line-height: 15px; }
 .tombstone-card .host { font-size: 12px; line-height: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tombstone-card .moss { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; }

@@ -5,7 +5,7 @@ import type { CompanyHit, ContentRequest, Curse, DeadLink } from "../../data/typ
 import { KIND_INFO } from "../dark-patterns";
 import { caughtLine } from "../vampire";
 import { categoryOf } from "./ghosts";
-import { appendPath, statusText } from "./tombstones";
+import { appendPath, fitPath, statusText } from "./tombstones";
 import { LAYOUT as L, MOTION as M } from "./tokens";
 
 export interface CardOptions {
@@ -178,12 +178,15 @@ export function openTombstoneCard(cards: HTMLElement, dead: DeadLink, opener: HT
     `<button class="close win95" type="button" aria-label="Close">x</button>` +
     `<div class="inscription" id="stone-inscription"><p class="here-lies">HERE LIES</p><p class="path"></p><p class="status"></p></div>` +
     `<div class="moss" aria-hidden="true"></div>`;
-  appendPath(card.querySelector<HTMLElement>(".path")!, dead.path);
+  const path = card.querySelector<HTMLElement>(".path")!;
+  appendPath(path, dead.path);
+  path.title = dead.path; // the full path on hover, however the stone cuts it
   const status = card.querySelector(".status")!;
   status.textContent = statusText(dead.status);
   const url = new URL(dead.url);
   if (url.origin !== doc.defaultView!.location.origin) status.after(Object.assign(doc.createElement("p"), { className: "host", textContent: url.hostname }));
   show(cards, card, opener, L.tombstoneWidth, opts);
+  fitPath(path);
   card.querySelector<HTMLElement>(".close")!.focus();
   if (!again) opts.play?.("thud");
   return card;

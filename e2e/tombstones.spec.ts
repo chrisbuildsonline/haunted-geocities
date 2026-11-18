@@ -106,13 +106,24 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
       const cs = getComputedStyle(card);
       const lineHeight = parseFloat(getComputedStyle(path).lineHeight);
       const segs = [...path.querySelectorAll<HTMLElement>(".seg")].map((s) => {
-        // The segment's one text node: every line box it lands on gives it a rect at a new top.
+        // The segment's one text node: every line box it lands on gives it a rect at a new top; the
+        // segment's own box shows at most two of them, the last ones.
         const range = document.createRange();
         range.selectNodeContents(s.querySelector("bdi")!.firstChild!);
         const lines = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
         const box = s.getBoundingClientRect();
         const t = range.getBoundingClientRect();
-        return { text: s.textContent, lines: lines.size, next: s.nextSibling?.nodeName ?? null, cut: s.scrollWidth > s.clientWidth, endVisible: t.right <= box.right + 1, startHidden: t.left < box.left - 1, dir: getComputedStyle(s).direction };
+        const full = s.querySelector<HTMLElement>(".sr");
+        return {
+          text: (full ?? s).textContent, // what a screen reader gets
+          visible: s.querySelector("bdi")!.textContent,
+          hiddenFromAt: s.querySelector("bdi")!.getAttribute("aria-hidden"),
+          lines: lines.size,
+          shown: Math.round(box.height / lineHeight),
+          next: s.nextSibling?.nodeName ?? null,
+          cut: s.classList.contains("cut"),
+          allVisible: t.top >= box.top - 1 && t.bottom <= box.bottom + 1 && t.left >= box.left - 1 && t.right <= box.right + 1,
+        };
       });
       const r = card.getBoundingClientRect();
       const ins = getComputedStyle(card.querySelector(".inscription")!);
@@ -120,7 +131,8 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
         focused: card.contains(this.activeElement),
         text: card.innerText.replace(/\s+/g, " ").trim(),
         segs,
-        pathText: path.textContent,
+        pathText: segs.map((s) => s.text).join(""),
+        pathTitle: path.title,
         pathLines: Math.round(path.getBoundingClientRect().height / lineHeight),
         wbr: path.querySelectorAll("wbr").length,
         look: [cs.width, cs.backgroundColor, cs.borderTopLeftRadius, cs.borderTopColor, cs.borderBottomColor, ins.color, ins.fontFamily.split(",")[0]],
@@ -136,16 +148,20 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
   expect(card.text).toContain("HERE LIES");
   expect(card.text).toContain("404 · Not Found");
   expect(card.pathText).toBe(BLOG);
+  expect(card.pathTitle).toBe(BLOG); // the full path on hover
   expect(card.wbr).toBe(3);
   expect(card.look).toEqual(["176px", "rgb(204, 204, 204)", "88px", "rgb(255, 255, 255)", "rgb(102, 102, 102)", "rgb(0, 0, 0)", `"Times New Roman"`]);
   expect(card.pathLines).toBeLessThanOrEqual(3);
   expect(card.segs.map((s) => s.text)).toEqual(["/", "blog/", "2019/", "the-very-long-haunted-filename-that-must-not-break.html"]);
-  for (const s of card.segs) {
-    expect(s.lines).toBe(1); // no line box ever breaks inside a segment
-    expect(s.next).toBe(s.text!.endsWith("/") ? "WBR" : null);
-    expect(s.dir).toBe("rtl");
-  }
-  expect(card.segs.at(-1)).toMatchObject({ cut: true, endVisible: true, startHidden: true }); // "…must-not-break.html"
+  for (const s of card.segs) expect(s.next).toBe(s.text!.endsWith("/") ? "WBR" : null);
+  // the folders fit their line: one line each, never broken, never cut
+  for (const s of card.segs.slice(0, 3)) expect(s).toMatchObject({ lines: 1, shown: 1, cut: false, visible: s.text, hiddenFromAt: null, allVisible: true });
+  // the filename is wider than a line: it wraps inside itself onto two lines, its start cut behind "…",
+  // its end readable, every visible character inside the stone; screen readers get the whole name
+  const name = card.segs.at(-1)!;
+  expect(name).toMatchObject({ lines: 2, shown: 2, cut: true, hiddenFromAt: "true", allVisible: true });
+  expect(name.visible).toMatch(/^….+-that-must-not-break\.html$/);
+  expect(name.visible!.length).toBeLessThan(name.text!.length);
   expect(card.rect.left).toBeGreaterThanOrEqual(8);
   expect(card.rect.right).toBeLessThanOrEqual(1280 - 8);
   await page.screenshot({ path: `${SHOTS}/desktop-1280-card.png` });
@@ -173,7 +189,8 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
   const narrow = (await stone())!;
   expect(narrow.rect.left).toBeGreaterThanOrEqual(8);
   expect(narrow.rect.right).toBeLessThanOrEqual(375 - 8);
-  for (const s of narrow.segs) expect(s.lines).toBe(1);
+  expect(narrow.segs.map((s) => [s.shown, s.cut])).toEqual(card.segs.map((s) => [s.shown, s.cut]));
+  expect(narrow.pathLines).toBeLessThanOrEqual(3);
   await page.screenshot({ path: `${SHOTS}/mobile-375-card.png` });
   await page.keyboard.press("Escape");
 

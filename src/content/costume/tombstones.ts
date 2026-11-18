@@ -21,9 +21,9 @@ export const pathSegments = (path: string) => path.split(/(?<=\/)/).filter(Boole
 
 /**
  * Append `path` to `el` as text that may break only after a "/": one unbreakable segment per piece
- * (its text set as text, never parsed), a <wbr> after every "/". A segment too wide for the line is
- * cut at its start by the CSS (direction: rtl), so the end of a filename stays readable; the <bdi>
- * keeps the segment's own text left-to-right.
+ * (its text set as text, never parsed), a <wbr> after every "/". A segment too wide for the line
+ * wraps inside itself onto at most two lines; fitPath cuts its start if it needs more. The <bdi>
+ * isolates its text.
  */
 export function appendPath(el: HTMLElement, path: string): void {
   const doc = el.ownerDocument;
@@ -33,6 +33,33 @@ export function appendPath(el: HTMLElement, path: string): void {
     seg.append(Object.assign(doc.createElement("bdi"), { textContent: part }));
     el.append(seg);
     if (part.endsWith("/")) el.append(doc.createElement("wbr"));
+  }
+}
+
+/**
+ * After layout: a path that would run past its 3 lines goes `tight` (a long segment gets one line,
+ * not two), and a segment whose text is taller than its box is `cut`: it loses characters from its
+ * start, behind a "…", until it fits, so the end of a filename stays readable. The whole segment
+ * stays in a visually hidden copy for screen readers. With no layout (nothing measures) it is a no-op.
+ */
+export function fitPath(path: HTMLElement): void {
+  path.classList.toggle("tight", path.scrollHeight > path.clientHeight + 1);
+  for (const seg of path.querySelectorAll<HTMLElement>(".seg")) {
+    const shown = seg.firstElementChild as HTMLElement;
+    const fits = () => shown.offsetHeight <= seg.clientHeight + 1;
+    if (fits()) continue;
+    const full = shown.textContent!;
+    let [lo, hi] = [1, full.length - 1]; // the fewest characters to drop
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      shown.textContent = `…${full.slice(mid)}`;
+      if (fits()) hi = mid;
+      else lo = mid + 1;
+    }
+    shown.textContent = `…${full.slice(lo)}`;
+    shown.setAttribute("aria-hidden", "true");
+    seg.append(Object.assign(seg.ownerDocument.createElement("span"), { className: "sr", textContent: full }));
+    seg.classList.add("cut");
   }
 }
 

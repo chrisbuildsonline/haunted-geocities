@@ -80,12 +80,12 @@ describe("labels and path text (req 34, 37-40)", () => {
     expect(evil.textContent).toBe("/<img src=x onerror=alert(1)>/a.html");
   });
 
-  test("CSS: path clamps at 3 lines and breaks only at '/'; a segment never breaks and ellipsises at its start", () => {
+  test("CSS: path clamps at 3 lines and breaks at '/'; a segment is one atomic box, broken inside only when wider than a line", () => {
     const css = costumeCss({ stars: "", twinkle: "" });
     const path = css.match(/\.tombstone-card \.path \{[^}]*\}/)![0];
     for (const d of ["-webkit-line-clamp: 3", "overflow-wrap: normal", "word-break: keep-all", "font-size: 13px"]) expect(path).toContain(d);
     const seg = css.match(/\.tombstone-card \.seg \{[^}]*\}/)![0];
-    for (const d of ["display: inline-block", "max-width: 100%", "direction: rtl", "text-overflow: ellipsis", "white-space: nowrap", "overflow: hidden"]) expect(seg).toContain(d);
+    for (const d of ["display: inline-flex", "max-width: 100%", "overflow: hidden"]) expect(seg).toContain(d);
   });
 });
 
