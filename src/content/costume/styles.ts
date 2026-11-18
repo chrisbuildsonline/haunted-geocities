@@ -1,7 +1,7 @@
 // The costume stylesheet, adopted inside the shadow root. Colours only from tokens.
 import { checkerUrl, DIGITS, mapToPx, SIGN_LEGEND, signFrame, svgUrl, type Px } from "./art";
 import { VAMPIRE_GLOW, VAMPIRE_GLOW_HI } from "./ghosts";
-import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL } from "./tokens";
+import { HARD_SHADOW, LAYOUT as L, MOTION as M, PALETTE as P, PIXEL, SPRITES as S } from "./tokens";
 
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;
 const TIMES = `"Times New Roman", Times, serif`;
@@ -9,6 +9,8 @@ const TIMES = `"Times New Roman", Times, serif`;
 /** An 8×8 strip of moss pixels (2px each): tufts over a solid bed, repeated along the stone's base. */
 /** CRT scanlines: a 1px line every 3px, as a pixel tile (no CSS gradients in the costume). */
 export const scanUrl = () => svgUrl([{ x: 0, y: 0, w: 4, h: 1, color: P.crypt }], 4, 3);
+/** The haunt moment's roll band: 2px spectral lines every 3px, so it reads on white and dark pages alike. */
+const rollUrl = () => svgUrl([{ x: 0, y: 0, w: 4, h: 2, color: P.spectral }], 4, 3);
 const mossUrl = () => svgUrl(mapToPx([".M..", "MM.M", "MMMM", "MMMM"], { M: P.moss }, 2), 8, 8);
 
 const signsUrl = () =>
@@ -198,6 +200,12 @@ button:focus-visible { ${ring} }
 .webmaster svg { display: block; width: 96px; height: 96px; image-rendering: pixelated; }
 .leaving .webmaster svg { transform: scaleX(-1); }
 .ectoplasm { position: absolute; top: 0; bottom: 0; left: -16px; width: 32px; background-image: ${checkerUrl(P.ectoplasm)}; background-size: 4px 4px; }
+.parade { position: absolute; inset: 0; isolation: isolate; }
+.spirit { position: absolute; top: 0; left: 0; width: ${S.paradeGhost[0]}px; height: ${S.paradeGhost[1]}px; transform: translateY(-200%); filter: drop-shadow(0 0 8px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
+.spirit.near { z-index: 1; opacity: .92; }
+.spirit.far { width: ${S.paradeGhostFar[0]}px; height: ${S.paradeGhostFar[1]}px; opacity: .6; }
+.spirit svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.roll { position: absolute; left: 0; right: 0; top: 0; height: 48px; transform: translateY(-100%); background-image: ${rollUrl()}; background-size: 4px 3px; border-bottom: 2px solid ${P.ectoplasm}; opacity: .7; }
 .leaving .ectoplasm { left: 80px; }
 
 @media (max-width: ${L.hudWrapBelow}px) {

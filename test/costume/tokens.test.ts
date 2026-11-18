@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { LAYOUT, MOTION, PAGE, PALETTE } from "../../src/content/costume/tokens";
+import { LAYOUT, MOTION, PAGE, PALETTE, SPRITES } from "../../src/content/costume/tokens";
 import { designTokens } from "./helpers";
 
 const webSafe = (h: string) => /^#(?:00|33|66|99|cc|ff){3}$/.test(h);
@@ -29,6 +29,12 @@ test("hero haunt motion values match DESIGN.md", () => {
   expect(MOTION.hero).toMatchObject({ scanIn: 150, lidsClose: [150, 450], line: [450, 600], lidsOpen: [600, 800], wipeStart: 700, fxOut: [1600, 1900] });
   expect(MOTION.hero).toMatchObject({ riseStart: 1700, riseStagger: 250, riseMs: 400, risePx: 48, tagDelay: 200, tagMs: 200 });
   expect(MOTION.hero).toMatchObject({ hud: 1900, odometer: [2200, 2800], vampires: 2300, markers: 2800 });
+  expect(MOTION.hero).toMatchObject({ roll: [800, 1400], paradeStart: 800, paradeStagger: 100, paradeMs: 1600 });
+});
+
+test("the parade ghosts are drawn at 2x and 3x the lane ghost, and match DESIGN.md", () => {
+  expect(SPRITES).toEqual(designTokens().costume.sprites);
+  expect(SPRITES).toMatchObject({ paradeGhost: [144, 144], paradeGhostFar: [96, 96] });
 });
 
 test("graveyardGap is 4 and matches DESIGN.md", () => {

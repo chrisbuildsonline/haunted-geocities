@@ -55,6 +55,7 @@ Layers, bottom to top:
 | Ghost | 16×16 | 48×48 |
 | Vampire | 16×18 | 48×54 |
 | Webmaster's Ghost (haunt moment) | 32×32 | 96×96 |
+| Parade ghost, near / far (haunt moment only) | 16×16 | 144×144 / 96×96 (9 and 6 CSS px per art pixel, the only exception to the 3px rule) |
 | Tombstone marker | 8×10 | 16×20 |
 | Curse badge icon | 6×6 | 12×12 |
 | HUD icons | 8×8 | 16×16 |
@@ -402,8 +403,10 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 
 **"The page dies into 1998."** (Hero haunt moment, `MOTION.hero` in the tokens.)
 
-- **The idea:** the modern page switches off like a 1998 CRT: scanlines, the picture closes to a bright line, the line shrinks to a dot. The tube comes back on, and a 96px pixel ghost glides across the viewport. Behind it the page is 1998; ahead of it the page is still modern. Its trailing edge is a strip of dithered ectoplasm. Then the tracker ghosts rise out of the page one by one, each with its company name tag.
-- **The clip:** it reads in three seconds: dark line, wipe, ghosts rising with names.
+- **The idea:** the modern page switches off like a 1998 CRT: scanlines, the picture closes to a bright line, the line shrinks to a dot. The tube comes back on with its picture rolling once, and a 96px pixel ghost glides across the viewport. Behind it the page is 1998; ahead of it the page is still modern. Its trailing edge is a strip of dithered ectoplasm. While it crosses, the whole page is overrun: six big tracker ghosts (the parade) stream up through it from the bottom edge to the top. Then the tracker ghosts rise into their lanes one by one, each with its company name tag.
+- **The clip:** it reads in three seconds: dark line, wipe with the parade streaming through the page, ghosts rising with names.
+- **The parade (the scene-wide beat):** six 16×16 tracker ghosts, one per hem tint, drawn big: three near ones at 144×144 (9 CSS px per art pixel, opacity .92) and three far ones at 96×96 (6 CSS px, opacity .6), so the flock has depth. They are the only sprites off the 3px grid: a close-up, still on integer pixels with `image-rendering: pixelated`. Each starts just below the viewport and ends just above it, sliding 32-40px sideways as it rises so the flock fans out; their x positions spread over the whole width (6%, 74%, 40%, 96%, 22% and 70% of the free width, in start order). They wear the lane ghost's glow, a little wider (`drop-shadow(0 0 8px #6633cc) drop-shadow(0 0 2px #ccffff)`). They sit in `#fx` under the Webmaster's Ghost, so they cross the page text only while the moment plays; no resting ghost is ever over text.
+- **The roll:** as the lids open, one 48px band of 2px `#6633cc` scanlines every 3px (opacity .7) with a 2px `#66ff99` leading edge rolls down the whole page once: the vertical hold slipping as the tube warms up. The violet lines read on white pages and the green edge on dark ones.
 - **Total: 3000ms** with up to four ghost companies. Each ghost after the 4th adds 250ms (8 ghosts end at 3850ms).
 - **How it is built:** the Web Animations API on transform, opacity and clip-path only, all inside the shadow root. The page is untouched. `#fx` carries `data-phase`: `crt`, then `wipe` at 700ms, then `rise` at 1700ms, moved by two marker animations that animate nothing (no timers).
 
@@ -414,6 +417,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | 150-450 | FX lids | Two `#000000` lids, each half the viewport, slide in from the top and bottom (`translateY(∓100%)` → 0) and meet at mid-height | `cubic-bezier(.45,0,.2,1)` |
 | 450-600 | FX phosphor line | A 2px `#ccffff` line across the middle shrinks `scaleX(1)` → `scaleX(0)`, to a dot. It is only there in this window. | `cubic-bezier(.2,.8,.2,1)` |
 | 600-800 | FX lids | The lids slide open again on the page | `cubic-bezier(.45,0,.2,1)` |
+| 800-1400 | FX roll | The roll band travels `translateY(-100%)` → `translateY(<viewport height>px)`, top to bottom, once | linear |
+| 800 + 100·i, 1600ms | FX parade | Parade ghost i travels `translate(0, <viewport height>px)` → `translate(±32-40px, -<size>px)`: from under the bottom edge to over the top edge. The last one leaves at 2900. | linear |
 | 700-1600 | FX ghost + layers 1 and 4 | The 96×96 Webmaster's Ghost travels `translateX(-96px → 100vw)` at mid-viewport height, with one ±6px vertical bob (a single 900ms cycle). The gutter starfield (or edge frame), the parchment tint, the guestbook frame and the top bands reveal behind it via `clip-path: inset(0 calc(100% - X) 0 0)`. Ghost and clip share one timing object, so they stay synced. A 32px strip trails the ghost: a 2×2 checker of `#66ff99`/transparent, the dither seam. | `cubic-bezier(.45,0,.2,1)` |
 | 1600-1900 | FX | Ghost leaves the right edge. Scanlines 1 → 0 and vignette 40% → 0. | `cubic-bezier(.2,.8,.2,1)` |
 | 1700 + 250·i | Lanes | Tracker ghost i rises 48px into its slot and fades 0 → 1 over 400ms, one by one in lane order (first 8; the rest arrive with the 8th). | `cubic-bezier(.2,.8,.2,1)` |
@@ -423,10 +428,11 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | 2300-2900 | Vampires | Fade in (300ms), then a single glow swell, `drop-shadow` 0 → 6px. One swell, no pulsing. | `cubic-bezier(.2,.8,.2,1)` |
 | 2800-3000 | Markers | Tombstones and curse badges fade in, 200ms | linear |
 
-- **Flash safety:** the screen goes dark once (the lids, 150-450ms) and comes back once (600-800ms): one dark-then-light change over 800ms, not a flicker. Every other change is monotonic, and nothing toggles back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
+- **Flash safety:** the screen goes dark once (the lids, 150-450ms) and comes back once (600-800ms): one dark-then-light change over 800ms, not a flicker. Every other change is monotonic, and nothing toggles back. The roll and the parade move position only (no opacity or colour change): the roll passes any point of the page once, in under 100ms, and never comes back. The only periodic motion is the 900ms bob (1.1 Hz, position only). Nothing strobes above 3 Hz.
 - **Graveyard strip:** on pages where the sprites dock above the HUD, they slide up with it and do not rise; the CRT and the wipe still play.
 - **Audio:** muted by default. If the user has turned sound on, the popup plays a 900ms band-passed noise "whoosh" from the Haunt click itself, so it runs alongside the wipe. The page plays nothing during the haunt moment.
-- **Cost:** 1 sprite, 1 dither strip, 1 vignette, 1 scanline tile, 2 lids, 1 line. The FX layer is removed when the moment ends.
+- **Cost:** 7 sprites (the Webmaster's Ghost and the six parade ghosts), 1 dither strip, 1 vignette, 2 scanline tiles (the screen and the roll), 2 lids, 1 line. Transform and opacity only, so it composites. The FX layer is removed when the moment ends, so the settled costume is the same with or without the parade.
+- **Layout:** every FX element is absolutely placed inside `#fx` (`overflow: hidden`) in the fixed host, so nothing in the moment can widen or scroll the page at 375, 700 or 1280 (`e2e/haunt-parade.spec.ts` checks `scrollWidth` throughout).
 
 **Un-haunt (reverse), 1100ms:**
 
@@ -441,7 +447,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 **prefers-reduced-motion: reduce**
 
 - **Haunt:**
-  - No CRT (no scanlines, lids or line), no ghost, no wipe, no rise, no stagger, no roll, no `#fx`. Name tags show at once.
+  - No CRT (no scanlines, lids, line or roll band), no ghost, no parade, no wipe, no rise, no stagger, no odometer roll, no `#fx`. Name tags show at once.
+  - The settled costume is the same as after the full moment: the parade and the roll live only in `#fx`.
   - The whole overlay root cross-fades opacity 0 → 1 over 300ms, linear.
   - The odometer shows its final value and the marquee is static.
 - **Un-haunt:** a 200ms opacity fade, then removal.
@@ -534,6 +541,8 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "ghost": [48, 48],
       "vampire": [48, 54],
       "webmasterGhost": [96, 96],
+      "paradeGhost": [144, 144],
+      "paradeGhostFar": [96, 96],
       "tombstoneMarker": [16, 20],
       "badgeIcon": [12, 12],
       "hudIcon": [16, 16]
@@ -626,6 +635,10 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
       "line": [450, 600],
       "lidsOpen": [600, 800],
       "wipeStart": 700,
+      "roll": [800, 1400],
+      "paradeStart": 800,
+      "paradeStagger": 100,
+      "paradeMs": 1600,
       "fxOut": [1600, 1900],
       "riseStart": 1700,
       "riseStagger": 250,

@@ -2,8 +2,8 @@
 // tracker ghosts rise one by one with their name tags) and its reverse (1100ms): Web Animations on
 // transform, opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
 import { mapToPx, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
-import { riseIn, vampireIn } from "./ghosts";
-import { MOTION as M, PIXEL } from "./tokens";
+import { ghostSvg as trackerGhostSvg, riseIn, vampireIn } from "./ghosts";
+import { HEM_TINTS, MOTION as M, PIXEL, SPRITES } from "./tokens";
 
 const H = M.hero;
 
@@ -15,14 +15,38 @@ const ghostSvg = () => svgMarkup(mapToPx(WEBMASTER, WEBMASTER_LEGEND, PIXEL.spri
 
 const SWEEP = () => `<div class="sweep"><div class="ectoplasm"></div><div class="webmaster">${ghostSvg()}</div></div>`;
 
-/** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette and ghost. */
+/**
+ * The parade: six tracker ghosts, one per hem tint, drift up through the whole page in start order.
+ * `x` is the share of the free width left of the sprite; near ones are 144px, far ones 96px and dimmer;
+ * `drift` is the sideways slide over the crossing, so the flock fans out as it rises.
+ */
+const PARADE = [
+  { x: 0.06, near: true, drift: 40 },
+  { x: 0.74, near: false, drift: -32 },
+  { x: 0.4, near: true, drift: 40 },
+  { x: 0.96, near: false, drift: -32 },
+  { x: 0.22, near: false, drift: 32 },
+  { x: 0.7, near: true, drift: -40 },
+] as const;
+
+const paradeSize = (near: boolean) => (near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
+
+/** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette, the parade, the ghost and the roll. */
 function buildFx(croot: HTMLElement, crt: boolean): HTMLElement {
   const fx = croot.ownerDocument.createElement("div");
   fx.id = "fx";
   fx.setAttribute("aria-hidden", "true");
-  fx.innerHTML = crt
-    ? `<div class="scan"></div><div class="vignette"></div>${SWEEP()}<div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`
-    : SWEEP();
+  if (!crt) fx.innerHTML = SWEEP();
+  else {
+    const spirits = PARADE.map((p, i) => `<div class="spirit ${p.near ? "near" : "far"}" data-tint="${HEM_TINTS[i]}">${trackerGhostSvg(HEM_TINTS[i]!)}</div>`);
+    fx.innerHTML = `<div class="scan"></div><div class="vignette"></div><div class="parade">${spirits.join("")}</div>${SWEEP()}<div class="roll"></div><div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`;
+    // Placed through the CSSOM (no style attribute), so a page's style-src CSP has nothing to refuse.
+    const vw = croot.ownerDocument.defaultView!.innerWidth;
+    fx.querySelectorAll<HTMLElement>(".spirit").forEach((s, i) => {
+      const p = PARADE[i]!;
+      s.style.left = `${Math.round(p.x * Math.max(0, vw - paradeSize(p.near)))}px`;
+    });
+  }
   croot.append(fx);
   return fx;
 }
@@ -87,6 +111,20 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   }
   // At rest the line is opacity 0, so it is only there while it shrinks.
   run(q(".phosphor"), [{ transform: "scaleX(1)", opacity: 1 }, { transform: "scaleX(0)", opacity: 1 }], { ...at(H.line), easing: M.easeOut, fill: "none" });
+
+  // The scene-wide part. As the tube comes back on, one band of scanlines rolls down the whole page (the
+  // vertical hold slipping once); then six big tracker ghosts drift up through it, bottom edge to top edge.
+  const vh = croot.ownerDocument.defaultView!.innerHeight;
+  run(q(".roll"), [{ transform: "translateY(-100%)" }, { transform: `translateY(${vh}px)` }], { ...at(H.roll), easing: "linear", fill: "both" });
+  fx.querySelectorAll(".spirit").forEach((s, i) => {
+    const p = PARADE[i]!;
+    run(s, [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${paradeSize(p.near)}px)` }], {
+      delay: H.paradeStart + i * H.paradeStagger,
+      duration: H.paradeMs,
+      easing: "linear",
+      fill: "both",
+    });
+  });
 
   run(q(".sweep"), [{ transform: "translateX(-96px)" }, { transform: "translateX(100vw)" }], { ...wipe, fill: "both" });
   run(
