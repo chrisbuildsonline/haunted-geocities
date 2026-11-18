@@ -108,10 +108,21 @@ describe("docs/devpost.md", () => {
     expect(section).toContain("Web Audio API");
   });
 
-  test("How Kiro was used says no MCP servers, custom agents or powers were used", () => {
+  test("How Kiro was used says no MCP servers or powers were used, and counts and names the custom agents", () => {
     const section = doc.split(/^### How Kiro was used\s*$/m)[1]?.split(/^##+ /m)[0] ?? "";
-    expect(section).toMatch(/\bno MCP servers, custom agents or Kiro powers\b/i);
+    expect(section).toMatch(/\bno MCP servers or Kiro powers\b/i);
+    expect(section).not.toMatch(/\bno MCP servers, custom agents\b/i);
     expect(section).toContain("kiro-cli");
+    const agents = files(".kiro/agents", ".json").map((f) => f.replace(/\.json$/, ""));
+    expect(agents.length).toBeGreaterThan(0);
+    expect(section).toContain(".kiro/agents/");
+    expect(stated(agents.length === 1 ? "custom agent" : "custom agents")).toBe(agents.length);
+    for (const name of agents) expect({ name, found: section.includes(`\`${name}\``) }).toEqual({ name, found: true });
+  });
+
+  test("does not say one costume save sets off several hooks", () => {
+    expect(doc).not.toMatch(/on a costume edit it asks the agent to run `bun run visual:baselines`/);
+    expect(doc).not.toMatch(/`era-accuracy` asks the agent to review a costume edit/);
   });
 
   test("says the code is MIT and the bundled tracker data is CC BY-NC-SA 4.0, as the README does", () => {

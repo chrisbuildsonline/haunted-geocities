@@ -1,5 +1,6 @@
 // The Kiro IDE hook files in .kiro/hooks/: shape, commands that resolve to package.json scripts,
-// the named hooks, read-only era-accuracy and rule-factory prompts and patterns that point at real paths.
+// the named hooks, read-only era-accuracy and rule-factory prompts, patterns that point at real paths,
+// and no two hooks that fire on the same save.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -31,6 +32,43 @@ function patternProblems(pattern: string, exists: (p: string) => boolean = (p) =
   return exists(prefix) ? [] : [`pattern ${pattern}: ${prefix} does not exist`];
 }
 
+/** Kiro IDE events that come with file patterns, and the ones that do not. */
+const FILE_EVENTS = ["fileEdited", "fileCreated", "fileDeleted"];
+const OTHER_EVENTS = ["userTriggered", "agentStop", "promptSubmit"];
+
+type HookLike = { name?: unknown; when?: { type?: unknown; patterns?: unknown } };
+
+/** Every repo file git knows about, as repo-relative paths. */
+function repoFiles(): string[] {
+  const r = Bun.spawnSync(["git", "ls-files"], { cwd: root, stdout: "pipe" });
+  return r.stdout.toString().split("\n").filter(Boolean);
+}
+
+/**
+ * Overlaps between hooks: two hooks on the same event with the same pattern list, or one repo file that
+ * sets off two hooks on the same file event. Each message names both hooks.
+ */
+function overlapProblems(list: HookLike[], paths: string[]): string[] {
+  const problems: string[] = [];
+  const key = (h: HookLike) => `${String(h.when?.type)} ${JSON.stringify([...((h.when?.patterns as string[] | undefined) ?? [])].sort())}`;
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const [a, b] = [list[i]!, list[j]!];
+      if (key(a) === key(b)) problems.push(`hooks ${String(a.name)} and ${String(b.name)} share the event and patterns ${key(a)}`);
+    }
+  }
+  for (const path of paths) {
+    const hits = list.filter(
+      (h) => FILE_EVENTS.includes(String(h.when?.type)) && ((h.when?.patterns as string[] | undefined) ?? []).some((p) => new Bun.Glob(p).match(path)),
+    );
+    for (const type of FILE_EVENTS) {
+      const same = hits.filter((h) => h.when?.type === type);
+      if (same.length > 1) problems.push(`${path} sets off ${same.map((h) => String(h.name)).join(" and ")} on ${type}`);
+    }
+  }
+  return problems;
+}
+
 test("there is at least one hook file", () => {
   expect(files.length).toBeGreaterThan(0);
 });
@@ -45,6 +83,7 @@ describe.each(hooks)("$file", ({ file, hook }) => {
     expect(typeof hook.then).toBe("object");
     expect(typeof hook.when.type).toBe("string");
     expect(typeof hook.then.type).toBe("string");
+    if (!FILE_EVENTS.includes(hook.when.type)) return;
     expect(Array.isArray(hook.when.patterns)).toBe(true);
     expect(hook.when.patterns.length).toBeGreaterThan(0);
     for (const p of hook.when.patterns) {
@@ -57,10 +96,14 @@ describe.each(hooks)("$file", ({ file, hook }) => {
     expect(hook.name).toBe(file.replace(/\.kiro\.hook$/, ""));
   });
 
-  test('is version "1", enabled and fires on fileEdited', () => {
+  test('is version "1", enabled and fires on a Kiro IDE event', () => {
     expect(hook.version).toBe("1");
     expect(hook.enabled).toBe(true);
-    expect(hook.when.type).toBe("fileEdited");
+    expect([...FILE_EVENTS, ...OTHER_EVENTS]).toContain(hook.when.type);
+  });
+
+  test("only a file event carries patterns", () => {
+    if (!FILE_EVENTS.includes(hook.when.type)) expect(hook.when.patterns ?? []).toEqual([]);
   });
 
   test("then has the shape its type needs", () => {
@@ -79,7 +122,43 @@ describe.each(hooks)("$file", ({ file, hook }) => {
   });
 
   test("every pattern is relative and points at a path that exists", () => {
-    expect(hook.when.patterns.flatMap((p: string) => patternProblems(p))).toEqual([]);
+    expect((hook.when.patterns ?? []).flatMap((p: string) => patternProblems(p))).toEqual([]);
+  });
+});
+
+describe("no two hooks overlap", () => {
+  test("no two hooks share an event and patterns, and no repo file sets off two hooks on one save", () => {
+    const paths = repoFiles();
+    expect(paths).toContain("src/content/costume/render.ts");
+    expect(overlapProblems(hooks.map((h) => h.hook), paths)).toEqual([]);
+  });
+
+  test("a costume save sets off exactly one hook", () => {
+    const hits = hooks.filter(({ hook }) => hook.when.type === "fileEdited" && hook.when.patterns.some((p: string) => new Bun.Glob(p).match("src/content/costume/tokens.ts")));
+    expect(hits.map((h) => h.hook.name)).toEqual(["visual-regression"]);
+  });
+
+  test("overlapProblems catches the old three-hooks-on-one-costume-save setup", () => {
+    const costume = { type: "fileEdited", patterns: ["src/content/costume/**"] };
+    const old = [
+      { name: "visual-regression", when: { type: "fileEdited", patterns: ["src/content/costume/**", "src/popup/**", "design/DESIGN.md"] } },
+      { name: "era-accuracy", when: costume },
+      { name: "baseline-refresh", when: costume },
+    ];
+    const problems = overlapProblems(old, ["src/content/costume/tokens.ts", "src/popup/popup.ts"]);
+    expect(problems.some((p) => p.includes("era-accuracy and baseline-refresh share"))).toBe(true);
+    expect(problems).toContain("src/content/costume/tokens.ts sets off visual-regression and era-accuracy and baseline-refresh on fileEdited");
+    expect(problems.some((p) => p.startsWith("src/popup/popup.ts"))).toBe(false);
+  });
+
+  test("overlapProblems lets the same file fire on different events", () => {
+    const list = [
+      { name: "a", when: { type: "fileEdited", patterns: ["src/**"] } },
+      { name: "b", when: { type: "fileCreated", patterns: ["src/**"] } },
+      { name: "c", when: { type: "userTriggered" } },
+      { name: "d", when: { type: "agentStop" } },
+    ];
+    expect(overlapProblems(list, ["src/x.ts"])).toEqual([]);
   });
 });
 
@@ -119,21 +198,27 @@ describe("patternProblems", () => {
 
 describe("the named hooks", () => {
   const table = [
-    { name: "manifest-lint", patterns: ["src/manifest.ts", "vite.config.ts"], then: { type: "runCommand", command: "bun run lint:manifest" } },
+    { name: "manifest-lint", event: "fileEdited", patterns: ["src/manifest.ts", "vite.config.ts"], then: { type: "runCommand", command: "bun run lint:manifest" } },
     {
       name: "visual-regression",
+      event: "fileEdited",
       patterns: ["design/DESIGN.md", "src/content/costume/**", "src/popup/**"],
       then: { type: "runCommand", command: "bun run test:visual" },
     },
-    { name: "era-accuracy", patterns: ["src/content/costume/**"], then: { type: "askAgent" } },
-    { name: "rule-factory", patterns: ["src/content/dark-patterns.ts", "src/data/neighborhoods.json"], then: { type: "askAgent" } },
-    { name: "baseline-refresh", patterns: ["src/content/costume/**"], then: { type: "askAgent" } },
+    { name: "era-accuracy", event: "agentStop", patterns: [], then: { type: "askAgent" } },
+    { name: "rule-factory", event: "fileEdited", patterns: ["src/content/dark-patterns.ts", "src/data/neighborhoods.json"], then: { type: "askAgent" } },
+    { name: "baseline-refresh", event: "userTriggered", patterns: [], then: { type: "askAgent" } },
   ];
 
-  test.each(table)("$name exists with its patterns and action", ({ name, patterns, then }) => {
+  test("the table covers every hook file", () => {
+    expect(table.map((r) => r.name).sort()).toEqual(hooks.map((h) => h.hook.name).sort());
+  });
+
+  test.each(table)("$name exists with its event, patterns and action", ({ name, event, patterns, then }) => {
     const hook = byName(name);
     expect(hook).toBeDefined();
-    expect([...hook!.when.patterns].sort()).toEqual(patterns);
+    expect(hook!.when.type).toBe(event);
+    expect([...(hook!.when.patterns ?? [])].sort()).toEqual(patterns);
     expect(hook!.then).toMatchObject(then);
   });
 
@@ -143,6 +228,12 @@ describe("the named hooks", () => {
 
     test("cites the steering file and every rule", () => {
       for (const word of ["era-accuracy.md", "216", "Comic Sans MS", "Times New Roman", "pixel art", "1998", "trademark", "line"]) {
+        expect({ word, found: prompt.includes(word) }).toEqual({ word, found: true });
+      }
+    });
+
+    test("reviews what the agent just changed in the costume and the popup, and stops at once if nothing changed", () => {
+      for (const word of ["git diff", "src/content/costume/", "src/popup/", "one line"]) {
         expect({ word, found: prompt.includes(word) }).toEqual({ word, found: true });
       }
     });
@@ -191,6 +282,12 @@ describe("the named hooks", () => {
       for (const word of ["bun run visual:baselines", "Docker", "e2e-visual/__screenshots__", "git", "summar"]) {
         expect({ word, found: prompt.includes(word) }).toEqual({ word, found: true });
       }
+    });
+
+    test("is run by hand, since making baselines is a choice and not something a save should start", () => {
+      expect(hook?.when?.type).toBe("userTriggered");
+      expect(hook?.when?.patterns).toBeUndefined();
+      expect(prompt).not.toContain("was just edited");
     });
 
     test("never writes baselines from the host's fonts or runs bun test", () => {

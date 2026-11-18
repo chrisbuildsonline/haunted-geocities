@@ -147,6 +147,26 @@ describe("README.md", () => {
     for (const name of [...specs, ...hooks]) expect({ name, found: section.includes(`\`${name}\``) }).toEqual({ name, found: true });
   });
 
+  test("How Kiro was used counts and names every custom agent and says how to start it", () => {
+    const section = readme.split(/^## How Kiro was used\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    const agents = readdirSync(join(root, ".kiro", "agents")).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, ""));
+    expect(agents.length).toBeGreaterThan(0);
+    expect(section).toContain(".kiro/agents/");
+    expect(section).toContain(`${agents.length} custom agent`);
+    for (const name of agents) {
+      expect({ name, found: section.includes(`\`${name}\``) }).toEqual({ name, found: true });
+      expect({ name, run: section.includes(`kiro-cli chat --agent ${name}`) }).toEqual({ name, run: true });
+    }
+  });
+
+  test("the Kiro hooks section says a costume save sets off one hook and how the others start", () => {
+    const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).not.toMatch(/A costume edit sets off `visual-regression`, `era-accuracy` and `baseline-refresh`/);
+    expect(section).toMatch(/costume[^.]*sets off only `visual-regression`/i);
+    expect(section).toMatch(/`era-accuracy`[^|]*\|[^|]*agent finishes/i);
+    expect(section).toMatch(/`baseline-refresh`[^|]*\|[^|]*by hand/i);
+  });
+
   test("the Kiro hooks section states the hook count in words", () => {
     const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
     const n = readdirSync(join(root, ".kiro", "hooks")).filter((f) => f.endsWith(".kiro.hook")).length;
