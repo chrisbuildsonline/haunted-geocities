@@ -61,6 +61,24 @@ for (const name of ["index", "trackers"] as const) {
   });
 }
 
+test("HUD @700", async ({ context, sw, extensionId }) => {
+  // Between the phone and the desktop: trackers.html's HUD on one row, counts, odometer and the whole web ring.
+  const page = await context.newPage();
+  await prepare(page, 700);
+  await page.goto(visualUrl("trackers.html"));
+  await hauntThroughPopup(context, sw, extensionId, page);
+  await page.bringToFront();
+  await waitForHaunted(page);
+  const inShadow = await shadowOf(page);
+  const hud = await inShadow(function () {
+    const r = this.querySelector("#hud")!.getBoundingClientRect();
+    return { x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height) };
+  });
+  await page.mouse.move(0, 0);
+  // the frame plus 4px around it, and its 4px hard shadow
+  await expect(page).toHaveScreenshot("hud-700.png", { clip: { x: hud.x - 4, y: hud.y - 4, width: hud.width + 12, height: hud.height + 12 } });
+});
+
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
     test(`costume ${name} @${width}`, async ({ context, sw, extensionId }) => {
