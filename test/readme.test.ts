@@ -90,10 +90,10 @@ describe("README.md", () => {
     expect(readme).toContain("until you un-haunt, reload or leave the page, or close the tab");
   });
 
-  test("names the three Kiro hooks, each of which exists in .kiro/hooks/, and nothing is still to come", () => {
+  test("names every Kiro hook, each of which exists in .kiro/hooks/, and nothing is still to come", () => {
     const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
     expect(section).toContain(".kiro/hooks/");
-    for (const name of ["manifest-lint", "visual-regression", "era-accuracy"]) {
+    for (const name of ["manifest-lint", "visual-regression", "era-accuracy", "rule-factory"]) {
       expect({ name, inReadme: section.includes(`\`${name}\``) }).toEqual({ name, inReadme: true });
       expect({ name, file: existsSync(join(root, ".kiro", "hooks", `${name}.kiro.hook`)) }).toEqual({ name, file: true });
     }
@@ -113,10 +113,11 @@ describe("README.md", () => {
     expect(install).toBeLessThan(section.indexOf("bun run test:e2e"));
   });
 
-  test("How Kiro was used names the hooks folder and the kiro-hooks spec", () => {
+  test("How Kiro was used names the hooks folder and the kiro-hooks and rule-factory specs", () => {
     const section = readme.split(/^## How Kiro was used\s*$/m)[1] ?? "";
     expect(section).toContain(".kiro/hooks/");
     expect(section).toContain("`kiro-hooks`");
+    expect(section).toContain("`rule-factory`");
   });
 
   test("describes neighborhoods, the toolbar badge and dark patterns as working", () => {

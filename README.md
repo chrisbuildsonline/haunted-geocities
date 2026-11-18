@@ -137,13 +137,14 @@ That runs `bun run test:visual:update` inside the image and copies the PNGs out.
 
 ## Kiro hooks
 
-Three Kiro IDE hooks live in `.kiro/hooks/`. Kiro IDE runs a hook when you save a file that matches it. They are a quick local check while you work, not a replacement for the checks above.
+Four Kiro IDE hooks live in `.kiro/hooks/`. Kiro IDE runs a hook when you save a file that matches it. They are a quick local check while you work, not a replacement for the checks above.
 
 | Hook | Runs when you save | What it does |
 | --- | --- | --- |
 | `manifest-lint` | `src/manifest.ts` or `vite.config.ts` | Runs `bun run lint:manifest`. |
 | `visual-regression` | a file in `src/content/costume/` or `src/popup/`, or `design/DESIGN.md` | Runs `bun run test:visual`. |
 | `era-accuracy` | a file in `src/content/costume/` | Asks the agent to review the edit against `.kiro/steering/era-accuracy.md`: web-safe colours only, Comic Sans MS and Times New Roman only, original pixel art, nothing a 1998 GeoCities page would not have had, and no trademarks. It reports each problem with its file and line, and does not change any file. |
+| `rule-factory` | `src/content/dark-patterns.ts` or `src/data/neighborhoods.json` | Asks the agent to check that the new dark-pattern rule or neighborhood has a test (a match and a near miss under `test/dark-patterns/`, or a data and a resolver test under `test/neighborhoods/`), a fixture line or an example in a test, and era-accurate copy, then to run `bun run test`. It reports what is missing with its file and line, and does not change any file. |
 
 A costume edit sets off both `visual-regression` and `era-accuracy`. The screenshot run takes a little while because it builds the extension and starts Chromium.
 
@@ -153,4 +154,6 @@ To turn a hook off, set `"enabled": false` in its file, or switch it off in the 
 
 The `.kiro/` folder holds what kiro-cli generated for this project: steering files in `.kiro/steering/` (product, structure, tech, era accuracy, accessibility and motion, non-destructive DOM) and specs in `.kiro/specs/` for the scaffold, tracker detector, costume renderer, tombstones, runtime vampires, dark-pattern curses (`dark-patterns`), neighborhoods and sound effects (`sound-effects`). Each spec has requirements, a design and a task list.
 
-The three hooks in `.kiro/hooks/` were also written by kiro-cli, together with their spec in `.kiro/specs/kiro-hooks/` (`kiro-hooks`), which covers the hook files, `lint:manifest`, `test:visual` and the test that checks the hooks.
+The first three hooks in `.kiro/hooks/` were also written by kiro-cli, together with their spec in `.kiro/specs/kiro-hooks/` (`kiro-hooks`), which covers the hook files, `lint:manifest`, `test:visual` and the test that checks the hooks.
+
+The fourth hook comes with its own spec, `.kiro/specs/rule-factory/` (`rule-factory`), also written by kiro-cli. It is a recipe for growing the two lists the extension reads: give the agent one line, such as `scarcity: "Only a few left"` or "a neighborhood for fishing and boat sites", and point it at the spec's `design.md`. It writes the tests first and sees them fail, then adds the regex to `src/content/dark-patterns.ts` or the entry and rules to `src/data/neighborhoods.json`, updates the tests that pin the neighborhood count and the kind list, proposes era-accurate copy, and ends with `bun run typecheck` and `bun run test` passing. The `rule-factory` hook then checks the result each time either file is saved, and `test/hooks.test.ts` holds the hook to its two files and a prompt that never edits.
