@@ -8,7 +8,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 
 ## What it does
 
-- Haunting is a three-second show: the page switches off like an old CRT (scanlines, the picture closes to a bright line, then a dot), the Webmaster's Ghost flies across and leaves 1998 behind it, and then the tracker ghosts rise out of the page one by one, each with its company's name tag. With reduced motion on, it skips straight to the haunted page.
+- Haunting is a three-second show: the page switches off like an old CRT (scanlines, the picture closes to a bright line, then a dot), the Webmaster's Ghost flies across and leaves 1998 behind it while six big ghosts stream up through the whole page, and then the tracker ghosts rise out of the page one by one, each with its company's name tag. With reduced motion on, it skips straight to the haunted page.
 - Haunt and un-haunt any page from the toolbar popup. The page is restyled (fonts, link colours, a parchment tint and a guestbook frame around the content column) by one adopted stylesheet, and the starfield, HUD and marquee sit in a closed shadow root over it. On a phone or a full-width page the whole page is tinted inside a 12px starfield edge. Un-haunting removes it all and the page is byte for byte as it was.
 - Trackers show up as ghosts, one per company, matched against the bundled DuckDuckGo Tracker Radar data. Click a ghost for its card. On a phone or a full-width page, where there is no room beside the text, the ghosts and vampires stand in a graveyard strip just above the HUD instead, and scroll sideways when there are many.
 - The HUD hit counter is labelled `Souls counted`: the number of tracker requests blocked or seen on the page.
@@ -21,7 +21,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 - Sound is off by default. Turn on **Sound effects** in the popup and the Haunt click plays a short whoosh, and opening a card plays a short sound for its kind: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and an organ stab for a vampire. The sounds are made in code with the Web Audio API (`src/audio/sound.ts`), with no audio files, and nothing plays until you click.
 
-![The haunt moment on a news page: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
+![The haunt moment on a news page: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume while six big ghosts stream up through the page, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
 
 ![Exorcise on a phone: the Criteo ghost in the graveyard strip spirals out to its faded look as the EXORCISED stamp slams on, and the HUD ghost count ticks from 1 to 0](docs/screenshots/exorcise.gif)
 
