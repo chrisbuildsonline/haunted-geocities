@@ -114,7 +114,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - 1px `#000000` outer line and a hard shadow `4px 4px 0 #000000` (refs 04, 06).
 - **Order (controls first, DOM order = visual order):**
   1. `[Hide]` Win95 button.
-  2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`.
+  2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`. Ghosts and vampires count the companies still haunting: Exorcise lowers the number by one and Let it back raises it (the popup lists every company found, exorcised ones with their `Exorcised` tag). A number that changes on Exorcise or Let it back ticks: it drops 8px into place, 0 → 1 opacity, `#66ff99` → `#ffffcc`, over 300ms (`slow`, `out`); the other numbers stay still. Under reduced motion it changes in place.
   3. Hit counter: the label `Souls counted` (12px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (12px `#ccccff`, 13:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter is a `role="group"` (not an image: it is a number with a label) with `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`; the visible label and digits are `aria-hidden` under it. At zero (no tracker request seen, e.g. a clean page) the six zeros are not drawn: the odometer cell holds the caption `No souls yet.` (Comic Sans MS 12px `#66ff99` on `#000000`, 16.3:1, in the odometer's sunken 1px frame, 22px tall like it) and the accessible name reads `Souls counted: none yet, tracker requests blocked or seen`. The first request swaps the caption for the digits. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
   4. Web ring: `« prev | Haunted WebRing | next »`. It moves focus to the previous/next sprite on the page.
 - **Hide/Show:** Hide fades every costume layer out (200ms) and leaves a 40×40 `[Show]` tab bottom-right with the ghost icon. Haunt state is kept.
@@ -126,7 +126,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - The page sheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift, plus the graveyard strip's height + 4px while the strip is drawn. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
   - They are computed at haunt and again when the HUD wraps, the lift changes or the mode changes.
   - The sheet is removed on Un-haunt, so page content is never trapped under the costume.
-- **Empty state:** when nothing is found, the counts are replaced by `No ghosts here. Suspiciously clean.`
+- **Empty state:** when nothing is found, the counts are replaced by `No ghosts here. Suspiciously clean.` A page whose every company is exorcised is not clean: it keeps the counts, at zero.
 
 ### Ghosts (one per tracker company)
 
@@ -143,6 +143,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - Then the `[Exorcise]` default button.
   - Footnote: `Blocked on this tab until you un-haunt or leave the page.` (the block is a session rule for this tab; it goes on Un-haunt, reload, navigation or tab close).
   - After Exorcise, the sprite fades to 40% opacity with an `EXORCISED` stamp, and the button becomes `[Let it back]`.
+  - **Exorcise moment:** the sprite spirals out once: a full turn over 400ms (`exorcise`, `inOut`), shrinking to half size at the half-turn and back to full, while its opacity falls from its look (1, or .6 for a known vampire) to 40%, only ever down. The stamp slams on over the second half: 200ms after 200ms, from `scale(1.5)` and opacity 0 to its resting tilt, `out`. The label and the button do not move; the HUD count ticks at the same time. It plays once, only on the change, in a lane or in the graveyard strip: a sprite drawn already exorcised, Let it back, and the haunt moment itself play nothing. Under reduced motion it is instant: no turn, no slam, and the sprite has no opacity transition, so the 40% look and the stamp are there at once.
 
 ### Docked graveyard
 
@@ -456,6 +457,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 | slow | 300 | HUD slide, sprite rise |
 | haunt | 3000 | Haunt moment (up to four ghosts) |
 | unhaunt | 1100 | Un-haunt |
+| exorcise | 400 | Exorcise moment (sprite spiral, stamp slam in its second half) |
 
 - **Easings:**
   - `out` = `cubic-bezier(.2,.8,.2,1)`, for entrances.
@@ -481,6 +483,7 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 - Transitions are limited to opacity, 200ms or less.
 - The marquee is static. Its first line is shown on its plaque and truncated with an ellipsis. Lines advance only on Hide/Show.
 - Cards open in place: no scale-in, and the tombstone card has no drop.
+- Exorcise is instant: no spiral or slam, no opacity transition on the sprite, and the HUD numbers change in place.
 - Ghosts and vampires sit still at their slot centres. Twinkles are off. The sign shows frame 1.
 - The haunt and un-haunt sequences are replaced by the cross-fades above.
 - The popup has no motion to reduce; its `prefers-reduced-motion: reduce` block stays as a guard.
