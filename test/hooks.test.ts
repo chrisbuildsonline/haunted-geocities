@@ -1,5 +1,5 @@
 // The Kiro IDE hook files in .kiro/hooks/: shape, commands that resolve to package.json scripts,
-// the three named hooks, a read-only era-accuracy prompt and patterns that point at real paths.
+// the named hooks, read-only era-accuracy and rule-factory prompts and patterns that point at real paths.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -126,6 +126,7 @@ describe("the named hooks", () => {
       then: { type: "runCommand", command: "bun run test:visual" },
     },
     { name: "era-accuracy", patterns: ["src/content/costume/**"], then: { type: "askAgent" } },
+    { name: "rule-factory", patterns: ["src/content/dark-patterns.ts", "src/data/neighborhoods.json"], then: { type: "askAgent" } },
   ];
 
   test.each(table)("$name exists with its patterns and action", ({ name, patterns, then }) => {
@@ -148,6 +149,25 @@ describe("the named hooks", () => {
     test("is a read-only review", () => {
       expect(prompt).toContain("do not edit, create or delete any file");
       for (const bad of ["fix it", "apply", "rewrite", "update the file"]) {
+        expect({ bad, found: prompt.toLowerCase().includes(bad) }).toEqual({ bad, found: false });
+      }
+      expect(hook?.then && "command" in hook.then).toBe(false);
+    });
+  });
+
+  describe("rule-factory prompt", () => {
+    const hook = byName("rule-factory");
+    const prompt: string = hook?.then?.prompt ?? "";
+
+    test("names the checks", () => {
+      for (const word of ["test/dark-patterns/", "test/neighborhoods/", "fixture", "example", "era-accuracy.md", "1998", "trademark", "bun run test"]) {
+        expect({ word, found: prompt.includes(word) }).toEqual({ word, found: true });
+      }
+    });
+
+    test("is a check only and uses the right test command", () => {
+      expect(prompt).toContain("do not edit, create or delete any file");
+      for (const bad of ["bun test", "fix it", "apply", "rewrite", "update the file"]) {
         expect({ bad, found: prompt.toLowerCase().includes(bad) }).toEqual({ bad, found: false });
       }
       expect(hook?.then && "command" in hook.then).toBe(false);
