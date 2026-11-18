@@ -116,7 +116,7 @@ export function exorciseOut(el: HTMLElement): Animation[] {
       { duration: M.exorcise, easing: M.easeInOut },
     ),
     stamp.animate(
-      [{ transform: `${STAMP_TILT} scale(2)`, opacity: 0 }, { transform: `${STAMP_TILT} scale(1)`, opacity: 1 }],
+      [{ transform: `${STAMP_TILT} scale(1.5)`, opacity: 0 }, { transform: `${STAMP_TILT} scale(1)`, opacity: 1 }],
       { delay: M.exorcise / 2, duration: M.exorcise / 2, easing: M.easeOut, fill: "backwards" },
     ),
   ];
