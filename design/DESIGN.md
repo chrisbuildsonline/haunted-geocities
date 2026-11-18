@@ -114,7 +114,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 - **Order (controls first, DOM order = visual order):**
   1. `[Hide]` Win95 button.
   2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`.
-  3. Hit counter: the label `Souls counted` (12px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (12px `#ccccff`, 13:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter has `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
+  3. Hit counter: the label `Souls counted` (12px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (12px `#ccccff`, 13:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter is a `role="group"` (not an image: it is a number with a label) with `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`; the visible label and digits are `aria-hidden` under it. At zero (no tracker request seen, e.g. a clean page) the six zeros are not drawn: the odometer cell holds the caption `No souls yet.` (Comic Sans MS 12px `#66ff99` on `#000000`, 16.3:1, in the odometer's sunken 1px frame, 22px tall like it) and the accessible name reads `Souls counted: none yet, tracker requests blocked or seen`. The first request swaps the caption for the digits. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
   4. Web ring: `« prev | Haunted WebRing | next »`. It moves focus to the previous/next sprite on the page.
 - **Hide/Show:** Hide fades every costume layer out (200ms) and leaves a 40×40 `[Show]` tab bottom-right with the ghost icon. Haunt state is kept.
 - **At 375px:**
@@ -174,16 +174,17 @@ On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires sta
   - The path, e.g. `/blog/2019/old-post.html`, at 13px. The minimum anywhere is 12px.
   - `404 · Not Found` (12px).
   - The inscription starts 52px down the stone, under the 24×24 `[x]` close button (24px from the top, 32px from the right, inside the arch).
-- **Path wrapping:** the path clamps at 3 lines (`-webkit-line-clamp: 3`). Insert `<wbr>` after every `/`. Set `overflow-wrap: normal; word-break: keep-all`, so lines break only at `/` and never inside a filename. If one segment is too long, ellipsis the start of that segment.
+- **Path wrapping:** the path clamps at 3 lines of 13px/17px (`-webkit-line-clamp: 3`, `max-height: 51px`). Insert `<wbr>` after every `/`. Set `overflow-wrap: normal; word-break: keep-all`, and make each segment one atomic box, so lines break at `/` and a segment that fits a line is never broken.
+- **A segment wider than a line** (a long filename) wraps inside itself onto at most 2 lines (at its hyphens, else anywhere). If it needs more, its start is cut: characters are dropped from the front behind a `…` until it fits, so the end (`…long-haunted-filename-` / `that-must-not-break.html`) stays readable. If the path would then run past 3 lines, the segment gets 1 line instead of 2. The whole segment stays in a visually hidden copy for screen readers, and the path element carries `title` with the full path for hover.
 
 ### Cursed badges (dark patterns)
 
 - **Badge:** `CURSED!` with a 12px skull icon. Comic Sans 12px bold `#000000` on `#ff9900`, 1px `#000000` border, hard shadow `2px 2px 0 #000000`, 18px tall.
-- **Compact badge:** the same badge with the word visually hidden: the skull alone, 22px wide. The word stays in its accessible name (`Cursed: <kind>: <snippet>`).
+- **Compact badge:** the same badge without its skull: the word `CURSED!` alone, 63px wide. The word is never hidden, so a badge is never an unlabelled glyph. Its accessible name stays `Cursed: <kind>: <snippet>`.
 - **Placement:**
   - First choice: 4px right of the element's last line box.
   - If the full badge would cross text or the viewport edge there, the compact badge in the same spot, so on a 375px page the badge stays on its sentence's last line instead of jumping above it.
-  - If that would cross text or the viewport edge, 4px above-left in the element's margin.
+  - If that would cross text or the viewport edge (a line ending within about 67px of the edge), 4px above-left in the element's margin.
   - Otherwise, in the gutter lane at the same y.
   - Never over the text.
 - **Card:** titled `Cursed: Fake scarcity` (or `Countdown`, `Confirmshaming`, `Pre-checked opt-in`). Body: the quoted snippet (60 chars max) and one line on the trick.
