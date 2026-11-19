@@ -125,6 +125,43 @@ async function capture(slug: string, url: string, gif: boolean) {
       makeGif(frames, n);
     }
 
+    // The page's end stays reachable: scrolled to the bottom, its last line of text sits above the
+    // bottom overlay (the graveyard strip, else the HUD). A frame of it for the record, not committed.
+    await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
+    await page.waitForTimeout(500);
+    const overlayTop = await inShadow(function () {
+      const g = this.getElementById("graveyard")!;
+      return (g.hidden ? this.getElementById("hud")! : g).getBoundingClientRect().top;
+    });
+    const lastText = await page.evaluate(() => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let bottom = 0;
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const el = n.parentElement;
+        if (!n.nodeValue?.trim() || !el || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(el.tagName) || el.closest("hg-crypt")) continue;
+        const cs = getComputedStyle(el);
+        if (cs.visibility === "hidden" || cs.position === "fixed" || el.closest("[aria-hidden='true'], dialog:not([open])")) continue;
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0 && r.bottom > bottom && r.bottom <= window.innerHeight + 1) bottom = r.bottom;
+      }
+      return bottom;
+    });
+    await page.screenshot({ path: `${frames}/end.png` });
+    console.log(`real-site: ${slug} scrolled to the end: last text line ends at ${Math.round(lastText)}px, bottom overlay starts at ${Math.round(overlayTop)}px`);
+    expect(lastText).toBeLessThanOrEqual(overlayTop + 1);
+    // The settled costume at 1280 and on a phone (375), top and end, for review (test-results only).
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${frames}/settled-1280.png` });
+    await page.setViewportSize({ width: 375, height: 740 });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: `${frames}/settled-375.png` });
+    await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${frames}/end-375.png` });
+
     const found = Number(/^Trackers found: (\d+)$/.exec(parade.caption)?.[1]);
     expect(found).toBeGreaterThan(0);
     return { trackersFound: found, parade: parade.companies };
