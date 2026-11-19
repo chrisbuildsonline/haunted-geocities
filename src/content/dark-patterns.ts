@@ -48,7 +48,7 @@ const COUNTDOWN = [
 /** A clock-shaped value; the watcher reports it only when it ticks. */
 export const CLOCK = /\b\d{1,2}:\d{2}(?::\d{2})?\b|\b(?:\d{1,2}\s*d\s*)?\d{1,2}\s*h\s*\d{1,2}\s*m(?:\s*\d{1,2}\s*s)?\b/i;
 
-const OPT_IN_WORDS = /\b(?:newsletters?|offers?|marketing|partners?|e-?mails?|subscribe)\b/i;
+const OPT_IN_WORDS = /\b(?:newsletters?|offers?|marketing|partners?|e-?mails?|subscribe|coupons)\b/i;
 
 const LEAD = String.raw`(?:no|nope|not\s+now|maybe\s+later|skip)`;
 const THANKS = String.raw`(?:(?:no\s+)?thanks?|thank\s+you)?`;

@@ -167,6 +167,15 @@ describe("prechecked", () => {
     expect(detect(`<label><input type="checkbox"> Email me when it is back</label>`)).toEqual([]);
     expect(detect(`<input type="checkbox" checked>`)).toEqual([]);
   });
+  test("prechecked: Mail me coupons", () => {
+    const ps = detect(`<label id="l"><input type="checkbox" checked> Mail me coupons</label>`);
+    expect(kinds(ps)).toEqual(["prechecked"]);
+    expect(snippets(ps)).toEqual(["Mail me coupons"]);
+  });
+  test("prechecked: an unchecked Mail me coupons box and a checked Apply coupon code box do not match", () => {
+    expect(detect(`<label><input type="checkbox"> Mail me coupons</label>`)).toEqual([]);
+    expect(detect(`<label><input type="checkbox" checked> Apply coupon code</label>`)).toEqual([]);
+  });
   test("an id with selector characters finds its label", () => {
     const ps = detect(`<input type="checkbox" id="a.b[c]" checked><label for="a.b[c]">Newsletter</label>`);
     expect(kinds(ps)).toEqual(["prechecked"]);
