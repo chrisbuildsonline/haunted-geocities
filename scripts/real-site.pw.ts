@@ -1,6 +1,6 @@
 // The haunt on real public pages, over the real network: `bun run docs:realsite`.
 // It builds the shipping extension, clicks Haunt in its popup and films the parade through to the
-// "Trackers found: N" caption. It writes docs/real-site-haunt.gif (the first page), a still of the
+// "Trackers found: N" caption at rest. It writes docs/real-site-haunt.gif (the first page), a still of the
 // caption on each page (docs/real-site-caption-<slug>.png) and docs/real-site.json (each page, the
 // date, its count and its parade's companies).
 // A docs tool, not a check: live pages change and networks fail, so it is in no CI or Docker stage,
@@ -92,9 +92,9 @@ async function capture(slug: string, url: string, gif: boolean) {
       };
     });
 
-    // The 3000ms moment plus a beat, one frame every 1/6s of page time. Each frame notes where the caption is.
+    // The 3000ms moment and the caption's hold (to 3600), one frame every 1/6s of page time. Each frame notes where the caption is.
     const captionAt: { k: number; mid: number }[] = [];
-    for (let k = 1; k <= 3.3 * FPS; k++) {
+    for (let k = 1; k <= 3.5 * FPS; k++) {
       await page.waitForTimeout(Math.max(0, start + (k * 1000) / FPS / SLOW - Date.now()));
       const at = n;
       await frame();
@@ -106,9 +106,10 @@ async function capture(slug: string, url: string, gif: boolean) {
     }
     await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 });
 
-    // The still: the frame whose caption sits nearest the middle of the screen.
+    // The still: the last frame with the caption, at rest in the marquee band (off the page's text).
     expect(captionAt.length).toBeGreaterThan(0);
-    const still = captionAt.reduce((a, b) => (Math.abs(b.mid - VIEW.height / 2) < Math.abs(a.mid - VIEW.height / 2) ? b : a));
+    const still = captionAt.at(-1)!;
+    expect(still.mid).toBeLessThan(VIEW.height / 3);
     copyFileSync(name(still.k), `docs/real-site-caption-${slug}.png`);
     if (gif) {
       // Let the moment play out (no finite animation left but the marquee), then hold the settled page
