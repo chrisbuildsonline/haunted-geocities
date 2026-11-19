@@ -1,0 +1,27 @@
+{
+  "captured": "2026-11-19",
+  "pages": [
+    {
+      "page": "https://www.nps.gov/index.htm",
+      "still": "docs/real-site-caption-nps.png",
+      "gif": "docs/real-site-haunt.gif",
+      "trackersFound": 4,
+      "parade": [
+        "Google Analytics (Google)",
+        "U.S. General Services Administration",
+        "Crazy Egg",
+        "Google Ads (Google)"
+      ]
+    },
+    {
+      "page": "https://www.cdc.gov/",
+      "still": "docs/real-site-caption-cdc.png",
+      "trackersFound": 3,
+      "parade": [
+        "Google Analytics (Google)",
+        "U.S. General Services Administration",
+        "Google Ads (Google)"
+      ]
+    }
+  ]
+}
