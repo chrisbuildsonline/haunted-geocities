@@ -6,7 +6,7 @@ import { collectLinks } from "../links";
 import { buildBands, MARQUEE_LINES, marqueeSeconds, topOffset } from "./bands";
 import { addPageSheet } from "./body-padding";
 import { documentHeight, FRAME, FRAME_OUT, frameBox, TINT, tintBox, type Box } from "./column-layers";
-import { playHaunt, playUnhaunt, type Moment, type Reveal } from "./haunt-moment";
+import { paradeOf, playHaunt, playUnhaunt, type Moment, type Reveal } from "./haunt-moment";
 import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud";
 import { pageTheme } from "./page-theme";
 import { watchReducedMotion } from "./reduced-motion";
@@ -407,7 +407,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const animate = !doc.hidden;
   showLine(animate && !motion.matches ? 1100 : 0);
   // The restyle lands at t=0 with the padding (one reflow); the tint and frame wipe in behind the ghost.
-  if (animate) costume.moment = playHaunt(croot, motion.matches, reveals());
+  // The parade is the companies found so far (the scanner reads the buffered requests at once).
+  if (animate) costume.moment = playHaunt(croot, motion.matches, reveals(), paradeOf(scan.companies));
   if (costume.moment) costume.moment.done.then(() => (settled = true));
   else settled = true;
   // Only inside the extension: unit tests (no chrome global) never touch the network.

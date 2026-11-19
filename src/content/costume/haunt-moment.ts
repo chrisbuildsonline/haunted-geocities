@@ -1,13 +1,30 @@
 // The haunt moment (3000ms: the page dies like a CRT, the Webmaster's Ghost wipes 1998 in, the
 // tracker ghosts rise one by one with their name tags) and its reverse (1100ms): Web Animations on
 // transform, opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
+import type { CompanyHit } from "../../data/types";
 import { mapToPx, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
-import { ghostSvg as trackerGhostSvg, riseIn, vampireIn } from "./ghosts";
+import { hemTint, orderCompanies, riseIn, tintsOf, ghostSvg as trackerGhostSvg, vampireIn } from "./ghosts";
 import { HEM_TINTS, LAYOUT as L, MOTION as M, PIXEL, SPRITES } from "./tokens";
 
 const H = M.hero;
 
 export type Moment = { done: Promise<void>; finish(): void };
+
+/** A click or a key press anywhere skips the moment: it jumps to its end and settles the page. */
+const SKIP = ["pointerdown", "keydown"] as const;
+
+function skippable(win: Window, m: Moment): Moment {
+  const skip = () => m.finish();
+  // Capture on the window, so a page that stops propagation cannot keep the moment playing.
+  for (const type of SKIP) win.addEventListener(type, skip, true);
+  const done = m.done.finally(() => {
+    for (const type of SKIP) win.removeEventListener(type, skip, true);
+  });
+  return { done, finish: m.finish };
+}
+
+/** One parade ghost that stands for a real tracker company on the page. */
+export type ParadeGhost = { company: string; tint: string };
 
 const settle = (anims: Animation[]) => Promise.all(anims.map((a) => a.finished.catch(() => undefined))).then(() => undefined);
 
@@ -29,25 +46,68 @@ const PARADE = [
   { x: 0.7, near: true, drift: -40 },
 ] as const;
 
-/** A parade ghost's side: 144/96px, or 96/64px on a phone (the HUD's wrap width), where 144px would crowd the screen. */
+/**
+ * The page's tracker companies for the parade, in lane order (ghosts by count, then vampires), at
+ * most six, each in its lane tint (a vampire in its base hem tint).
+ */
+export function paradeOf(companies: readonly CompanyHit[]): ParadeGhost[] {
+  const sorted = orderCompanies(companies);
+  const tints = tintsOf(sorted);
+  return sorted.slice(0, PARADE.length).map(({ company }) => ({ company, tint: tints.get(company) ?? hemTint(company) }));
+}
+
+/** A phone (the HUD's wrap width): the text fills the screen, so the parade rides the top bands instead. */
+const isPhone = (vw: number) => vw <= L.hudWrapBelow;
+
+/** A parade ghost's side: 144/96px, or 48/32px on a phone, where it must fit the band strip. */
 const paradeSize = (near: boolean, vw: number) =>
-  (vw <= L.hudWrapBelow ? (near ? SPRITES.paradeGhostPhone : SPRITES.paradeGhostPhoneFar) : near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
+  (isPhone(vw) ? (near ? SPRITES.paradeGhostPhone : SPRITES.paradeGhostPhoneFar) : near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
+
+/**
+ * The six parade ghosts: the page's companies first, each with its name tag (none on a phone, where
+ * the band has no room), then decorative fillers in the hem tints left over, up to six.
+ */
+function buildSpirits(doc: Document, parade: readonly ParadeGhost[], phone: boolean): HTMLElement[] {
+  const real = parade.slice(0, PARADE.length);
+  const spare = HEM_TINTS.filter((t) => !real.some((g) => g.tint === t));
+  return PARADE.map((p, i) => {
+    const g = real[i];
+    const tint = g?.tint ?? spare[i - real.length]!;
+    const s = doc.createElement("div");
+    s.className = `spirit ${p.near ? "near" : "far"}`;
+    s.dataset.tint = tint;
+    s.innerHTML = trackerGhostSvg(tint);
+    if (!g) s.setAttribute("data-filler", "");
+    else {
+      s.dataset.company = g.company;
+      if (!phone) s.append(Object.assign(doc.createElement("span"), { className: "name", textContent: g.company }));
+    }
+    return s;
+  });
+}
 
 /** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette, the parade, the ghost and the roll. */
-function buildFx(croot: HTMLElement, crt: boolean): HTMLElement {
-  const fx = croot.ownerDocument.createElement("div");
+function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[] = []): HTMLElement {
+  const doc = croot.ownerDocument;
+  const fx = doc.createElement("div");
   fx.id = "fx";
   fx.setAttribute("aria-hidden", "true");
   if (!crt) fx.innerHTML = SWEEP();
   else {
-    const spirits = PARADE.map((p, i) => `<div class="spirit ${p.near ? "near" : "far"}" data-tint="${HEM_TINTS[i]}">${trackerGhostSvg(HEM_TINTS[i]!)}</div>`);
-    fx.innerHTML = `<div class="scan"></div><div class="vignette"></div><div class="parade">${spirits.join("")}</div>${SWEEP()}<div class="roll"></div><div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`;
+    fx.innerHTML = `<div class="scan"></div><div class="vignette"></div><div class="parade"></div>${SWEEP()}<div class="roll"></div><div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`;
+    const vw = doc.defaultView!.innerWidth;
+    const phone = isPhone(vw);
+    const spirits = buildSpirits(doc, parade, phone);
+    fx.querySelector(".parade")!.append(...spirits);
     // Placed through the CSSOM (no style attribute), so a page's style-src CSP has nothing to refuse.
-    const vw = croot.ownerDocument.defaultView!.innerWidth;
-    fx.querySelectorAll<HTMLElement>(".spirit").forEach((s, i) => {
+    // On a phone each one is centred in the band strip (under any fixed header the bands sit below).
+    const bands = layer(croot, "top-bands");
+    spirits.forEach((s, i) => {
       const p = PARADE[i]!;
       const size = paradeSize(p.near, vw);
-      Object.assign(s.style, { left: `${Math.round(p.x * Math.max(0, vw - size))}px`, width: `${size}px`, height: `${size}px` });
+      const left = phone ? 0 : Math.round(p.x * Math.max(0, vw - size));
+      Object.assign(s.style, { left: `${left}px`, width: `${size}px`, height: `${size}px` });
+      if (phone) s.style.top = `${(bands?.offsetTop ?? 0) + Math.max(0, ((bands?.offsetHeight ?? 0) - size) / 2)}px`;
     });
   }
   croot.append(fx);
@@ -76,12 +136,14 @@ const clipAt = (x: string) => `inset(0 calc(100% - ${x}) 0 0)`;
 export type Reveal = { el: Element; pseudo: string; left: number };
 const pseudoClip = (x: string, left: number) => `inset(-8px calc(100% - ${x} + ${left}px) -8px -8px)`;
 
-export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = []): Moment {
+/** The haunt moment; `parade` is the page's tracker companies (paradeOf), drawn as the parade ghosts. */
+export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = [], parade: readonly ParadeGhost[] = []): Moment {
+  const win = croot.ownerDocument.defaultView!;
   if (reduced) {
     const fade = croot.animate([{ opacity: 0 }, { opacity: 1 }], { duration: M.reducedHaunt, easing: "linear" });
-    return { done: settle([fade]), finish: () => fade.finish() };
+    return skippable(win, { done: settle([fade]), finish: () => fade.finish() });
   }
-  const fx = buildFx(croot, true);
+  const fx = buildFx(croot, true, parade);
   const q = (sel: string) => fx.querySelector(sel)!;
   const hud = layer(croot, "hud");
   const anims: Animation[] = [];
@@ -117,16 +179,17 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
 
   // The scene-wide part. As the tube comes back on, one band of scanlines rolls down the whole page (the
   // vertical hold slipping once); then six big tracker ghosts drift up through it, bottom edge to top edge.
-  const { innerHeight: vh, innerWidth: vw } = croot.ownerDocument.defaultView!;
+  // On a phone the text fills the screen, so they ride the top bands left to right instead, spaced out.
+  const { innerHeight: vh, innerWidth: vw } = win;
   run(q(".roll"), [{ transform: "translateY(-100%)" }, { transform: `translateY(${vh}px)` }], { ...at(H.roll), easing: "linear", fill: "both" });
   fx.querySelectorAll(".spirit").forEach((s, i) => {
     const p = PARADE[i]!;
-    run(s, [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${paradeSize(p.near, vw)}px)` }], {
-      delay: H.paradeStart + i * H.paradeStagger,
-      duration: H.paradeMs,
-      easing: "linear",
-      fill: "both",
-    });
+    const size = paradeSize(p.near, vw);
+    const path = isPhone(vw)
+      ? [{ transform: `translate(-${size}px, 0px)` }, { transform: `translate(${vw}px, 0px)` }]
+      : [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${size}px)` }];
+    const [stagger, duration] = isPhone(vw) ? [H.paradePhoneStagger, H.paradePhoneMs] : [H.paradeStagger, H.paradeMs];
+    run(s, path, { delay: H.paradeStart + i * stagger, duration, easing: "linear", fill: "both" });
   });
 
   run(q(".sweep"), [{ transform: "translateX(-96px)" }, { transform: "translateX(100vw)" }], { ...wipe, fill: "both" });
@@ -161,7 +224,7 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   });
   run(layer(croot, "markers"), [{ opacity: 0 }, { opacity: 1 }], { delay: H.markers, duration: 200, easing: "linear" });
 
-  return { done: settle(anims).then(() => fx.remove()), finish: () => anims.forEach((a) => a.finish()) };
+  return skippable(win, { done: settle(anims).then(() => fx.remove()), finish: () => anims.forEach((a) => a.finish()) });
 }
 
 export function playUnhaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = []): Promise<void> {

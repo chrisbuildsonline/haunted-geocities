@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { renderCostume } from "../../src/content/costume/render";
-import { flush, setup, stubMain, withTrackers, type Rec } from "./helpers";
-import { playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
-import { riseIn } from "../../src/content/costume/ghosts";
+import { flush, LANE_ORDER, setup, stubMain, withTrackers, type Rec } from "./helpers";
+import { paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
+import { hemTint, orderCompanies, riseIn, tintsOf } from "../../src/content/costume/ghosts";
+import type { CompanyHit } from "../../src/data/types";
 import { costumeCss, scanUrl } from "../../src/content/costume/styles";
 import { svgUrl } from "../../src/content/costume/art";
 import { HEM_TINTS, MOTION, PALETTE, SPRITES } from "../../src/content/costume/tokens";
@@ -226,22 +227,137 @@ describe("hero haunt moment", () => {
     expect(H.paradeStart + 5 * H.paradeStagger + H.paradeMs).toBeLessThanOrEqual(MOTION.haunt);
   });
 
-  test("on a phone (400px or less) the parade is drawn smaller, 96px near and 64px far, and still fits the width", () => {
+  test("on a phone (400px or less) the parade keeps off the reading column: a train of 48/32px ghosts along the top bands", () => {
     const s = setup({ width: 375 });
     const el = s.doc.body.appendChild(s.doc.createElement("div"));
     el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+    // the bands sit 20px down (under a page's fixed header) and are 48px tall
+    const bands = el.querySelector<HTMLElement>("#top-bands")!;
+    Object.defineProperty(bands, "offsetTop", { value: 20 });
+    Object.defineProperty(bands, "offsetHeight", { value: 48 });
     playHaunt(el, false);
     const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
-    expect(spirits.map((sp) => [sp.style.width, sp.style.height])).toEqual(
-      [96, 64, 96, 64, 64, 96].map((n) => [`${n}px`, `${n}px`]),
-    );
-    expect([SPRITES.paradeGhostPhone[0], SPRITES.paradeGhostPhoneFar[0]]).toEqual([96, 64]);
-    spirits.forEach((sp) => {
+    expect(spirits.map((sp) => [sp.style.width, sp.style.height])).toEqual([48, 32, 48, 32, 32, 48].map((n) => [`${n}px`, `${n}px`]));
+    expect([SPRITES.paradeGhostPhone[0], SPRITES.paradeGhostPhoneFar[0]]).toEqual([48, 32]);
+    spirits.forEach((sp, i) => {
       const size = parseFloat(sp.style.width);
-      expect(parseFloat(sp.style.left) + size).toBeLessThanOrEqual(375);
-      const [drift] = on(s.recs, sp);
-      expect(String(drift!.keyframes[1]!.transform)).toMatch(new RegExp(`, -${size}px\\)$`));
+      // centred in the band strip, never below it, so never over the page's text
+      expect(parseFloat(sp.style.top)).toBe(20 + (48 - size) / 2);
+      expect(parseFloat(sp.style.top) + size).toBeLessThanOrEqual(20 + 48);
+      expect(sp.style.left).toBe("0px");
+      // left edge to right edge, sideways only, spaced out so the six never clump
+      const [ride] = on(s.recs, sp);
+      expect(ride!.keyframes.map((k) => k.transform)).toEqual([`translate(-${size}px, 0px)`, "translate(375px, 0px)"]);
+      expect(ride!.opts).toMatchObject({ delay: H.paradeStart + i * H.paradePhoneStagger, duration: H.paradePhoneMs, easing: "linear", fill: "both" });
     });
+    expect(H.paradeStart + 5 * H.paradePhoneStagger + H.paradePhoneMs).toBeLessThanOrEqual(MOTION.haunt);
+    // 48px ghosts at least 64px apart on the way across
+    expect(((375 + 48) / H.paradePhoneMs) * H.paradePhoneStagger).toBeGreaterThanOrEqual(64);
+  });
+
+  test("the parade is the page's own tracker companies: lane order, lane tint and a name tag each; fillers only make it up to six", () => {
+    const { el } = croot(3);
+    playHaunt(el, false, [], [
+      { company: "Criteo", tint: "#99ccff" },
+      { company: "<b>comScore</b>", tint: "#ff99cc" },
+    ]);
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    expect(spirits).toHaveLength(6);
+    expect(spirits.map((s) => s.dataset.company ?? null)).toEqual(["Criteo", "<b>comScore</b>", null, null, null, null]);
+    expect(spirits.map((s) => s.querySelector(".name")?.textContent ?? null)).toEqual(["Criteo", "<b>comScore</b>", null, null, null, null]);
+    expect(el.querySelector("#fx b")).toBeNull(); // names are text, never markup
+    expect(spirits.map((s) => s.hasAttribute("data-filler"))).toEqual([false, false, true, true, true, true]);
+    // the real ones wear their lane tint; the fillers take the hem tints left over, so all six still differ
+    expect(spirits.map((s) => s.dataset.tint)).toEqual(["#99ccff", "#ff99cc", "#ccff99", "#ffcc99", "#cc99ff", "#99ffcc"]);
+    // the six-ghost look stays: near and far in the same order
+    expect(spirits.map((s) => s.style.width)).toEqual(["144px", "96px", "144px", "96px", "96px", "144px"]);
+  });
+
+  test("more than six companies: the first six in lane order, no fillers", () => {
+    const { el } = croot(3);
+    const many = Array.from({ length: 8 }, (_, i) => ({ company: `C${i}`, tint: HEM_TINTS[i % 6]! }));
+    playHaunt(el, false, [], many);
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    expect(spirits.map((s) => s.dataset.company)).toEqual(["C0", "C1", "C2", "C3", "C4", "C5"]);
+    expect(el.querySelectorAll("#fx [data-filler]")).toHaveLength(0);
+  });
+
+  test("paradeOf: companies in lane order (ghosts by count, then vampires) with their lane tints", () => {
+    const hit = (company: string, count: number, vampire = false): CompanyHit => ({
+      company,
+      domains: [],
+      count,
+      categories: [],
+      fingerprinting: 0,
+      ...(vampire ? { vampire: { caught: [], knownOnly: true } } : {}),
+    });
+    const hits = [hit("Taboola", 1, true), hit("comScore", 2), hit("Criteo", 3), hit("Hotjar", 2, true)];
+    const sorted = orderCompanies(hits);
+    const tints = tintsOf(sorted);
+    expect(paradeOf(hits)).toEqual([
+      { company: "Criteo", tint: tints.get("Criteo")! },
+      { company: "comScore", tint: tints.get("comScore")! },
+      { company: "Hotjar", tint: hemTint("Hotjar") },
+      { company: "Taboola", tint: hemTint("Taboola") },
+    ]);
+    expect(paradeOf([])).toEqual([]);
+  });
+
+  test("the costume hands the page's companies to the parade at haunt time", () => {
+    const { win, doc } = setup();
+    stubMain(win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
+    withTrackers(win);
+    const root = renderCostume(doc);
+    const spirits = [...root.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    expect(spirits.map((s) => s.dataset.company ?? null)).toEqual([...LANE_ORDER, null, null]);
+    const lane = new Map([...root.querySelectorAll<HTMLElement>("#lanes > .ghost")].map((g) => [g.dataset.company, g.dataset.tint]));
+    for (const s of spirits.filter((s) => lane.has(s.dataset.company))) expect(s.dataset.tint).toBe(lane.get(s.dataset.company)!);
+  });
+
+  test("a click or a key press skips the moment: it settles at once, the FX root goes, and the listeners go with it", async () => {
+    type Win = ReturnType<typeof setup>["win"];
+    for (const fire of [
+      (w: Win) => w.document.body.dispatchEvent(new w.Event("pointerdown", { bubbles: true })),
+      (w: Win) => w.document.dispatchEvent(new w.KeyboardEvent("keydown", { key: "Escape", bubbles: true })),
+    ]) {
+      const { win, el } = croot(3);
+      const anims = deferredClock(win);
+      const added: unknown[][] = [];
+      const removed: unknown[][] = [];
+      const add = win.addEventListener.bind(win);
+      const remove = win.removeEventListener.bind(win);
+      win.addEventListener = ((...a: Parameters<typeof add>) => (added.push(a), add(...a))) as typeof add;
+      win.removeEventListener = ((...a: Parameters<typeof remove>) => (removed.push(a), remove(...a))) as typeof remove;
+      const m = playHaunt(el, false);
+      expect(added.map(([t]) => t).sort()).toEqual(["keydown", "pointerdown"]);
+      expect(added.map(([, , capture]) => capture)).toEqual([true, true]);
+      let done = false;
+      void m.done.then(() => (done = true));
+      await flush();
+      expect(done).toBe(false);
+      fire(win);
+      // the deferred clock resolves an animation only when it is finished: done means all of them were
+      await m.done;
+      expect(anims.length).toBeGreaterThan(20);
+      expect(el.querySelector("#fx")).toBeNull();
+      // every listener it added is gone: same type, same function, same capture flag
+      expect(removed).toHaveLength(added.length);
+      expect(removed).toEqual(expect.arrayContaining(added));
+    }
+  });
+
+  test("the skip listeners also go when the moment ends on its own or the costume finishes it", async () => {
+    const { win, el } = croot(3);
+    const before = { add: 0, remove: 0 };
+    const add = win.addEventListener.bind(win);
+    const remove = win.removeEventListener.bind(win);
+    win.addEventListener = ((...a: Parameters<typeof add>) => (before.add++, add(...a))) as typeof add;
+    win.removeEventListener = ((...a: Parameters<typeof remove>) => (before.remove++, remove(...a))) as typeof remove;
+    await playHaunt(el, false).done; // the recording clock: every animation is already finished
+    expect(before).toEqual({ add: 2, remove: 2 });
+    const reduced = playHaunt(el, true);
+    await reduced.done;
+    expect(before).toEqual({ add: 4, remove: 4 });
   });
 
   test("the roll: one band of spectral scanlines rolls down the whole page as the tube comes back, 800-1400", () => {

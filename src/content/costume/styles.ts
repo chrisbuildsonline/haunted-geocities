@@ -205,6 +205,7 @@ button:focus-visible { ${ring} }
 .spirit.near { z-index: 1; opacity: .92; }
 .spirit.far { opacity: .6; }
 .spirit svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.spirit .name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 1px 6px; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 14px/18px ${COMIC}; }
 .roll { position: absolute; left: 0; right: 0; top: 0; height: 48px; transform: translateY(-100%); background-image: ${rollUrl()}; background-size: 4px 3px; border-bottom: 2px solid ${P.ectoplasm}; opacity: .7; }
 .leaving .ectoplasm { left: 80px; }
 
