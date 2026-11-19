@@ -120,6 +120,23 @@ describe("docs/devpost.md", () => {
     for (const name of agents) expect({ name, found: section.includes(`\`${name}\``) }).toEqual({ name, found: true });
   });
 
+  test("says 2 custom agents and gives rule-factory's write paths and commands as its JSON has them", () => {
+    const section = doc.split(/^### How Kiro was used\s*$/m)[1]?.split(/^##+ /m)[0] ?? "";
+    expect(section).toContain("**2 custom agents**");
+    expect(section).not.toMatch(/\b(1|one) custom agent\b/i);
+    const rf = JSON.parse(readFileSync(join(root, ".kiro", "agents", "rule-factory.json"), "utf8")) as {
+      toolsSettings: { execute_bash: { allowedCommands: string[] }; fs_write: { allowedPaths: string[] } };
+    };
+    const para = section.split("`rule-factory` runs")[1]?.split(/\n- /)[0] ?? "";
+    expect(para).toContain("`fs_write`");
+    expect(para).toContain("`execute_bash`");
+    for (const p of rf.toolsSettings.fs_write.allowedPaths) {
+      const shown = p.replace(/\*\*$/, "");
+      expect({ path: shown, found: para.includes(`\`${shown}\``) }).toEqual({ path: shown, found: true });
+    }
+    for (const c of rf.toolsSettings.execute_bash.allowedCommands) expect({ c, found: para.includes(`\`${c}\``) }).toEqual({ c, found: true });
+  });
+
   test("does not say one costume save sets off several hooks", () => {
     expect(doc).not.toMatch(/on a costume edit it asks the agent to run `bun run visual:baselines`/);
     expect(doc).not.toMatch(/`era-accuracy` asks the agent to review a costume edit/);
