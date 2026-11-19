@@ -66,6 +66,7 @@ const SHAME =
     String.raw`miss(?:ing)?\s+out`,
     String.raw`(?:don['’]t|do\s+not)\s+(?:like|want|need)\s+(?:to\s+save|saving|deals?|discounts?|savings?|free|bargains?|money)`,
     String.raw`stay\s+(?:broke|uninformed|ignorant)`,
+    String.raw`stay\s+in\s+the\s+dark`,
   ].join("|") +
   ")";
 const CONFIRM = new RegExp(`^${LEAD}\\b${SEP}${THANKS}${SEP}${I}[^.!?]*?\\b${SHAME}\\b`, "i");

@@ -110,6 +110,15 @@ describe("confirmshaming", () => {
   test("confirmshaming: No, I prefer paying full price", () => expect(one(`<button>No, I prefer paying full price</button>`)).toEqual(["confirmshaming"]));
   test("confirmshaming: Maybe later, I don't like deals", () => expect(one(`<a role="button">Maybe later, I don't like deals</a>`)).toEqual(["confirmshaming"]));
   test("confirmshaming: No thanks, I'll pay full price", () => expect(one(`<button>No thanks, I'll pay full price</button>`)).toEqual(["confirmshaming"]));
+  test("confirmshaming: No thanks, I'll stay in the dark", () => {
+    const ps = detect(`<button>No thanks, I'll stay in the dark</button>`);
+    expect(kinds(ps)).toEqual(["confirmshaming"]);
+    expect(snippets(ps)).toEqual(["No thanks, I'll stay in the dark"]);
+  });
+  test("confirmshaming: No thanks, I'll stay in the garden does not match", () => {
+    expect(detect(`<button>No thanks, I'll stay in the garden</button>`)).toEqual([]);
+    expect(detect(`<a href="#">No thanks, I'll stay in touch</a>`)).toEqual([]);
+  });
   test("confirmshaming on an input[type=submit] value", () => {
     expect(one(`<input type="submit" value="No thanks, I hate saving money">`)).toEqual(["confirmshaming"]);
     expect(one(`<input type="button" value="No thanks, I hate saving money">`)).toEqual(["confirmshaming"]);
