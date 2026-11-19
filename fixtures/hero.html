@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Pinecrest Valley Parks</title>
+    <style>
+      /* A made-up photo-heavy page, shaped like a big public site: a dark top bar with a pill search box,
+         a full-width photo hero with a dark translucent text panel, a black "find a park" band, then a tall
+         light page. Full width, so no gutter is 64px wide at any size and the graveyard strip docks. */
+      body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #222; background: #ffffff; }
+      .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; background: #000000; color: #ffffff; }
+      .brand { font-weight: 700; }
+      .search { display: flex; align-items: center; gap: 8px; width: 240px; height: 40px; padding: 0 16px; border-radius: 20px; background: #333333; color: #ffffff; }
+      .search svg { flex: none; }
+      .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #ffffff; font: 600 16px system-ui, sans-serif; }
+      .search input::placeholder { color: #ffffff; }
+      .hero { position: relative; height: 420px; padding: 80px 64px; box-sizing: border-box; color: #ffffff;
+        background: #445566 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23556677'/%3E%3Crect width='4' height='4' fill='%23667788'/%3E%3C/svg%3E"); }
+      .panel { width: 520px; max-width: 100%; padding: 24px; border-radius: 12px; background: rgba(0, 0, 0, 0.6); color: #ffffcc; }
+      .panel .title { margin: 0 0 16px; font: 44px/1.2 Georgia, serif; }
+      .panel .cta { display: block; padding: 10px; border-radius: 4px; background: #ffffcc; color: #224422; text-align: center; font-weight: 700; text-decoration: none; }
+      .find { padding: 24px 64px; background: #000000; color: #ffffcc; }
+      .find h2 { margin: 0 0 8px; }
+      main { padding: 16px 20px 24px; }
+      p { margin: 0 0 1rem; }
+      img { display: block; width: 1px; height: 1px; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <span class="brand">Pinecrest Valley Parks</span>
+      <form class="search" id="pill" role="search" action="/thanks.html">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+        <input id="site-search" type="search" name="query" placeholder="Search or ask anything" aria-label="Search the parks" />
+      </form>
+    </div>
+
+    <section class="hero" id="hero">
+      <div class="panel" id="panel">
+        <p class="title">Winter is Coming</p>
+        <a class="cta" id="cta" href="/thanks.html">Plan Your Winter Trip</a>
+        <p>Photo: <a id="hero-link" href="/index.html">Pinecrest Lake in snow</a>, valley archive</p>
+      </div>
+    </section>
+
+    <section class="find" id="find">
+      <h2>Find a Park</h2>
+      <p>Browse <a id="find-link" href="/index.html">every park by county</a> or by activity.</p>
+    </section>
+
+    <main>
+      <h1>Pinecrest Valley Parks</h1>
+      <p>The valley has eleven parks, from the lakeshore campground to the high meadow trail. Most open at dawn and close at dusk, and the visitor centre on Mill Road keeps the trail maps, the tide of fishing permits and the lost property box.</p>
+      <p>Winter brings the snow road closures. The upper loop shuts when the gate sign says so, and the ranger station posts the opening dates in its window. Chains are needed past the second bridge from December to March.</p>
+      <p>Dogs are welcome on a lead in every park except the bird reserve. Bring water: the taps at the trailheads are turned off over the winter so the pipes do not freeze.</p>
+      <p>The lakeshore campground takes bookings from the first of April. Pitches near the water fill first, so book early if you want to hear the loons at night. Firewood is sold at the gate.</p>
+      <p>Volunteers repair the boardwalk every spring. If you can lift a plank and swing a hammer, the parks office would love to hear from you, and there is soup at the end of the day.</p>
+      <p>The valley bus runs from the station to the lake every hour at weekends. Bikes ride free on the rack at the back, two at a time, and the driver will wait for the last boat in summer.</p>
+      <p>School groups can book a ranger walk on weekday mornings. Walks last an hour and end at the old mill, where the children can grind a little flour and take it home in a paper bag.</p>
+      <p>The meadow is closed to walkers in nesting season. Watch from the hide on the east side, which has a bench, a pair of field glasses on a chain and a notebook for what you saw.</p>
+      <p>Lost something? The visitor centre keeps it for a month, then gives it to the charity shop in town. Keys and glasses are kept longer, in the drawer under the map table.</p>
+      <p>The night sky walks start again in October. The rangers bring a telescope and hot chocolate, and on a clear night you can see the cloud of the galaxy over the north ridge.</p>
+      <h2 id="featured">Featured stories</h2>
+      <p>Last winter a heron spent the whole season on the frozen mill pond, fishing through one hole that the volunteers kept open. <a id="story" href="/index.html">Read the heron's story</a>.</p>
+      <p id="last">Last line: the parks office closes for the holidays on the twenty-third and opens again on the second of January.</p>
+
+      <!--
+        Third-party requests, by company: Google Analytics (Google) 2, Google Ads (Google) 1 (a known vampire).
+        Two companies whose names share their first eight letters, so the graveyard tags must tell them apart.
+        The e2e browser maps these real tracker domains to the local fixture server (e2e/fixtures.ts).
+      -->
+      <img alt="" src="http://google-analytics.com:4321/t/p.svg?n=h1" />
+      <img alt="" src="http://google-analytics.com:4321/t/p.svg?n=h2" />
+      <img alt="" src="http://doubleclick.net:4321/t/p.svg?n=h1" />
+    </main>
+  </body>
+</html>

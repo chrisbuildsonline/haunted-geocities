@@ -41,7 +41,15 @@ export const CROWD_HOSTS = {
   "Amazon.com": "amazon-adsystem.com",
   PubMatic: "pubmatic.com",
 } as const;
-const HOST_RULES = [...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS), ...Object.values(CROWD_HOSTS)].map((h) => `MAP ${h} 127.0.0.1`).join(",");
+/**
+ * Two Google companies whose names share their first eight letters (Google Analytics (Google), a ghost;
+ * Google Ads (Google), a known vampire), as on real government pages: fixtures/hero.html loads both.
+ * google-analytics.com is HSTS-preloaded, so e2e/photo-page.spec.ts answers its upgraded request with a route.
+ */
+export const GOOGLE_HOSTS = { "Google Analytics (Google)": "google-analytics.com", "Google Ads (Google)": "doubleclick.net" } as const;
+const HOST_RULES = [...new Set([...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS), ...Object.values(CROWD_HOSTS), ...Object.values(GOOGLE_HOSTS)])]
+  .map((h) => `MAP ${h} 127.0.0.1`)
+  .join(",");
 
 type Fixtures = { context: BrowserContext; sw: Worker; extensionId: string; consoleErrors: string[] };
 
