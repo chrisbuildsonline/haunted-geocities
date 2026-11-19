@@ -13,6 +13,7 @@
     "ingest:trackers": "bun scripts/ingest-trackers.ts",
     "docker:test": "docker build --progress=plain -t haunted-geocities:test .",
     "docs:screenshots": "docker build --target shots --output docs/screenshots .",
+    "docs:realsite": "vite build && playwright test --config playwright.realsite.config.ts",
     "visual:baselines":"docker build --target baselines --output e2e-visual/__screenshots__ .",
     "package": "vite build && bun scripts/package.ts",
     "fixtures": "bun scripts/fixture-server.ts",
