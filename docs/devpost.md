@@ -22,6 +22,8 @@ The old GeoCities pages were loud, but you could see everything they did. A mode
 - The popup lists everything found on the page, and while a page is haunted the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 - **Sound effects**, off by default. Switch them on in the popup and the Haunt click plays a short whoosh, and each card opens with a sound of its own: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and a low organ stab for a vampire. Nothing plays until you click.
 
+On real pages: on the live National Park Service home page (nps.gov) the parade carried the four tracker companies the page loaded, Google Analytics, the U.S. General Services Administration, Crazy Egg and Google Ads, and the caption read `Trackers found: 4`; on the CDC home page (cdc.gov) it read `Trackers found: 3`. The README opens with that run as a GIF (`docs/real-site-haunt.gif`, made by `bun run docs:realsite` over the real network). The other README shots and the demo video use made-up fixture pages.
+
 There are no host permissions at install. The tracker data is bundled and matched locally, and link checks are sent without cookies.
 
 The code is MIT. The bundled tracker data, `src/data/trackers.json`, comes from the DuckDuckGo Tracker Radar and is CC BY-NC-SA 4.0, separate from the code.

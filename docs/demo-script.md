@@ -6,7 +6,9 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Shot:** The `news.html` fixture, a calm small-town news front page. Click the toolbar icon and **Haunt this page**. The page dies like an old CRT, the Webmaster's Ghost wipes 1998 in, and the parade streams up through the whole page: six big ghosts, each carrying the name of a tracker company this page sends you to, Criteo, Chartbeat, comScore, Quantcast, Hotjar and Taboola. Then the tracker ghosts rise into their lanes with their name tags.
 
-**Voiceover:** This news page looks calm. One click and the companies watching you come out by name: Criteo, Chartbeat, comScore, Quantcast, Hotjar and Taboola.
+**Voiceover:** This news page, one of our fixtures, looks calm. One click and the companies watching you come out by name: Criteo, Chartbeat, comScore, Quantcast, Hotjar and Taboola.
+
+**Fixture note:** `news.html` is a fixture, a made-up page in `fixtures/` served locally with its tracker domains pointed at the local server, not a real site. The same haunt on real pages over the real network is in `docs/real-site-haunt.gif`: the live nps.gov home page shows `Trackers found: 4` and cdc.gov `Trackers found: 3` (stills and record in `docs/`, made by `bun run docs:realsite`). The video stays on fixtures because the rules keep third-party marks out of it.
 
 ## 0:15-0:40 The costume
 

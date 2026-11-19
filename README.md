@@ -1,8 +1,12 @@
 # Haunted GeoCities
 
-A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page itself turns 1998: Times New Roman text, Comic Sans headings, blue underlined links and a parchment column in a ridged guestbook frame, under a night sky, a heads-up display and a marquee. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
+![The haunt on the live National Park Service home page: the page dies like an old CRT, the parade carries the four tracker companies the page loaded (Google Analytics, U.S. General Services Administration, Crazy Egg and Google Ads) with the caption Trackers found: 4, and the page settles in its 1998 costume with the graveyard strip and the HUD](docs/real-site-haunt.gif)
 
 A pre-period prototype exists outside the entry and was rebuilt from lessons, not copied; Tracker Radar ingest output is the only reused data.
+
+A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page itself turns 1998: Times New Roman text, Comic Sans headings, blue underlined links and a parchment column in a ridged guestbook frame, under a night sky, a heads-up display and a marquee. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
+
+The GIF at the top is a real page, not a fixture: the shipping build on the live National Park Service home page (`https://www.nps.gov/index.htm`) over the real network, made on 2026-11-19 by `bun run docs:realsite`. Playwright cannot click the toolbar icon, so the run gives the extension a host permission for that one page in place of the click, then presses **Haunt this page** in the popup. The parade carries the trackers the page really loaded, and the caption reads `Trackers found: 4` ([still](docs/real-site-caption-nps.png)). The same run on the CDC home page (`https://www.cdc.gov/`) shows `Trackers found: 3` ([still](docs/real-site-caption-cdc.png)). Both are US government pages, public-domain works, and the extension has no link to either agency. The record of the run is [`docs/real-site.json`](docs/real-site.json). Live pages change, so this run is a docs tool and not one of the checks. Every other shot and GIF in this README, and the opening of the demo video, uses the fixture pages in `fixtures/`, small made-up sites served locally (with real tracker domains pointed at the local server), not real sites.
 
 ![A haunted page: the article in Times New Roman on a parchment column inside a ridged guestbook frame, a tracker ghost and two vampires in the starfield, the HUD along the bottom](docs/screenshots/haunted.png)
 
@@ -21,7 +25,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 - While a page is haunted, the toolbar icon shows how many ghosts, vampires, tombstones and curses that tab has.
 - Sound is off by default. Turn on **Sound effects** in the popup and the Haunt click plays a short whoosh, and opening a card plays a short sound for its kind: a soft "ooo" for a ghost, a stone thud for a tombstone, a sting for a curse and an organ stab for a vampire. The sounds are made in code with the Web Audio API (`src/audio/sound.ts`), with no audio files, and nothing plays until you click.
 
-![The haunt moment on a news page: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume while six big ghosts stream up through the page, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
+![The haunt moment on the news.html fixture: the screen dies like a CRT, the Webmaster's Ghost wipes in the 1998 costume while six big ghosts stream up through the page, and four tracker ghosts rise one by one with their company name tags](docs/screenshots/haunt.gif)
 
 ![Exorcise on a phone: the Criteo ghost in the graveyard strip spirals out to its faded look as the EXORCISED stamp slams on, and the HUD ghost count ticks from 1 to 0](docs/screenshots/exorcise.gif)
 
@@ -120,6 +124,8 @@ bun run docker:test
 `test:e2e` launches headless Chromium with a build of the extension that also has host permissions for localhost (`dist-e2e/`), because Playwright cannot click the toolbar icon. `dist/`, the build you ship, has none. `docker:test` builds the Dockerfile, which runs the typecheck, the unit tests, the manifest lint, the e2e run and the visual check in a clean Playwright image.
 
 The screenshots above are taken from the real extension on the fixtures by `bun run screenshots`, which is kept out of `test:e2e`. The haunt moment GIF is made from a burst of frames by `ffmpeg` (6 fps, 560px wide, 128 colours), and the exorcise GIF the same way (12 fps, 375px wide), so that run needs `ffmpeg` on the path. The committed ones come from the Docker image, where Comic Neue is installed, so the comic headings show as they do in the visual baselines: `bun run docs:screenshots` runs the same script there and writes the files to `docs/screenshots/`.
+
+The real-site GIF and stills at the top come from `bun run docs:realsite` (`scripts/real-site.pw.ts`), which builds `dist/` and films the haunt on the live pages over the real network, with no fixture server and no host-resolver flag. It needs the network and `ffmpeg`, and it is in no check and not in the Docker image, because live pages change; the committed files and `docs/real-site.json` are the record.
 
 ### lint:manifest
 
