@@ -79,6 +79,49 @@ test("HUD @700", async ({ context, sw, extensionId }) => {
   await expect(page).toHaveScreenshot("hud-700.png", { clip: { x: hud.x - 4, y: hud.y - 4, width: hud.width + 12, height: hud.height + 12 } });
 });
 
+/**
+ * news.html mid-moment, motion on: every animation in the costume and on the page sheet is paused at
+ * `at` ms. Wide (2000ms): the ghosts high on the page and the caption rising a third of the way up;
+ * phone (2500ms): the last ghosts of the train on the bands, the caption behind them in the marquee band
+ * and the address half unveiled.
+ */
+function hauntParade(width: number) {
+  const at = width <= 400 ? 2500 : 2000;
+  test(`haunt parade @${width}`, async ({ context, sw }) => {
+    const page = await context.newPage();
+    await prepare(page, width);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.goto(visualUrl("news.html"));
+    await page.waitForLoadState("load");
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Animation.enable");
+    await cdp.send("Animation.setPlaybackRate", { playbackRate: 0 }); // the moment holds at its start until seeked
+    await haunt(sw, page);
+    const inShadow = await shadowOf(page);
+    await expect.poll(() => hudCount(page, "ghosts"), { timeout: 20_000 }).toBe(4);
+    let last = -1;
+    await expect
+      .poll(async () => {
+        const n = await inShadow(function () { return this.querySelectorAll("*").length; });
+        const still = n === last;
+        last = n;
+        return still;
+      }, { timeout: 20_000, intervals: [1000] })
+      .toBe(true);
+    const drawn = await inShadow(function (t: number) {
+      const all = new Set([...this.getAnimations(), ...document.getAnimations()]);
+      for (const a of all) {
+        a.pause();
+        a.currentTime = t;
+      }
+      return { spirits: this.querySelectorAll("#fx .parade > .spirit").length, caption: this.querySelector("#fx .found")?.textContent };
+    }, at);
+    expect(drawn).toEqual({ spirits: 6, caption: "Trackers found: 6" });
+    await page.mouse.move(0, 0);
+    await expect(page).toHaveScreenshot(`haunt-parade-${width}.png`, { animations: "allow" });
+  });
+}
+
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
     test(`costume ${name} @${width}`, async ({ context, sw, extensionId }) => {
@@ -150,41 +193,8 @@ for (const width of WIDTHS) {
     await expect(page).toHaveScreenshot(`exorcised-${width}.png`);
   });
 
-  test(`haunt parade @${width}`, async ({ context, sw }) => {
-    // news.html mid-moment, motion on: every animation in the costume and on the page sheet is paused
-    // at 1500ms, so the six parade ghosts are half-way up the page and the wipe is near the right edge.
-    const page = await context.newPage();
-    await prepare(page, width);
-    await page.emulateMedia({ reducedMotion: "no-preference" });
-    await page.goto(visualUrl("news.html"));
-    await page.waitForLoadState("load");
-    const cdp = await context.newCDPSession(page);
-    await cdp.send("Animation.enable");
-    await cdp.send("Animation.setPlaybackRate", { playbackRate: 0 }); // the moment holds at its start until seeked
-    await haunt(sw, page);
-    const inShadow = await shadowOf(page);
-    await expect.poll(() => hudCount(page, "ghosts"), { timeout: 20_000 }).toBe(4);
-    let last = -1;
-    await expect
-      .poll(async () => {
-        const n = await inShadow(function () { return this.querySelectorAll("*").length; });
-        const still = n === last;
-        last = n;
-        return still;
-      }, { timeout: 20_000, intervals: [1000] })
-      .toBe(true);
-    const spirits = await inShadow(function () {
-      const all = new Set([...this.getAnimations(), ...document.getAnimations()]);
-      for (const a of all) {
-        a.pause();
-        a.currentTime = 1500;
-      }
-      return this.querySelectorAll("#fx .parade > .spirit").length;
-    });
-    expect(spirits).toBe(6);
-    await page.mouse.move(0, 0);
-    await expect(page).toHaveScreenshot(`haunt-parade-${width}.png`, { animations: "allow" });
-  });
+  if (width === 375) hauntParade(700);
+  hauntParade(width);
 
   if (width === 375) {
     test(`graveyard exorcised with a card @${width}`, async ({ context, sw, extensionId }) => {
