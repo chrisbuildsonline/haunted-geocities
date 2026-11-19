@@ -117,7 +117,7 @@ describe("rule-factory", () => {
     }
   });
 
-  test("pre-approves reading only, so writing and commands need your trust", () => {
+  test("pre-approves only fs_read as a whole tool; writes and commands only inside the scopes below", () => {
     expect(agent?.allowedTools ?? []).toEqual(["fs_read"]);
   });
 
@@ -168,6 +168,14 @@ describe("rule-factory", () => {
     for (const [, script] of prompt.matchAll(/\bbun run (?!scripts\b)([\w:-]+)/g)) {
       expect({ script, real: scripts.includes(script) }).toEqual({ script, real: true });
     }
+  });
+
+  // allowedCommands match the whole command line, so "bun run test | tail" is refused in a
+  // --no-interactive run; the prompt has to say to run the two commands bare.
+  test("prompt runs the two commands bare, with no pipe, redirect or extra argument", () => {
+    expect(prompt).toMatch(/exactly as written/i);
+    expect(prompt).toMatch(/no pipe/i);
+    expect(prompt).not.toMatch(/bun run (?:test|typecheck)\s*(?:\||2>|>)/);
   });
 
   test("prompt never commits and stops to ask when the request is unclear", () => {
