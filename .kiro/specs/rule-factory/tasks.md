@@ -60,7 +60,7 @@ Each trial is a real run of the workflow on a throwaway description. Start from 
   - Req: 12, 13
   - Check: the near-miss test fails, and so does nothing else except possibly `fixture.test.ts`. Revert the weakening.
 
-- [ ] 5.3 Other lists: run the workflow once on a `confirmshaming` phrase (`SHAME`) and once on a `prechecked` word (`OPT_IN_WORDS`).
+- [x] 5.3 Other lists: run the workflow once on a `confirmshaming` phrase (`SHAME`) and once on a `prechecked` word (`OPT_IN_WORDS`).
   - Req: 8, 9, 11, 12
   - Check: for each, the diff adds one fragment or word, the positive test fails first, then passes, and the near-miss expects `[]`.
 
