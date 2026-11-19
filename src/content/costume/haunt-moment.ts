@@ -59,6 +59,15 @@ export function paradeOf(companies: readonly CompanyHit[]): ParadeGhost[] {
 /** A phone (the HUD's wrap width): the text fills the screen, so the parade rides the marquee band instead. */
 const isPhone = (vw: number) => vw <= L.hudWrapBelow;
 
+/**
+ * How far past the viewport's edge a parade ghost starts and ends, so its glow (an 8px drop-shadow) is
+ * off screen too: no smudge of it waits on the address bar while the caption holds.
+ */
+export const PARADE_GLOW = 16;
+
+/** The phone train's ride, left edge to right edge, glow and all: the caption rides in at this speed too. */
+const phoneRide = (vw: number) => vw + SPRITES.paradeGhostPhone[0] + 2 * PARADE_GLOW;
+
 /** A parade ghost's side: 144/96px, or 24/16px on a phone, where it must fit the 24px marquee band. */
 const paradeSize = (near: boolean, vw: number) =>
   (isPhone(vw) ? (near ? SPRITES.paradeGhostPhone : SPRITES.paradeGhostPhoneFar) : near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
@@ -201,13 +210,13 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
     const p = PARADE[i]!;
     const size = paradeSize(p.near, vw);
     const path = isPhone(vw)
-      ? [{ transform: `translate(-${size}px, 0px)` }, { transform: `translate(${vw}px, 0px)` }]
-      : [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${size}px)` }];
+      ? [{ transform: `translate(-${size + PARADE_GLOW}px, 0px)` }, { transform: `translate(${vw + PARADE_GLOW}px, 0px)` }]
+      : [{ transform: `translate(0px, ${vh + PARADE_GLOW}px)` }, { transform: `translate(${p.drift}px, -${size + PARADE_GLOW}px)` }];
     const [stagger, duration] = isPhone(vw) ? [H.paradePhoneStagger, H.paradePhoneMs] : [H.paradeStagger, H.paradeMs];
     run(s, path, { delay: H.paradeStart + i * stagger, duration, easing: "linear", fill: "both" });
   });
   // The caption keeps to the marquee band at every width (costume chrome, never the page's text): it rides
-  // in from the left edge at the phone train's speed (the width in a second), rests centred in the band
+  // in from the left edge at the phone train's speed (its ride in a second), rests centred in the band
   // under the address bar and holds there to captionOut, a beat after the 3000ms moment. On a phone it
   // sets off one beat behind the last ghost, so the gap to it holds on the way in.
   const caption = q(".found") as HTMLElement;
@@ -215,7 +224,7 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   const restX = Math.round((vw - w) / 2);
   caption.style.top = `${marqueeTop(croot) + (L.marquee - h) / 2}px`;
   const start = isPhone(vw) ? H.captionPhoneStart : H.captionStart;
-  const rest = start + ((restX + w) * H.paradePhoneMs) / (vw + SPRITES.paradeGhostPhone[0]);
+  const rest = start + ((restX + w) * H.paradePhoneMs) / phoneRide(vw);
   const resting = { transform: `translate(${restX}px, 0px)` };
   run(caption, [{ transform: "translate(-100%, 0px)" }, { ...resting, offset: (rest - start) / (H.captionOut - start) }, resting], {
     delay: start,

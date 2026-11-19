@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderCostume } from "../../src/content/costume/render";
 import { flush, LANE_ORDER, setup, stubMain, TRACKER_ENTRIES, withTrackers, type Rec } from "./helpers";
-import { paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
+import { PARADE_GLOW, paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
 import { hemTint, orderCompanies, riseIn, tintsOf } from "../../src/content/costume/ghosts";
 import type { CompanyHit } from "../../src/data/types";
 import { costumeCss, scanUrl } from "../../src/content/costume/styles";
@@ -234,10 +234,11 @@ describe("hero haunt moment", () => {
       expect(parseFloat(s.style.left) + size).toBeLessThanOrEqual(win.innerWidth);
       const [drift] = on(recs, s);
       expect(drift!.opts).toMatchObject({ delay: H.paradeStart + i * H.paradeStagger, duration: H.paradeMs, easing: "linear", fill: "both" });
-      // from just below the viewport to just above it: a whole-page crossing, never back
+      // from just below the viewport to just above it: a whole-page crossing, never back, and far enough
+      // past each edge that the glow (drop-shadow 8px) is off screen too, so no smudge waits on the bar
       const [from, to] = drift!.keyframes.map((k) => String(k.transform).match(/translate\((-?\d+)px, (-?\d+)px\)/)!.slice(1).map(Number));
-      expect(from).toEqual([0, win.innerHeight]);
-      expect(to![1]).toBe(-size);
+      expect(from).toEqual([0, win.innerHeight + PARADE_GLOW]);
+      expect(to![1]).toBe(-(size + PARADE_GLOW));
       expect(Math.abs(to![0]!)).toBeLessThanOrEqual(48);
     });
     expect(H.paradeStart + 5 * H.paradeStagger + H.paradeMs).toBeLessThanOrEqual(MOTION.haunt);
@@ -267,13 +268,16 @@ describe("hero haunt moment", () => {
       expect(sp.style.left).toBe("0px");
       // left edge to right edge, sideways only, spaced out so the six never clump
       const [ride] = on(s.recs, sp);
-      expect(ride!.keyframes.map((k) => k.transform)).toEqual([`translate(-${size}px, 0px)`, "translate(375px, 0px)"]);
+      // (glow and all: fully off each edge before it sets off and after it leaves)
+      expect(ride!.keyframes.map((k) => k.transform)).toEqual([`translate(-${size + PARADE_GLOW}px, 0px)`, `translate(${375 + PARADE_GLOW}px, 0px)`]);
       expect(ride!.opts).toMatchObject({ delay: H.paradeStart + i * H.paradePhoneStagger, duration: H.paradePhoneMs, easing: "linear", fill: "both" });
     });
     // the train is still out of the band by 3000
     expect(H.paradeStart + 5 * H.paradePhoneStagger + H.paradePhoneMs).toBeLessThanOrEqual(MOTION.haunt);
     // 24px ghosts at least 48px apart on the way across
-    expect(((375 + 24) / H.paradePhoneMs) * H.paradePhoneStagger).toBeGreaterThanOrEqual(48);
+    expect(((375 + 24 + 2 * PARADE_GLOW) / H.paradePhoneMs) * H.paradePhoneStagger).toBeGreaterThanOrEqual(48);
+    // the glow margin covers the sprite's 8px drop-shadow
+    expect(PARADE_GLOW).toBeGreaterThanOrEqual(16);
   });
 
   test("the parade is the page's own tracker companies: lane order, lane tint and a name tag each; fillers only make it up to six", () => {
@@ -301,12 +305,12 @@ describe("hero haunt moment", () => {
     // the tag is the hem's own colour: the ghost's tint still shows, with the name on it
     const name = spirits[0]!.querySelector<HTMLElement>(".name")!;
     expect(name.style.background).toBe("#99ccff");
-    // nothing hangs under the sprite any more, so every ghost ends just over the top edge
+    // nothing hangs under the sprite any more, so every ghost ends just over the top edge (past its glow)
     const ends = spirits.map((s) => {
       const [drift] = on(recs, s);
       return Number(String(drift!.keyframes.at(-1)!.transform).match(/, (-?\d+)px\)/)![1]);
     });
-    expect(ends).toEqual([-144, -96, -144, -96, -96, -144]);
+    expect(ends).toEqual([144, 96, 144, 96, 96, 144].map((size) => -(size + PARADE_GLOW)));
   });
 
   test("parade name tag CSS: inside the hem rows (12-14 of 16) and the hem's width, crypt ink on the tint, 14px near and 12px far", () => {
@@ -340,7 +344,7 @@ describe("hero haunt moment", () => {
   });
 
   // At every width the caption keeps to the marquee band (costume chrome, never the page's text): it rides
-  // in from the left edge at the phone train's speed (the width in a second), rests centred in the band and
+  // in from the left edge at the phone train's speed (its ride in a second), rests centred in the band and
   // holds there to captionOut, a beat after the 3000ms moment.
   for (const [vw, vh, start] of [[1280, 800, H.captionStart], [700, 667, H.captionStart], [401, 667, H.captionStart], [375, 667, H.captionPhoneStart]] as const) {
     test(`@${vw}: the caption, Trackers found: N, rides into the marquee band under the bar, rests centred and holds to ${H.captionOut}`, () => {
@@ -360,7 +364,7 @@ describe("hero haunt moment", () => {
       expect(ride!.opts).toMatchObject({ delay: start, easing: "linear", fill: "both" });
       // in at the train's speed: from fully off the left edge to centred
       const rideMs = (ride!.keyframes[1]!.offset as number) * (ride!.opts.duration as number);
-      expect(Math.round(rideMs)).toBe(Math.round((H.paradePhoneMs * (restX + 130)) / (vw + SPRITES.paradeGhostPhone[0])));
+      expect(Math.round(rideMs)).toBe(Math.round((H.paradePhoneMs * (restX + 130)) / (vw + SPRITES.paradeGhostPhone[0] + 2 * PARADE_GLOW)));
       // it rests, readable, for over a second, to captionOut
       expect(end(ride!)).toBe(H.captionOut);
       expect(H.captionOut - (start + rideMs)).toBeGreaterThan(1000);
