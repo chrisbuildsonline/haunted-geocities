@@ -492,6 +492,18 @@ describe("hero haunt moment", () => {
     expect(css).toMatch(/\.roll\s*\{[^}]*transform:\s*translateY\(-100%\)/);
   });
 
+  test("a parade name tag is solid: the near/far dimming is on the sprite only, so no page text shows through a tag", () => {
+    const css = costumeCss({ stars: "a", twinkle: "b" });
+    const rule = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replaceAll(".", "\\.")}\\s*\\{([^}]*)\\}`))?.[1];
+    // the ghost's box (which holds the tag) is never see-through
+    for (const sel of [".spirit", ".spirit.near", ".spirit.far"]) expect(rule(sel) ?? "", sel).not.toMatch(/opacity/);
+    expect(rule(".spirit.near svg")).toMatch(/opacity:\s*\.92/);
+    expect(rule(".spirit.far svg")).toMatch(/opacity:\s*\.6\b/);
+    // and the tag itself is an opaque crypt plaque
+    expect(rule(".spirit .name")).toMatch(new RegExp(`background:\\s*${PALETTE.crypt}`));
+    expect(rule(".spirit .name")).not.toMatch(/opacity/);
+  });
+
   test("reduced motion: no FX root, no lids, no rise, no stagger, no phase, tags shown at once", () => {
     const { el, recs } = croot(3, { reduced: true });
     playHaunt(el, true);

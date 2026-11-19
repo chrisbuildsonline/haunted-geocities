@@ -62,7 +62,7 @@ for (const width of [1280, 700] as const) {
     // the parade ends on a caption with the page's real tracker count
     expect(await captionText(inShadow)).toBe(`Trackers found: ${shown.length}`);
 
-    type Sample = { fx: boolean; spirits: Box[]; names: Box[]; found: Box | null; roll: Box | null; overflow: boolean; vh: number; vw: number };
+    type Sample = { fx: boolean; spirits: Box[]; names: (Box & { solid: number })[]; found: Box | null; roll: Box | null; overflow: boolean; vh: number; vw: number };
     const samples: Sample[] = [];
     let shot = false;
     let captionShot = false;
@@ -72,12 +72,18 @@ for (const width of [1280, 700] as const) {
           const r = el.getBoundingClientRect();
           return { left: r.left, top: r.top, bottom: r.bottom, width: r.width };
         };
+        // how solid a tag is drawn: its own and every ancestor's opacity, times its backing's alpha
+        const solid = (el: Element) => {
+          let a = Number(getComputedStyle(el).backgroundColor.match(/rgba\([^)]*,\s*([\d.]+)\)/)?.[1] ?? 1);
+          for (let e: Element | null = el; e; e = e.parentElement) a *= Number(getComputedStyle(e).opacity);
+          return a;
+        };
         const roll = this.querySelector("#fx .roll");
         const found = this.querySelector("#fx .parade > .found");
         return {
           fx: !!this.getElementById("fx"),
           spirits: [...this.querySelectorAll("#fx .parade > .spirit")].map(box),
-          names: [...this.querySelectorAll("#fx .parade > .spirit > .name")].map(box),
+          names: [...this.querySelectorAll("#fx .parade > .spirit > .name")].map((el) => ({ ...box(el), solid: solid(el) })),
           found: found ? box(found) : null,
           roll: roll ? box(roll) : null,
           overflow: document.documentElement.scrollWidth > innerWidth,
@@ -112,6 +118,11 @@ for (const width of [1280, 700] as const) {
       const high = tops.some((t, n) => n > low && t < vh * 0.2 && t > -live[0]!.spirits[i]!.width);
       expect({ i, low: low >= 0, high }).toEqual({ i, low: true, high: true });
     }
+    // every name tag on screen is drawn solid (the far ghosts' dimming is on their sprite only), so no
+    // line of the page's text ever shows through a tag mid-parade
+    const seeThrough = live.flatMap((s) => s.names.filter((b) => visible(b, vw, vh) && b.solid < 1).map((b) => b.solid));
+    expect(live.some((s) => s.names.some((b) => visible(b, vw, vh)))).toBe(true);
+    expect(seeThrough).toEqual([]);
     // they spread across the width: centres in the left and right thirds
     const centres = live[0]!.spirits.map((b) => b.left + b.width / 2);
     expect(Math.min(...centres)).toBeLessThan(vw / 3);

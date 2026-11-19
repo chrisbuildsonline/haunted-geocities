@@ -202,9 +202,10 @@ button:focus-visible { ${ring} }
 .ectoplasm { position: absolute; top: 0; bottom: 0; left: -16px; width: 32px; background-image: ${checkerUrl(P.ectoplasm)}; background-size: 4px 4px; }
 .parade { position: absolute; inset: 0; isolation: isolate; }
 .spirit { position: absolute; top: 0; left: 0; transform: translateY(-200%); filter: drop-shadow(0 0 8px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
-.spirit.near { z-index: 1; opacity: .92; }
-.spirit.far { opacity: .6; }
+.spirit.near { z-index: 1; }
 .spirit svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.spirit.near svg { opacity: .92; }
+.spirit.far svg { opacity: .6; }
 .spirit .name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 1px 6px; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 14px/18px ${COMIC}; }
 .found { position: absolute; top: 0; left: 0; z-index: 2; transform: translateY(-200%); padding: 1px 6px; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 14px/18px ${COMIC}; }
 .roll { position: absolute; left: 0; right: 0; top: 0; height: 48px; transform: translateY(-100%); background-image: ${rollUrl()}; background-size: 4px 3px; border-bottom: 2px solid ${P.ectoplasm}; opacity: .7; }
