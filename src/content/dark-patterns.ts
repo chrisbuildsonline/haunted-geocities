@@ -36,6 +36,7 @@ const SCARCITY = [
   /\b(?:only|just)\s+\d{1,4}\s+(?:(?:items?|units?|rooms?|seats?|tickets?|pieces?|spots?|copies|pairs?)\s+)?(?:left|remaining|available|in\s+stock)\b/i,
   /\b\d{1,4}\s+(?:people|others|shoppers|customers)\s+(?:are\s+)?(?:viewing|looking|watching)\b/i,
   /\b(?:low\s+stock|selling\s+fast|almost\s+(?:gone|sold\s+out))\b/i,
+  /\blast\s+(?:one|item|unit|piece|pair|copy)\s+in\s+(?:the\s+)?(?:shop|store|stock)\b/i,
 ];
 
 const COUNTDOWN = [

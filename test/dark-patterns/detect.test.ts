@@ -92,6 +92,25 @@ describe("scarcity", () => {
   });
 });
 
+describe("scarcity: last one in the shop", () => {
+  test("scarcity: Last one in the shop", () => {
+    const [p] = detect(`<p id="a">Hurry, last one in the shop!</p>`);
+    expect(p!.kind).toBe("scarcity");
+    expect(p!.snippet).toBe("Hurry, last one in the shop!");
+  });
+  test("scarcity: Last <b>one</b> in the shop is found when a tag splits it", () => {
+    const [p] = detect(`<p id="a">LAST <b>one</b>   in the shop</p>`);
+    expect(p!.kind).toBe("scarcity");
+    expect(p!.element.id).toBe("a");
+  });
+  test("scarcity: Last item in stock and Last pair in the store match", () => {
+    for (const t of ["Last item in stock", "Last pair in the store"]) expect(kinds(detect(`<p>${t}</p>`))).toEqual(["scarcity"]);
+  });
+  test("scarcity: Last one in the pool and Last orders in the shop do not match", () => {
+    for (const t of ["Last one in the pool is a rotten egg", "Last orders in the shop are at five", "Our last one in the series is out."]) expect(detect(`<p>${t}</p>`)).toEqual([]);
+  });
+});
+
 describe("countdown", () => {
   test("countdown: Offer ends in 3 hours, Ends in 15 min, Limited-time offer, 2 hours left", () => {
     for (const t of ["Offer ends in 3 hours", "Ends in 15 min", "Limited-time offer", "2 hours left", "Sale expires today"]) expect(kinds(detect(`<p>${t}</p>`))).toEqual(["countdown"]);
