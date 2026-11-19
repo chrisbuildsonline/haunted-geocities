@@ -10,7 +10,7 @@ import { chromium, expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { shadowOf, tabIdOf } from "../e2e/fixtures";
+import { scrollToEnd, shadowOf, tabIdOf } from "../e2e/fixtures";
 
 /**
  * US government pages: public-domain works (17 U.S.C. 105) that load their trackers with no consent
@@ -127,8 +127,8 @@ async function capture(slug: string, url: string, gif: boolean) {
 
     // The page's end stays reachable: scrolled to the bottom, its last line of text sits above the
     // bottom overlay (the graveyard strip, else the HUD). A frame of it for the record, not committed.
-    await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
-    await page.waitForTimeout(500);
+    // The bottom is the one the page has once its lazy footer content has loaded (scrollToEnd).
+    await scrollToEnd(page, 1500);
     const overlayTop = await inShadow(function () {
       const g = this.getElementById("graveyard")!;
       return (g.hidden ? this.getElementById("hud")! : g).getBoundingClientRect().top;
@@ -158,8 +158,7 @@ async function capture(slug: string, url: string, gif: boolean) {
     await page.waitForTimeout(1500);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: `${frames}/settled-375.png` });
-    await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
-    await page.waitForTimeout(500);
+    await scrollToEnd(page, 1500);
     await page.screenshot({ path: `${frames}/end-375.png` });
 
     const found = Number(/^Trackers found: (\d+)$/.exec(parade.caption)?.[1]);
