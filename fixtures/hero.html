@@ -26,6 +26,9 @@
       main { padding: 16px 20px 24px; }
       p { margin: 0 0 1rem; }
       img { display: block; width: 1px; height: 1px; }
+      .foot { padding: 16px 20px; border-top: 1px solid #cccccc; }
+      .promo { height: 60px; background: #eeeeee; }
+      .foot p { margin: 8px 0 0; }
     </style>
   </head>
   <body>
@@ -75,5 +78,20 @@
       <img alt="" src="http://google-analytics.com:4321/t/p.svg?n=h2" />
       <img alt="" src="http://doubleclick.net:4321/t/p.svg?n=h1" />
     </main>
+
+    <!-- A footer that grows once it is scrolled into view, the way nps.gov's lazy-loaded app promo picture
+         does: the page's end moves 52px further down after the first scroll to it. -->
+    <footer class="foot" id="foot">
+      <div class="promo" id="promo"></div>
+      <p id="foot-last">Pinecrest Valley Parks, the visitor centre on Mill Road.</p>
+    </footer>
+    <script>
+      const promo = document.getElementById("promo");
+      new IntersectionObserver((seen, io) => {
+        if (!seen.some((e) => e.isIntersecting)) return;
+        promo.style.height = "112px";
+        io.disconnect();
+      }).observe(promo);
+    </script>
   </body>
 </html>

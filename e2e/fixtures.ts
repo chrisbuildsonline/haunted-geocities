@@ -137,6 +137,26 @@ export async function haunt(sw: Worker, page: Page): Promise<number> {
   return tabId;
 }
 
+/**
+ * Scroll to the page's end and stay on it. Content that loads once scrolled into view (nps.gov's lazy
+ * footer picture) moves the end further down after the first scroll, so scroll again until the page,
+ * `settle` ms after a scroll, is still scrolled to its end. Instant, because a page's
+ * `scroll-behavior: smooth` would still be gliding when it is measured.
+ */
+export async function scrollToEnd(page: Page, settle = 500): Promise<void> {
+  const gap = () =>
+    page.evaluate(() => {
+      const se = document.scrollingElement!;
+      return se.scrollHeight - se.clientHeight - Math.ceil(window.scrollY);
+    });
+  for (let i = 0; i < 10; i++) {
+    await page.evaluate(() => window.scrollTo({ top: document.scrollingElement!.scrollHeight, behavior: "instant" }));
+    await page.waitForTimeout(settle);
+    if ((await gap()) <= 1) return;
+  }
+  throw new Error(`the page never stayed scrolled to its end (${await gap()}px short)`);
+}
+
 /** popup.html opened as a 360px-wide tab, targeting `tabId` through ?tab=. */
 export async function openPopup(context: BrowserContext, extensionId: string, tabId: number): Promise<Page> {
   const popup = await context.newPage();

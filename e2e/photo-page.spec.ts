@@ -2,7 +2,7 @@
 // site): the graveyard tells same-prefix companies apart, the strip and the HUD never hide the page's end
 // or a focused link, and the dark hero blocks and the search box wear the costume too.
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, GOOGLE_HOSTS, haunt, shadowOf, test, type InShadow } from "./fixtures";
+import { expect, fixture, GOOGLE_HOSTS, haunt, scrollToEnd, shadowOf, test, type InShadow } from "./fixtures";
 
 const SHOTS = "test-results/photo-page";
 const COMPANIES = Object.keys(GOOGLE_HOSTS);
@@ -68,11 +68,15 @@ for (const width of [1280, 375]) {
 
   test(`${width}px: the strip and the HUD never hide the page's end or a focused link`, async ({ context, sw }) => {
     const { page, inShadow } = await hauntHero(context, sw, width);
-    // scrolled to the end, the last line and the "Featured stories" heading sit above the bottom overlay
-    await page.evaluate(() => window.scrollTo(0, document.scrollingElement!.scrollHeight));
+    // scrolled to the end, the footer's last line, the main column's last line and the "Featured stories"
+    // heading sit above the bottom overlay; the footer grows once it is seen, and the end is still the end
+    expect((await rectOf(page, "promo")).height).toBe(60);
+    await scrollToEnd(page);
+    expect((await rectOf(page, "promo")).height).toBe(112);
+    const end = await page.evaluate(() => ({ y: Math.ceil(window.scrollY), max: document.scrollingElement!.scrollHeight - document.scrollingElement!.clientHeight }));
+    expect(end.y).toBeGreaterThanOrEqual(end.max - 1);
     const top = await overlayTop(inShadow);
-    expect((await rectOf(page, "last")).bottom).toBeLessThanOrEqual(top);
-    expect((await rectOf(page, "featured")).bottom).toBeLessThanOrEqual(top);
+    for (const id of ["foot-last", "last", "featured"]) expect({ id, bottom: (await rectOf(page, id)).bottom <= top }).toEqual({ id, bottom: true });
     await page.screenshot({ path: `${SHOTS}/end-${width}.png` });
     // a link under the strip that takes keyboard focus is scrolled clear of it
     await page.evaluate(() => {
