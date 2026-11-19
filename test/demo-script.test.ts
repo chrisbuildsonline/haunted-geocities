@@ -97,6 +97,14 @@ describe("docs/demo-script.md", () => {
     for (const c of ruleFactory.toolsSettings.execute_bash.allowedCommands) expect({ c, found: kiro!.shot.includes(`\`${c}\``) }).toEqual({ c, found: true });
   });
 
+  test("the Kiro beat credits rule-factory only with the run recorded in docs/rule-factory-run.md", () => {
+    const kiro = steps.find((s) => s.shot.includes("rule-factory"));
+    expect(kiro!.shot).toContain('"add a scarcity phrase: Last one in the shop"');
+    expect(existsSync(join(root, "docs", "rule-factory-run.md"))).toBe(true);
+    expect(kiro!.voiceover).toContain("docs/rule-factory-run.md");
+    expect(doc).not.toMatch(/came from it|came to be cursed|stay in the dark|coupons box/);
+  });
+
   test("keeps a plain tone", () => {
     expect(doc).not.toMatch(/\b(revolutionary|seamless(ly)?|cutting-edge|game-?chang\w*|blazing(ly)?|supercharg\w*|unleash\w*|next-level|leverag\w*|delight\w*|magic(al)?)\b/i);
     expect(doc).not.toMatch(/!{2,}/);

@@ -137,6 +137,19 @@ describe("docs/devpost.md", () => {
     for (const c of rf.toolsSettings.execute_bash.allowedCommands) expect({ c, found: para.includes(`\`${c}\``) }).toEqual({ c, found: true });
   });
 
+  test("credits rule-factory only with the run recorded in docs/rule-factory-run.md", () => {
+    const run = readFileSync(join(root, "docs", "rule-factory-run.md"), "utf8");
+    // the recorded run's regex is in the source exactly as the transcript gives it
+    const regex = run.match(/^ {2}`(\/\\blast\\s\+.+\/i)`$/m)?.[1];
+    expect(regex).toBeDefined();
+    expect(readFileSync(join(root, "src", "content", "dark-patterns.ts"), "utf8")).toContain(regex!);
+    expect(run).toContain('kiro-cli chat --agent rule-factory --no-interactive');
+    const para = doc.split("`rule-factory` runs")[1]?.split(/\n- /)[0] ?? "";
+    expect(para).toContain("`docs/rule-factory-run.md`");
+    expect(para).toContain('"Last one in the shop"');
+    expect(doc).not.toMatch(/came from it|came to be cursed|stay in the dark|Mail me coupons/);
+  });
+
   test("does not say one costume save sets off several hooks", () => {
     expect(doc).not.toMatch(/on a costume edit it asks the agent to run `bun run visual:baselines`/);
     expect(doc).not.toMatch(/`era-accuracy` asks the agent to review a costume edit/);

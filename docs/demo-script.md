@@ -30,7 +30,7 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Shot:** The `.kiro/` folder: 6 steering files, 10 specs, 5 hooks and 2 custom agents, `costume-reviewer` (a read-only era reviewer with only `fs_read`) and `rule-factory`. In a terminal, run `kiro-cli chat --agent rule-factory "add a scarcity phrase: Last one in the shop"`. The agent writes a positive and a near-miss test under `test/dark-patterns/`, runs `bun run test` and the new test fails, then adds the regex to `src/content/dark-patterns.ts` and runs `bun run typecheck` and `bun run test` to green. Its `fs_write` is limited to `src/content/dark-patterns.ts`, `src/data/neighborhoods.json`, `src/data/types.ts`, `test/dark-patterns/` and `test/neighborhoods/`, its `execute_bash` to `bun run test` and `bun run typecheck`, and it never commits. Saving `src/content/dark-patterns.ts` fires the `rule-factory` hook, which checks the new rule has its tests.
 
-**Voiceover:** Kiro wrote the steering, a spec before every feature, the hooks and 2 custom agents. The rule-factory agent turns one line into a failing test, then the rule, then a green suite, and it can only touch the rule files and their tests. Two of the extension's curses came from it: "No thanks, I'll stay in the dark" and a pre-ticked coupons box.
+**Voiceover:** Kiro wrote the steering, a spec before every feature, the hooks and 2 custom agents. The rule-factory agent turns one line into a failing test, then the rule, then a green suite, and it can only touch the rule files and their tests. One run of this exact request is recorded, unedited, in docs/rule-factory-run.md, and the "Last one in the shop" curse it added is committed as it wrote it.
 
 ## 2:30-2:50 Sound and un-haunt
 

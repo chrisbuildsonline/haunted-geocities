@@ -175,6 +175,13 @@ describe("README.md", () => {
     }
   });
 
+  test("credits rule-factory only with the run recorded in docs/rule-factory-run.md", () => {
+    const section = readme.split(/^## How Kiro was used\s*$/m)[1]?.split(/^## /m)[0] ?? "";
+    expect(section).toContain("[`docs/rule-factory-run.md`](docs/rule-factory-run.md)");
+    expect(section).toContain('kiro-cli chat --agent rule-factory "add a scarcity phrase: Last one in the shop"');
+    expect(readme).not.toMatch(/came from it|came to be cursed|stay in the dark|Mail me coupons/);
+  });
+
   test("the Kiro hooks section says a costume save sets off one hook and how the others start", () => {
     const section = readme.split(/^## Kiro hooks\s*$/m)[1]?.split(/^## /m)[0] ?? "";
     expect(section).not.toMatch(/A costume edit sets off `visual-regression`, `era-accuracy` and `baseline-refresh`/);
