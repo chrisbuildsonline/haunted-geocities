@@ -1,5 +1,6 @@
-// The scene-wide part of the haunt moment: six big tracker ghosts drift up through the whole page and
-// one band of scanlines rolls down it (design/DESIGN.md "Haunt moment", the parade and the roll).
+// The scene-wide part of the haunt moment: six big tracker ghosts drift up through the whole page, the
+// caption with the page's tracker count ends the parade, and one band of scanlines rolls down it
+// (design/DESIGN.md "Haunt moment", the parade, the caption and the roll).
 // Under reduced motion neither exists, and the settled costume is the same either way.
 import type { Page } from "@playwright/test";
 import { expect, fixture, haunt, shadowOf, test } from "./fixtures";
@@ -15,6 +16,14 @@ async function openNews(page: Page, width: number, query = "") {
 
 type Box = { left: number; top: number; bottom: number; width: number };
 const visible = (b: Box, vw: number, vh: number) => b.bottom > 0 && b.top < vh && b.left + b.width > 0 && b.left < vw;
+/** Two boxes share more than half a pixel each way. */
+const overlap = (a: Box, b: Box) => a.left < b.left + b.width - 0.5 && b.left < a.left + a.width - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
+
+/** The caption that ends the parade. */
+const captionText = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
+  inShadow(function () {
+    return this.querySelector("#fx .parade > .found")?.textContent ?? null;
+  });
 
 /** The companies the costume shows (lanes and graveyard strip), in lane order. */
 const companiesShown = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
@@ -33,7 +42,7 @@ const paradeDrawn = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
   });
 
 for (const width of [1280, 700] as const) {
-  test(`@${width}: six big ghosts, the page's own tracker companies with their names, cross the whole page bottom to top, a scanline roll passes once, no overflow`, async ({ context, sw }) => {
+  test(`@${width}: six big ghosts, the page's own tracker companies with their names, cross the whole page bottom to top, the tracker count caption ends it, a scanline roll passes once, no overflow`, async ({ context, sw }) => {
     test.setTimeout(90_000);
     const page = await context.newPage();
     await openNews(page, width);
@@ -50,10 +59,13 @@ for (const width of [1280, 700] as const) {
     expect(drawn.map((d) => d.company).sort()).toEqual([...shown].sort());
     expect(drawn.map((d) => d.name)).toEqual(drawn.map((d) => d.company));
     expect(drawn.some((d) => d.filler)).toBe(false);
+    // the parade ends on a caption with the page's real tracker count
+    expect(await captionText(inShadow)).toBe(`Trackers found: ${shown.length}`);
 
-    type Sample = { fx: boolean; spirits: Box[]; roll: Box | null; overflow: boolean; vh: number; vw: number };
+    type Sample = { fx: boolean; spirits: Box[]; names: Box[]; found: Box | null; roll: Box | null; overflow: boolean; vh: number; vw: number };
     const samples: Sample[] = [];
     let shot = false;
+    let captionShot = false;
     for (const end = Date.now() + 45_000; Date.now() < end; await page.waitForTimeout(40)) {
       const s: Sample = await inShadow(function () {
         const box = (el: Element) => {
@@ -61,9 +73,12 @@ for (const width of [1280, 700] as const) {
           return { left: r.left, top: r.top, bottom: r.bottom, width: r.width };
         };
         const roll = this.querySelector("#fx .roll");
+        const found = this.querySelector("#fx .parade > .found");
         return {
           fx: !!this.getElementById("fx"),
           spirits: [...this.querySelectorAll("#fx .parade > .spirit")].map(box),
+          names: [...this.querySelectorAll("#fx .parade > .spirit > .name")].map(box),
+          found: found ? box(found) : null,
           roll: roll ? box(roll) : null,
           overflow: document.documentElement.scrollWidth > innerWidth,
           vh: innerHeight,
@@ -75,6 +90,10 @@ for (const width of [1280, 700] as const) {
       if (!shot && onScreen >= 4) {
         shot = true;
         await page.screenshot({ path: `${OUT}/parade-${width}.png` });
+      }
+      if (!captionShot && s.found && s.found.top < s.vh * 0.7) {
+        captionShot = true;
+        await page.screenshot({ path: `${OUT}/parade-caption-${width}.png` });
       }
       if (!s.fx) break;
     }
@@ -103,14 +122,29 @@ for (const width of [1280, 700] as const) {
     const lower = rollTops.findIndex((t) => t > (2 * vh) / 3 && t < vh);
     expect(upper).toBeGreaterThanOrEqual(0);
     expect(lower).toBeGreaterThan(upper);
+    // the caption crosses the whole height too, setting off after the last ghost and leaving after every one
+    const caps = live.map((s) => s.found!);
+    const capLow = caps.findIndex((b) => b.top > vh * 0.6 && b.top < vh);
+    const capHigh = caps.some((b, n) => n > capLow && b.top < vh * 0.2 && b.bottom > 0);
+    expect({ low: capLow >= 0, high: capHigh }).toEqual({ low: true, high: true });
+    const lastIn = live.findIndex((s) => visible(s.spirits[5]!, vw, vh));
+    const capIn = live.findIndex((s) => visible(s.found!, vw, vh));
+    expect(capIn).toBeGreaterThan(lastIn);
+    expect(live.some((s) => visible(s.found!, vw, vh) && s.spirits.every((b) => !visible(b, vw, vh)))).toBe(true);
+    // and never over a parade ghost or its name tag (on screen: past the top edge nothing is drawn)
+    for (const s of live) {
+      const hit = [...s.spirits, ...s.names].find((b) => visible(s.found!, vw, vh) && visible(b, vw, vh) && overlap(s.found!, b));
+      expect(hit).toBeUndefined();
+    }
     // nothing pushes the page sideways while it plays, and the FX root is gone at the end
     expect(samples.some((s) => s.overflow)).toBe(false);
     expect(samples.at(-1)!.fx).toBe(false);
     expect(shot).toBe(true);
+    expect(captionShot).toBe(true);
   });
 }
 
-test("@375: the parade keeps off the reading column, a train of six 48/32px ghosts along the top bands, never over the page's text", async ({ context, sw }) => {
+test("@375: the parade keeps off the reading column and the bar's address, a train of six 48/32px ghosts along the top bands with the caption behind, never over text", async ({ context, sw }) => {
   test.setTimeout(90_000);
   const page = await context.newPage();
   await openNews(page, 375);
@@ -120,33 +154,59 @@ test("@375: the parade keeps off the reading column, a train of six 48/32px ghos
   await haunt(sw, page);
   const inShadow = await shadowOf(page);
   const drawn = await paradeDrawn(inShadow);
-  expect(drawn.map((d) => d.company).sort()).toEqual((await companiesShown(inShadow)).sort());
+  const shown = await companiesShown(inShadow);
+  expect(drawn.map((d) => d.company).sort()).toEqual([...shown].sort());
+  // the caption ends the train here too, where the ghosts carry no name tags
+  expect(drawn.every((d) => d.name === null)).toBe(true);
+  const caption = await captionText(inShadow);
 
   type Rect = { left: number; right: number; top: number; bottom: number };
-  type Sample = { fx: boolean; spirits: Box[]; bands: Rect; text: Rect[]; overflow: boolean; vh: number; vw: number };
+  type Sample = { fx: boolean; spirits: Box[]; found: Box | null; bands: Rect; bar: Rect; address: Rect[]; text: Rect[]; overflow: boolean; vh: number; vw: number };
   const samples: Sample[] = [];
   let shot = false;
+  let captionShot = false;
   for (const end = Date.now() + 45_000; Date.now() < end; await page.waitForTimeout(40)) {
     const s: Sample = await inShadow(function () {
       const box = (el: Element) => {
         const r = el.getBoundingClientRect();
         return { left: r.left, top: r.top, bottom: r.bottom, width: r.width };
       };
-      // every line box of the page's own text (the host and its shadow root are not the page)
-      const text: { left: number; right: number; top: number; bottom: number }[] = [];
-      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-        if (!n.textContent!.trim() || n.parentElement?.closest("script, style, hg-crypt")) continue;
-        const range = document.createRange();
-        range.selectNodeContents(n);
-        for (const r of range.getClientRects()) if (r.width && r.height) text.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
-      }
+      const rect = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+      const lines = (root: Node, skip: string | null) => {
+        const out: { left: number; right: number; top: number; bottom: number }[] = [];
+        const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+        for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+          if (!n.textContent!.trim() || (skip && n.parentElement?.closest(skip))) continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          for (const r of range.getClientRects()) if (r.width && r.height) out.push(rect(r));
+        }
+        return out;
+      };
+      // the neighbourhood bar's text as drawn: the part of each line its own clip-path (if any) leaves showing
+      const hood = this.getElementById("neighborhood")!;
+      const shownTo = (el: Element) => {
+        const clip = getComputedStyle(el).clipPath;
+        if (clip === "none") return Infinity;
+        const m = clip.match(/^inset\(\S+ (-?[\d.]+)px/);
+        if (!m) throw new Error(`unexpected clip-path ${clip}`);
+        return el.getBoundingClientRect().right - parseFloat(m[1]!);
+      };
+      const address = [...hood.children].flatMap((el) => {
+        const to = shownTo(el);
+        return lines(el, null).map((r) => ({ ...r, right: Math.min(r.right, to) })).filter((r) => r.right > r.left);
+      });
       const b = this.getElementById("top-bands")!.getBoundingClientRect();
+      const found = this.querySelector("#fx .parade > .found");
       return {
         fx: !!this.getElementById("fx"),
         spirits: [...this.querySelectorAll("#fx .parade > .spirit")].map(box),
-        bands: { left: b.left, right: b.right, top: b.top, bottom: b.bottom },
-        text,
+        found: found ? box(found) : null,
+        bands: rect(b),
+        bar: rect(hood.getBoundingClientRect()),
+        address,
+        // every line box of the page's own text (the host and its shadow root are not the page)
+        text: lines(document.body, "script, style, hg-crypt"),
         overflow: document.documentElement.scrollWidth > innerWidth,
         vh: innerHeight,
         vw: innerWidth,
@@ -156,6 +216,10 @@ test("@375: the parade keeps off the reading column, a train of six 48/32px ghos
     if (!shot && s.spirits.filter((b) => visible(b, s.vw, s.vh)).length >= 3) {
       shot = true;
       await page.screenshot({ path: `${OUT}/parade-375.png` });
+    }
+    if (!captionShot && s.found && s.found.left > 8 && s.found.left + s.found.width < s.vw / 2 + 60) {
+      captionShot = true;
+      await page.screenshot({ path: `${OUT}/parade-caption-375.png` });
     }
     if (!s.fx) break;
   }
@@ -183,9 +247,39 @@ test("@375: the parade keeps off the reading column, a train of six 48/32px ghos
     const right = centres.findIndex((c, n) => n > left && c > (2 * vw) / 3 && c < vw);
     expect({ i, left: left >= 0, right: right > left }).toEqual({ i, left: true, right: true });
   }
+  // the neighbourhood bar's text is never under a ghost of the train either, and it is all there by the end
+  const crosses = (r: { left: number; right: number; top: number; bottom: number }, b: Box) =>
+    r.left < b.left + b.width - 0.5 && r.right > b.left + 0.5 && r.top < b.bottom - 0.5 && r.bottom > b.top + 0.5;
+  const fullAddress = samples.at(-1)!.address;
+  expect(fullAddress.length).toBeGreaterThan(0);
+  for (const [n, s] of live.entries()) {
+    for (const [i, b] of s.spirits.entries()) {
+      const hit = s.address.find((r) => crosses(r, b));
+      expect({ n, i, hit }).toEqual({ n, i, hit: undefined });
+    }
+  }
+  const whole = (s: Sample) => s.address.reduce((w, r) => w + r.right - r.left, 0);
+  expect(live.some((s) => whole(s) >= whole(samples.at(-1)!) - 0.5)).toBe(true);
+  // the caption: inside the marquee band (under the bar's text), never over the page's text or a ghost,
+  // riding the whole width behind the last ghost and still on screen after every ghost has gone
+  expect(caption).toBe(`Trackers found: ${shown.length}`);
+  for (const s of live) {
+    const f = s.found!;
+    if (!visible(f, s.vw, s.vh)) continue;
+    expect({ top: f.top >= s.bar.bottom - 0.5, bottom: f.bottom <= s.bands.bottom + 0.5 }).toEqual({ top: true, bottom: true });
+    expect(s.text.find((r) => crosses(r, f))).toBeUndefined();
+    expect(s.spirits.find((b) => visible(b, s.vw, s.vh) && overlap(f, b))).toBeUndefined();
+    expect(Math.min(f.left + f.width, s.vw)).toBeLessThanOrEqual(s.spirits[5]!.left + 0.5);
+  }
+  const capCentres = live.map((s) => s.found!.left + s.found!.width / 2);
+  const capLeft = capCentres.findIndex((c) => c > 0 && c < vw / 3);
+  expect(capLeft).toBeGreaterThanOrEqual(0);
+  expect(capCentres.findIndex((c, n) => n > capLeft && c > (2 * vw) / 3 && c < vw)).toBeGreaterThan(capLeft);
+  expect(live.some((s) => visible(s.found!, vw, s.vh) && s.spirits.every((b) => !visible(b, vw, s.vh)))).toBe(true);
   expect(samples.some((s) => s.overflow)).toBe(false);
   expect(samples.at(-1)!.fx).toBe(false);
   expect(shot).toBe(true);
+  expect(captionShot).toBe(true);
 });
 
 test("@1280: a page without trackers still gets six parade ghosts, all decorative fillers with no name", async ({ context, sw }) => {
@@ -200,6 +294,7 @@ test("@1280: a page without trackers still gets six parade ghosts, all decorativ
   const inShadow = await shadowOf(page);
   expect(await companiesShown(inShadow)).toEqual([]);
   expect(await paradeDrawn(inShadow)).toEqual(Array.from({ length: 6 }, () => ({ company: null, name: null, filler: true })));
+  expect(await captionText(inShadow)).toBe("Trackers found: 0");
   await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 });
 });
 

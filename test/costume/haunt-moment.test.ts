@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderCostume } from "../../src/content/costume/render";
-import { flush, LANE_ORDER, setup, stubMain, withTrackers, type Rec } from "./helpers";
+import { flush, LANE_ORDER, setup, stubMain, TRACKER_ENTRIES, withTrackers, type Rec } from "./helpers";
 import { paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
 import { hemTint, orderCompanies, riseIn, tintsOf } from "../../src/content/costume/ghosts";
 import type { CompanyHit } from "../../src/data/types";
@@ -273,6 +273,16 @@ describe("hero haunt moment", () => {
     expect(spirits.map((s) => s.style.width)).toEqual(["144px", "96px", "144px", "96px", "96px", "144px"]);
   });
 
+  test("a named parade ghost ends with its name tag above the top edge too (4px gap and the 22px tag), so no tag is left hanging", () => {
+    const { el, recs } = croot(3);
+    playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }]);
+    const ends = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")].map((s) => {
+      const [drift] = on(recs, s);
+      return Number(String(drift!.keyframes.at(-1)!.transform).match(/, (-?\d+)px\)/)![1]);
+    });
+    expect(ends).toEqual([-(144 + 26), -96, -144, -96, -96, -144]);
+  });
+
   test("more than six companies: the first six in lane order, no fillers", () => {
     const { el } = croot(3);
     const many = Array.from({ length: 8 }, (_, i) => ({ company: `C${i}`, tint: HEM_TINTS[i % 6]! }));
@@ -280,6 +290,87 @@ describe("hero haunt moment", () => {
     const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
     expect(spirits.map((s) => s.dataset.company)).toEqual(["C0", "C1", "C2", "C3", "C4", "C5"]);
     expect(el.querySelectorAll("#fx [data-filler]")).toHaveLength(0);
+  });
+
+  test("the parade ends on a caption, Trackers found: N: it rises last, in the first ghost's column, and is gone by 3000", () => {
+    const { el, recs, win } = croot(3);
+    playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }], 9);
+    const found = el.querySelector<HTMLElement>("#fx .parade > .found");
+    expect(found?.textContent).toBe("Trackers found: 9");
+    expect(found!.style.left).toBe(el.querySelector<HTMLElement>("#fx .parade > .spirit")!.style.left);
+    const [rise] = on(recs, found);
+    expect(rise!.keyframes.map((k) => k.transform)).toEqual([`translate(0px, ${win.innerHeight}px)`, "translate(0px, -100%)"]);
+    expect(rise!.opts).toMatchObject({ delay: H.captionStart, duration: MOTION.haunt - H.captionStart, easing: "linear", fill: "both" });
+    // it sets off after the last ghost, so it ends the parade
+    expect(H.captionStart).toBeGreaterThan(H.paradeStart + 5 * H.paradeStagger);
+  });
+
+  test("the caption counts every tracker company on the page, not only the six that march; a clean page says 0", () => {
+    const { el } = croot(3);
+    playHaunt(el, false);
+    expect(el.querySelector("#fx .found")?.textContent).toBe("Trackers found: 0");
+    const { win, doc } = setup();
+    stubMain(win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
+    const more = ["chartbeat.com/a", "quantserve.com/a", "doubleclick.net/a", "facebook.net/a"].map((p, i) => ({ name: `https://${p}.js`, startTime: 20 + i }));
+    withTrackers(win, [...TRACKER_ENTRIES, ...more]);
+    const root = renderCostume(doc);
+    expect(root.querySelectorAll("#fx .parade > .spirit[data-company]")).toHaveLength(6);
+    expect(root.querySelector("#fx .found")?.textContent).toBe("Trackers found: 8");
+  });
+
+  test("on a phone the caption rides the marquee band one beat behind the last ghost, at the train's speed", () => {
+    const s = setup({ width: 375 });
+    const el = s.doc.body.appendChild(s.doc.createElement("div"));
+    el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+    const bands = el.querySelector<HTMLElement>("#top-bands")!;
+    Object.defineProperty(bands, "offsetTop", { value: 20 });
+    Object.defineProperty(bands, "offsetHeight", { value: 48 });
+    const proto = s.win.HTMLElement.prototype;
+    // the caption 120×22 (happy-dom has no layout); the prototype's own getters are put back after
+    const size = { offsetWidth: 120, offsetHeight: 22 };
+    const own = Object.keys(size).map((k) => [k, Object.getOwnPropertyDescriptor(proto, k)] as const);
+    for (const [k, v] of Object.entries(size)) {
+      const base = Object.getOwnPropertyDescriptor(proto, k)?.get;
+      Object.defineProperty(proto, k, { configurable: true, get(this: HTMLElement) { return this.classList.contains("found") ? v : (base?.call(this) ?? 0); } });
+    }
+    try {
+      playHaunt(el, false, [], [], 3);
+    } finally {
+      for (const [k, d] of own) d ? Object.defineProperty(proto, k, d) : delete (proto as unknown as Record<string, unknown>)[k];
+    }
+    const found = el.querySelector<HTMLElement>("#fx .parade > .found")!;
+    expect(found.textContent).toBe("Trackers found: 3");
+    // under the neighbourhood bar, centred in the 24px marquee band, so it never crosses the bar's text
+    expect(found.style.top).toBe(`${20 + 24 + (24 - 22) / 2}px`);
+    expect(found.style.left).toBe("0px");
+    const [ride] = on(s.recs, found);
+    expect(ride!.keyframes.map((k) => k.transform)).toEqual(["translate(-100%, 0px)", "translate(375px, 0px)"]);
+    // one beat after the last ghost, at the 48px ghosts' speed, so the gap to it holds all the way
+    expect(ride!.opts).toMatchObject({ delay: H.captionPhoneStart, duration: Math.round((H.paradePhoneMs * (375 + 120)) / (375 + 48)), easing: "linear", fill: "both" });
+    expect(H.captionPhoneStart as number).toBe(H.paradeStart + 6 * H.paradePhoneStagger);
+  });
+
+  test("on a phone the address is unveiled behind the last ghost, so no ghost of the train ever crosses the bar's text", () => {
+    const s = setup({ width: 375 });
+    const el = s.doc.body.appendChild(s.doc.createElement("div"));
+    el.innerHTML =
+      `<div id="starfield"></div><div id="top-bands"><div id="neighborhood"><span class="where">You are in: <b>Area51/Hangar/1998</b></span></div></div>` +
+      `<div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+    const where = el.querySelector<HTMLElement>(".where")!;
+    where.getBoundingClientRect = () => ({ left: 10, right: 190, width: 180, top: 5, bottom: 19, height: 14, x: 10, y: 5, toJSON() {} });
+    playHaunt(el, false);
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    const [last] = on(s.recs, spirits.at(-1)!);
+    const [veil] = on(s.recs, where);
+    expect(veil, "the address's own reveal").toBeDefined();
+    // the same timing as the last ghost's ride, held before it starts and dropped after it ends
+    expect(veil!.opts).toMatchObject({ delay: last!.opts.delay, duration: last!.opts.duration, easing: "linear", fill: "backwards" });
+    // the shown part ends 8px behind the last ghost's left edge (clear of its glow) at both ends of the ride
+    const ghostLeft = last!.keyframes.map((k) => Number(String(k.transform).match(/translate\((-?[\d.]+)px/)![1]));
+    const shownTo = veil!.keyframes.map((k) => 190 - Number(String(k.clipPath).match(/^inset\(0px (-?[\d.]+)px 0px 0px\)$/)![1]));
+    expect(shownTo).toEqual(ghostLeft.map((x) => x - 8));
+    expect(shownTo[0]).toBeLessThanOrEqual(10); // nothing shown while the train is still to come
+    expect(shownTo[1]).toBeGreaterThanOrEqual(190); // all of it once the last ghost is out
   });
 
   test("paradeOf: companies in lane order (ghosts by count, then vampires) with their lane tints", () => {

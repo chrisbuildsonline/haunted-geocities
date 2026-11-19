@@ -86,8 +86,8 @@ function buildSpirits(doc: Document, parade: readonly ParadeGhost[], phone: bool
   });
 }
 
-/** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette, the parade, the ghost and the roll. */
-function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[] = []): HTMLElement {
+/** The FX root: for the haunt, the CRT (scanlines, two lids, the phosphor line) around the vignette, the parade and its caption, the ghost and the roll. */
+function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[] = [], found = 0): HTMLElement {
   const doc = croot.ownerDocument;
   const fx = doc.createElement("div");
   fx.id = "fx";
@@ -98,7 +98,9 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
     const vw = doc.defaultView!.innerWidth;
     const phone = isPhone(vw);
     const spirits = buildSpirits(doc, parade, phone);
-    fx.querySelector(".parade")!.append(...spirits);
+    // The caption that ends the parade: the page's tracker count, as text.
+    const caption = Object.assign(doc.createElement("div"), { className: "found", textContent: `Trackers found: ${found}` });
+    fx.querySelector(".parade")!.append(...spirits, caption);
     // Placed through the CSSOM (no style attribute), so a page's style-src CSP has nothing to refuse.
     // On a phone each one is centred in the band strip (under any fixed header the bands sit below).
     const bands = layer(croot, "top-bands");
@@ -109,6 +111,8 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
       Object.assign(s.style, { left: `${left}px`, width: `${size}px`, height: `${size}px` });
       if (phone) s.style.top = `${(bands?.offsetTop ?? 0) + Math.max(0, ((bands?.offsetHeight ?? 0) - size) / 2)}px`;
     });
+    // It rises in the first ghost's column; on a phone it rides in from the left edge (its top is set once it can be measured).
+    caption.style.left = phone ? "0px" : spirits[0]!.style.left;
   }
   croot.append(fx);
   return fx;
@@ -136,14 +140,23 @@ const clipAt = (x: string) => `inset(0 calc(100% - ${x}) 0 0)`;
 export type Reveal = { el: Element; pseudo: string; left: number };
 const pseudoClip = (x: string, left: number) => `inset(-8px calc(100% - ${x} + ${left}px) -8px -8px)`;
 
-/** The haunt moment; `parade` is the page's tracker companies (paradeOf), drawn as the parade ghosts. */
-export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = [], parade: readonly ParadeGhost[] = []): Moment {
+/** A parade name tag's room under its ghost: the 4px gap and the 22px tag (18px line, 1px padding and border each way). */
+const NAME_ROOM = 26;
+
+/** How far behind the last ghost's left edge the address is unveiled on a phone: clear of its 8px glow. */
+const VEIL_GAP = 8;
+
+/**
+ * The haunt moment; `parade` is the page's tracker companies (paradeOf), drawn as the parade ghosts,
+ * and `found` how many there are in all (the caption's count, which may be more than six).
+ */
+export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[] = [], parade: readonly ParadeGhost[] = [], found = parade.length): Moment {
   const win = croot.ownerDocument.defaultView!;
   if (reduced) {
     const fade = croot.animate([{ opacity: 0 }, { opacity: 1 }], { duration: M.reducedHaunt, easing: "linear" });
     return skippable(win, { done: settle([fade]), finish: () => fade.finish() });
   }
-  const fx = buildFx(croot, true, parade);
+  const fx = buildFx(croot, true, parade, found);
   const q = (sel: string) => fx.querySelector(sel)!;
   const hud = layer(croot, "hud");
   const anims: Animation[] = [];
@@ -185,12 +198,47 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   fx.querySelectorAll(".spirit").forEach((s, i) => {
     const p = PARADE[i]!;
     const size = paradeSize(p.near, vw);
+    // A ghost with a name tag ends with the tag above the top edge too, so none is left hanging there.
+    const tag = s.querySelector(".name") ? NAME_ROOM : 0;
     const path = isPhone(vw)
       ? [{ transform: `translate(-${size}px, 0px)` }, { transform: `translate(${vw}px, 0px)` }]
-      : [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${size}px)` }];
+      : [{ transform: `translate(0px, ${vh}px)` }, { transform: `translate(${p.drift}px, -${size + tag}px)` }];
     const [stagger, duration] = isPhone(vw) ? [H.paradePhoneStagger, H.paradePhoneMs] : [H.paradeStagger, H.paradeMs];
     run(s, path, { delay: H.paradeStart + i * stagger, duration, easing: "linear", fill: "both" });
   });
+  // The caption ends the parade. Wide, it rises after the last ghost and leaves the top edge at 3000, slower
+  // than the ghosts, so they draw away from it. On a phone it rides the marquee band one beat behind the
+  // last ghost at the train's speed, under the neighbourhood bar's text, and leaves the right edge last.
+  const caption = q(".found") as HTMLElement;
+  const bands = layer(croot, "top-bands");
+  const last = PARADE.length - 1;
+  if (isPhone(vw)) {
+    const [w, h] = [caption.offsetWidth, caption.offsetHeight];
+    caption.style.top = `${(bands?.offsetTop ?? 0) + L.neighborhoodBar + (L.marquee - h) / 2}px`;
+    const lastSize = paradeSize(PARADE[last]!.near, vw);
+    run(caption, [{ transform: "translate(-100%, 0px)" }, { transform: `translate(${vw}px, 0px)` }], {
+      delay: H.captionPhoneStart,
+      duration: Math.round((H.paradePhoneMs * (vw + w)) / (vw + lastSize)),
+      easing: "linear",
+      fill: "both",
+    });
+    // The train rides over the neighbourhood bar, so its address is unveiled behind the last ghost
+    // (VEIL_GAP behind its left edge, on the same timing): no ghost is ever over the address's text.
+    const where = bands?.querySelector(".where");
+    if (where) {
+      const box = where.getBoundingClientRect();
+      const left = box.left - fx.getBoundingClientRect().left;
+      const shownTo = (ghostLeft: number) => ({ clipPath: `inset(0px ${+(box.width - (ghostLeft - VEIL_GAP - left)).toFixed(2)}px 0px 0px)` });
+      run(where, [shownTo(-lastSize), shownTo(vw)], { delay: H.paradeStart + last * H.paradePhoneStagger, duration: H.paradePhoneMs, easing: "linear", fill: "backwards" });
+    }
+  } else {
+    run(caption, [{ transform: `translate(0px, ${vh}px)` }, { transform: "translate(0px, -100%)" }], {
+      delay: H.captionStart,
+      duration: M.haunt - H.captionStart,
+      easing: "linear",
+      fill: "both",
+    });
+  }
 
   run(q(".sweep"), [{ transform: "translateX(-96px)" }, { transform: "translateX(100vw)" }], { ...wipe, fill: "both" });
   run(

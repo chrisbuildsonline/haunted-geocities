@@ -110,6 +110,8 @@ export const MOTION = {
     paradeMs: 1600,
     paradePhoneStagger: 200,
     paradePhoneMs: 1200,
+    captionStart: 1500,
+    captionPhoneStart: 2000,
     fxOut: [1600, 1900],
     riseStart: 1700,
     riseStagger: 250,

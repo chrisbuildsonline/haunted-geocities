@@ -407,8 +407,8 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const animate = !doc.hidden;
   showLine(animate && !motion.matches ? 1100 : 0);
   // The restyle lands at t=0 with the padding (one reflow); the tint and frame wipe in behind the ghost.
-  // The parade is the companies found so far (the scanner reads the buffered requests at once).
-  if (animate) costume.moment = playHaunt(croot, motion.matches, reveals(), paradeOf(scan.companies));
+  // The parade is the companies found so far (the scanner reads the buffered requests at once); its caption counts them all.
+  if (animate) costume.moment = playHaunt(croot, motion.matches, reveals(), paradeOf(scan.companies), scan.companies.length);
   if (costume.moment) costume.moment.done.then(() => (settled = true));
   else settled = true;
   // Only inside the extension: unit tests (no chrome global) never touch the network.
