@@ -35,6 +35,17 @@ test("theme change rebuilds the sheet", () => {
   expect(css).not.toContain("html::before");
 });
 
+test("scroll padding keeps focused and anchored content clear of the bands and the bottom overlay", () => {
+  const { doc } = setup({ html: `<html><head><style>html{scroll-padding-top:10px}body{padding:0}</style></head><body><p>x</p></body></html>` });
+  const page = addPageSheet(doc);
+  page.update(170, 30); // the HUD plus the docked graveyard strip, and a 30px cookie bar
+  const css = pageCss(doc);
+  expect(css).toMatch(/:root \{[^}]*scroll-padding-top: calc\(10px \+ 48px\) !important/);
+  expect(css).toMatch(/:root \{[^}]*scroll-padding-bottom: calc\(0px \+ 170px \+ 16px \+ var\(--hg-lift\)\) !important/);
+  expect(css).toContain("--hg-lift: 30px");
+  expect(css).toContain("padding-bottom: calc(0px + 170px + 16px + var(--hg-lift)) !important");
+});
+
 test("full-overlay adds 12px inline padding", () => {
   const { doc } = setup({ html: `<html><head><style>body{padding:0 3px}</style></head><body><p>x</p></body></html>` });
   const page = addPageSheet(doc);

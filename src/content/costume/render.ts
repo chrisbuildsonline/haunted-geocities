@@ -8,6 +8,7 @@ import { addPageSheet } from "./body-padding";
 import { documentHeight, FRAME, FRAME_OUT, frameBox, TINT, tintBox, type Box } from "./column-layers";
 import { paradeOf, playHaunt, playUnhaunt, type Moment, type Reveal } from "./haunt-moment";
 import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud";
+import { findBlocks } from "./page-blocks";
 import { pageTheme } from "./page-theme";
 import { watchReducedMotion } from "./reduced-motion";
 import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
@@ -120,7 +121,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   const vw = () => doc.documentElement.clientWidth || win.innerWidth;
   const measure = () => {
     const theme = pageTheme(doc);
-    page.set({ theme });
+    page.set({ theme, blocks: findBlocks(doc, { darkPage: theme.dark }) });
     bands.style.top = `${topOffset(doc)}px`;
     lift = sampleBottomLift(doc);
     pad();

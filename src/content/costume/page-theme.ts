@@ -36,15 +36,21 @@ export function ensureContrast(colour: string, bg: string, min: number = L.minCo
 
 const multiply = (a: string, b: string) => toHex(toRgb(a).map((v, i) => (v * toRgb(b)[i]!) / 255) as Rgb);
 
-/** A computed CSS colour as #rrggbb over white, or null when it is fully transparent. */
-function opaque(css: string): string | null {
+/** A computed CSS colour as its #rrggbb and its alpha, or null when it is not a hex or rgb() colour. */
+export function parseColour(css: string): { hex: string; alpha: number } | null {
   const hex = css.trim().match(/^#([0-9a-f]{6}|[0-9a-f]{3})$/i)?.[1];
-  if (hex) return "#" + (hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex).toLowerCase();
+  if (hex) return { hex: "#" + (hex.length === 3 ? [...hex].map((c) => c + c).join("") : hex).toLowerCase(), alpha: 1 };
   const m = css.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:\s*[,/]\s*([\d.]+%?))?\s*\)$/);
   if (!m) return null;
-  const a = m[4] === undefined ? 1 : m[4].endsWith("%") ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
-  if (a === 0) return null;
-  return toHex([m[1], m[2], m[3]].map((v) => 255 - (255 - parseFloat(v!)) * a) as Rgb);
+  const alpha = m[4] === undefined ? 1 : m[4].endsWith("%") ? parseFloat(m[4]) / 100 : parseFloat(m[4]);
+  return { hex: toHex([m[1], m[2], m[3]].map((v) => parseFloat(v!)) as Rgb), alpha };
+}
+
+/** A computed CSS colour as #rrggbb over white, or null when it is fully transparent. */
+function opaque(css: string): string | null {
+  const c = parseColour(css);
+  if (!c || c.alpha === 0) return null;
+  return toHex(toRgb(c.hex).map((v) => 255 - (255 - v) * c.alpha) as Rgb);
 }
 
 /** The page's background: body, else html when the body is transparent, else white. Images are ignored. */
@@ -97,7 +103,7 @@ const KEEP = [
   "[data-icon]", '[aria-hidden="true"]',
 ].join(", ");
 // Links that keep their colours: site chrome (often on its own dark bar) and links dressed as buttons.
-const CHROME = [
+export const CHROME = [
   "nav *", '[role="navigation"] *', '[role="banner"] *', '[role="contentinfo"] *',
   "header:not(main *, article *) *", "footer:not(main *, article *) *",
   '[role="button"]', '[role="tab"]', '[role="menuitem"]', '[class*="btn"]', '[class*="button"]', '[class*="Button"]',
