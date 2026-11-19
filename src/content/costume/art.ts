@@ -63,6 +63,9 @@ export const GHOST = [
 ];
 export const ghostLegend = (hem: string): Legend => ({ o: P.crypt, W: P.ghostWhite, S: P.ghostShade, H: hem });
 
+/** The 8×8 phone parade ghost: the HUD ghost icon with a 2-row hem in the company tint, so it fits the 24px marquee band. */
+export const PHONE_GHOST = ["..oooo..", ".oWWWWo.", "oWoWWoSo", "oWWWWWSo", "oWWWWWSo", "oHHHHHHo", "oHHHHHHo", "oo.oo.oo"];
+
 /**
  * The 16×18 vampire: slicked hair with a widow's peak, pale face, red eyes, two fangs under a dark
  * mouth, a high collar lined in blood red, a red clasp on a shirt V, and a cape whose lining shows

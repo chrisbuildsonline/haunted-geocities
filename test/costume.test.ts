@@ -558,7 +558,7 @@ describe("haunt moment", () => {
     expect([markers!.opts.delay, markers!.opts.duration, markers!.opts.easing]).toEqual([2800, 200, "linear"]);
 
     const end = Math.max(...recs.map((r) => (r.opts.delay ?? 0) + (r.opts.duration as number)));
-    expect(end).toBe(T.MOTION.haunt);
+    expect(end).toBe(T.MOTION.hero.captionOut); // the caption holds a beat after the 3000ms moment
     for (const r of recs) expect(props(r).every((p) => ["transform", "opacity", "clipPath"].includes(p))).toBe(true);
 
     await flush();

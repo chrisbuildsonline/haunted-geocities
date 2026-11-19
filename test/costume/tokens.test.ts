@@ -30,12 +30,13 @@ test("hero haunt motion values match DESIGN.md", () => {
   expect(MOTION.hero).toMatchObject({ riseStart: 1700, riseStagger: 250, riseMs: 400, risePx: 48, tagDelay: 200, tagMs: 200 });
   expect(MOTION.hero).toMatchObject({ hud: 1900, odometer: [2200, 2800], vampires: 2300, markers: 2800 });
   expect(MOTION.hero).toMatchObject({ roll: [800, 1400], paradeStart: 800, paradeStagger: 100, paradeMs: 1600, paradePhoneStagger: 160, paradePhoneMs: 1000 });
-  expect(MOTION.hero).toMatchObject({ captionStart: 1500, captionPhoneStart: 1760 });
+  expect(MOTION.hero).toMatchObject({ captionStart: 1500, captionPhoneStart: 1760, captionOut: 3600 });
 });
 
-test("the parade ghosts are drawn at 2x and 3x the lane ghost (the lane ghost's size and 2/3 of it on a phone), and match DESIGN.md", () => {
+test("the parade ghosts are drawn at 2x and 3x the lane ghost, and on a phone the 8×8 phone ghost at 3px and 2px fits the 24px marquee band; all match DESIGN.md", () => {
   expect(SPRITES).toEqual(designTokens().costume.sprites);
-  expect(SPRITES).toMatchObject({ paradeGhost: [144, 144], paradeGhostFar: [96, 96], paradeGhostPhone: [48, 48], paradeGhostPhoneFar: [32, 32] });
+  expect(SPRITES).toMatchObject({ paradeGhost: [144, 144], paradeGhostFar: [96, 96], paradeGhostPhone: [24, 24], paradeGhostPhoneFar: [16, 16] });
+  expect(SPRITES.paradeGhostPhone[0]).toBeLessThanOrEqual(LAYOUT.marquee);
 });
 
 test("graveyardGap is 4 and matches DESIGN.md", () => {

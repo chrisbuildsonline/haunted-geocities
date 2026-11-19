@@ -24,8 +24,8 @@ afterEach(() => {
   for (const w of windows.splice(0)) w.happyDOM.abort();
 });
 
-export function setup(opts: { reduced?: boolean; html?: string; width?: number } = {}) {
-  const win = new Window({ url: "https://haunt.example/", width: opts.width ?? 1280, height: 800 });
+export function setup(opts: { reduced?: boolean; html?: string; width?: number; height?: number } = {}) {
+  const win = new Window({ url: "https://haunt.example/", width: opts.width ?? 1280, height: opts.height ?? 800 });
   windows.push(win);
   win.document.write(opts.html ?? LIGHT);
   const recs: Rec[] = [];

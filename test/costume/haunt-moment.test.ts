@@ -24,6 +24,22 @@ function croot(n: number, opts: { reduced?: boolean } = {}) {
   return { ...s, el };
 }
 
+/** Runs `fn` with the caption measuring `w`×`h` (happy-dom has no layout); the prototype's own getters are put back after. */
+function withCaptionSize(win: { HTMLElement: { prototype: object } }, w: number, h: number, fn: () => void) {
+  const proto = win.HTMLElement.prototype;
+  const size = { offsetWidth: w, offsetHeight: h };
+  const own = Object.keys(size).map((k) => [k, Object.getOwnPropertyDescriptor(proto, k)] as const);
+  for (const [k, v] of Object.entries(size)) {
+    const base = Object.getOwnPropertyDescriptor(proto, k)?.get;
+    Object.defineProperty(proto, k, { configurable: true, get(this: HTMLElement) { return this.classList.contains("found") ? v : (base?.call(this) ?? 0); } });
+  }
+  try {
+    fn();
+  } finally {
+    for (const [k, d] of own) d ? Object.defineProperty(proto, k, d) : delete (proto as unknown as Record<string, unknown>)[k];
+  }
+}
+
 /** Element.animate whose `finished` promises resolve only when the test (or `finish()`) says so. */
 function deferredClock(win: { Element: { prototype: object } }) {
   const anims: { el: Element; keyframes: Keyframe[]; opts: KeyframeAnimationOptions; resolve(): void }[] = [];
@@ -132,8 +148,8 @@ describe("hero haunt moment", () => {
     expect(span(markers!)).toEqual([H.markers, H.markers + 200]);
   });
 
-  test("the moment ends at 3000 with four ghosts, and after the last tag pop with eight", async () => {
-    for (const [n, last] of [[4, 3000], [8, 3850]] as const) {
+  test("the moment ends after the caption's hold (3600) with four ghosts, and after the last tag pop with eight", async () => {
+    for (const [n, last] of [[4, H.captionOut], [8, 3850]] as const) {
       const { el, recs } = croot(n);
       const m = playHaunt(el, false);
       expect(Math.max(...recs.map(end))).toBe(last);
@@ -227,32 +243,37 @@ describe("hero haunt moment", () => {
     expect(H.paradeStart + 5 * H.paradeStagger + H.paradeMs).toBeLessThanOrEqual(MOTION.haunt);
   });
 
-  test("on a phone (400px or less) the parade keeps off the reading column: a train of 48/32px ghosts along the top bands", () => {
+  test("on a phone (400px or less) the parade keeps off the reading column and the address bar: a train of 24/16px ghosts in the marquee band", () => {
     const s = setup({ width: 375 });
     const el = s.doc.body.appendChild(s.doc.createElement("div"));
     el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
-    // the bands sit 20px down (under a page's fixed header) and are 48px tall
+    // the bands sit 20px down (under a page's fixed header): the 24px bar, then the 24px marquee band
     const bands = el.querySelector<HTMLElement>("#top-bands")!;
     Object.defineProperty(bands, "offsetTop", { value: 20 });
     Object.defineProperty(bands, "offsetHeight", { value: 48 });
     playHaunt(el, false);
     const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
-    expect(spirits.map((sp) => [sp.style.width, sp.style.height])).toEqual([48, 32, 48, 32, 32, 48].map((n) => [`${n}px`, `${n}px`]));
-    expect([SPRITES.paradeGhostPhone[0], SPRITES.paradeGhostPhoneFar[0]]).toEqual([48, 32]);
+    expect(spirits.map((sp) => [sp.style.width, sp.style.height])).toEqual([24, 16, 24, 16, 16, 24].map((n) => [`${n}px`, `${n}px`]));
+    expect([SPRITES.paradeGhostPhone[0], SPRITES.paradeGhostPhoneFar[0]]).toEqual([24, 16]);
+    // the 8×8 phone ghost art, drawn at 3px (24) and shown at 2px (16): integer art pixels both ways
+    expect(spirits.map((sp) => sp.querySelector("svg")?.getAttribute("viewBox"))).toEqual(Array(6).fill("0 0 24 24"));
+    const [barBottom, bandBottom] = [20 + 24, 20 + 48];
     spirits.forEach((sp, i) => {
       const size = parseFloat(sp.style.width);
-      // centred in the band strip, never below it, so never over the page's text
-      expect(parseFloat(sp.style.top)).toBe(20 + (48 - size) / 2);
-      expect(parseFloat(sp.style.top) + size).toBeLessThanOrEqual(20 + 48);
+      // centred in the marquee band: under the address bar the whole show, and never below the bands
+      expect(parseFloat(sp.style.top)).toBe(barBottom + (24 - size) / 2);
+      expect(parseFloat(sp.style.top)).toBeGreaterThanOrEqual(barBottom);
+      expect(parseFloat(sp.style.top) + size).toBeLessThanOrEqual(bandBottom);
       expect(sp.style.left).toBe("0px");
       // left edge to right edge, sideways only, spaced out so the six never clump
       const [ride] = on(s.recs, sp);
       expect(ride!.keyframes.map((k) => k.transform)).toEqual([`translate(-${size}px, 0px)`, "translate(375px, 0px)"]);
       expect(ride!.opts).toMatchObject({ delay: H.paradeStart + i * H.paradePhoneStagger, duration: H.paradePhoneMs, easing: "linear", fill: "both" });
     });
+    // the train is still out of the band by 3000
     expect(H.paradeStart + 5 * H.paradePhoneStagger + H.paradePhoneMs).toBeLessThanOrEqual(MOTION.haunt);
-    // 48px ghosts at least 64px apart on the way across
-    expect(((375 + 48) / H.paradePhoneMs) * H.paradePhoneStagger).toBeGreaterThanOrEqual(64);
+    // 24px ghosts at least 48px apart on the way across
+    expect(((375 + 24) / H.paradePhoneMs) * H.paradePhoneStagger).toBeGreaterThanOrEqual(48);
   });
 
   test("the parade is the page's own tracker companies: lane order, lane tint and a name tag each; fillers only make it up to six", () => {
@@ -273,14 +294,40 @@ describe("hero haunt moment", () => {
     expect(spirits.map((s) => s.style.width)).toEqual(["144px", "96px", "144px", "96px", "96px", "144px"]);
   });
 
-  test("a named parade ghost ends with its name tag above the top edge too (4px gap and the 22px tag), so no tag is left hanging", () => {
+  test("a parade name tag is worn on its ghost's hem, in the hem's tint, so it never sits on the page's text and leaves with its ghost", () => {
     const { el, recs } = croot(3);
     playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }]);
-    const ends = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")].map((s) => {
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
+    // the tag is the hem's own colour: the ghost's tint still shows, with the name on it
+    const name = spirits[0]!.querySelector<HTMLElement>(".name")!;
+    expect(name.style.background).toBe("#99ccff");
+    // nothing hangs under the sprite any more, so every ghost ends just over the top edge
+    const ends = spirits.map((s) => {
       const [drift] = on(recs, s);
       return Number(String(drift!.keyframes.at(-1)!.transform).match(/, (-?\d+)px\)/)![1]);
     });
-    expect(ends).toEqual([-(144 + 26), -96, -144, -96, -96, -144]);
+    expect(ends).toEqual([-144, -96, -144, -96, -96, -144]);
+  });
+
+  test("parade name tag CSS: inside the hem rows (12-14 of 16) and the hem's width, crypt ink on the tint, 14px near and 12px far", () => {
+    const css = costumeCss({ stars: "a", twinkle: "b" });
+    const rule = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replaceAll(".", "\\.")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+    const tag = rule(".spirit .name");
+    // from the hem's first row (12/16 = 75%) and never below its third (15/16): 22px near (144px, 9px rows
+    // 108-135) and 18px far (96px, 6px rows 72-90)
+    expect(tag).toMatch(/top:\s*75%/);
+    expect(tag).not.toMatch(/margin-top/);
+    expect(tag).toMatch(/max-width:\s*87\.5%/); // the hem's 14 of 16 columns
+    expect(tag).toMatch(/overflow:\s*hidden/);
+    expect(tag).toMatch(/text-overflow:\s*ellipsis/);
+    expect(tag).toMatch(new RegExp(`color:\\s*${PALETTE.crypt}`));
+    expect(tag).toMatch(new RegExp(`border:\\s*1px solid ${PALETTE.crypt}`));
+    expect(tag).toMatch(/font:\s*14px\/18px/);
+    expect(rule(".spirit.far .name")).toMatch(/font-size:\s*12px/);
+    expect(rule(".spirit.far .name")).toMatch(/line-height:\s*14px/);
+    // 18px line + 1px padding and 1px border each way = 22px, inside the 27px of a near ghost's hem rows
+    expect(18 + 4).toBeLessThanOrEqual((144 / 16) * 3);
+    expect(14 + 4).toBeLessThanOrEqual((96 / 16) * 3);
   });
 
   test("more than six companies: the first six in lane order, no fillers", () => {
@@ -292,17 +339,36 @@ describe("hero haunt moment", () => {
     expect(el.querySelectorAll("#fx [data-filler]")).toHaveLength(0);
   });
 
-  test("the parade ends on a caption, Trackers found: N: it rises last, in the first ghost's column, and is gone by 3000", () => {
-    const { el, recs, win } = croot(3);
-    playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }], 9);
-    const found = el.querySelector<HTMLElement>("#fx .parade > .found");
-    expect(found?.textContent).toBe("Trackers found: 9");
-    expect(found!.style.left).toBe(el.querySelector<HTMLElement>("#fx .parade > .spirit")!.style.left);
-    const [rise] = on(recs, found);
-    expect(rise!.keyframes.map((k) => k.transform)).toEqual([`translate(0px, ${win.innerHeight}px)`, "translate(0px, -100%)"]);
-    expect(rise!.opts).toMatchObject({ delay: H.captionStart, duration: MOTION.haunt - H.captionStart, easing: "linear", fill: "both" });
-    // it sets off after the last ghost, so it ends the parade
-    expect(H.captionStart).toBeGreaterThan(H.paradeStart + 5 * H.paradeStagger);
+  // At every width the caption keeps to the marquee band (costume chrome, never the page's text): it rides
+  // in from the left edge at the phone train's speed (the width in a second), rests centred in the band and
+  // holds there to captionOut, a beat after the 3000ms moment.
+  for (const [vw, vh, start] of [[1280, 800, H.captionStart], [700, 667, H.captionStart], [401, 667, H.captionStart], [375, 667, H.captionPhoneStart]] as const) {
+    test(`@${vw}: the caption, Trackers found: N, rides into the marquee band under the bar, rests centred and holds to ${H.captionOut}`, () => {
+      const s = setup({ width: vw, height: vh });
+      const el = s.doc.body.appendChild(s.doc.createElement("div"));
+      el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+      Object.defineProperty(el.querySelector("#top-bands")!, "offsetTop", { value: 20 });
+      withCaptionSize(s.win, 130, 22, () => playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }], 9));
+      const found = el.querySelector<HTMLElement>("#fx .parade > .found")!;
+      expect(found.textContent).toBe("Trackers found: 9");
+      // centred in the 24px marquee band, under the address bar, for the whole ride: it moves sideways only
+      expect(found.style.top).toBe(`${20 + 24 + (24 - 22) / 2}px`);
+      expect(found.style.left).toBe("0px");
+      const [ride] = on(s.recs, found);
+      const restX = Math.round((vw - 130) / 2);
+      expect(ride!.keyframes.map((k) => k.transform)).toEqual(["translate(-100%, 0px)", `translate(${restX}px, 0px)`, `translate(${restX}px, 0px)`]);
+      expect(ride!.opts).toMatchObject({ delay: start, easing: "linear", fill: "both" });
+      // in at the train's speed: from fully off the left edge to centred
+      const rideMs = (ride!.keyframes[1]!.offset as number) * (ride!.opts.duration as number);
+      expect(Math.round(rideMs)).toBe(Math.round((H.paradePhoneMs * (restX + 130)) / (vw + SPRITES.paradeGhostPhone[0])));
+      // it rests, readable, for over a second, to captionOut
+      expect(end(ride!)).toBe(H.captionOut);
+      expect(H.captionOut - (start + rideMs)).toBeGreaterThan(1000);
+    });
+  }
+
+  test("the caption's hold ends a beat (600ms) after the 3000ms moment", () => {
+    expect(H.captionOut as number).toBe(MOTION.haunt + 600);
   });
 
   test("the caption counts every tracker company on the page, not only the six that march; a clean page says 0", () => {
@@ -318,77 +384,20 @@ describe("hero haunt moment", () => {
     expect(root.querySelector("#fx .found")?.textContent).toBe("Trackers found: 8");
   });
 
-  test("on a phone the caption rides the marquee band one beat behind the last ghost, at the train's speed", () => {
-    const s = setup({ width: 375 });
-    const el = s.doc.body.appendChild(s.doc.createElement("div"));
-    el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
-    const bands = el.querySelector<HTMLElement>("#top-bands")!;
-    Object.defineProperty(bands, "offsetTop", { value: 20 });
-    Object.defineProperty(bands, "offsetHeight", { value: 48 });
-    const proto = s.win.HTMLElement.prototype;
-    // the caption 120×22 (happy-dom has no layout); the prototype's own getters are put back after
-    const size = { offsetWidth: 120, offsetHeight: 22 };
-    const own = Object.keys(size).map((k) => [k, Object.getOwnPropertyDescriptor(proto, k)] as const);
-    for (const [k, v] of Object.entries(size)) {
-      const base = Object.getOwnPropertyDescriptor(proto, k)?.get;
-      Object.defineProperty(proto, k, { configurable: true, get(this: HTMLElement) { return this.classList.contains("found") ? v : (base?.call(this) ?? 0); } });
-    }
-    try {
-      playHaunt(el, false, [], [], 3);
-    } finally {
-      for (const [k, d] of own) d ? Object.defineProperty(proto, k, d) : delete (proto as unknown as Record<string, unknown>)[k];
-    }
-    const found = el.querySelector<HTMLElement>("#fx .parade > .found")!;
-    expect(found.textContent).toBe("Trackers found: 3");
-    // under the neighbourhood bar, centred in the 24px marquee band, so it never crosses the bar's text
-    expect(found.style.top).toBe(`${20 + 24 + (24 - 22) / 2}px`);
-    expect(found.style.left).toBe("0px");
-    const [ride] = on(s.recs, found);
-    expect(ride!.keyframes.map((k) => k.transform)).toEqual(["translate(-100%, 0px)", "translate(375px, 0px)"]);
-    // one beat after the last ghost, at the 48px ghosts' speed, so the gap to it holds all the way
-    expect(ride!.opts).toMatchObject({ delay: H.captionPhoneStart, duration: Math.round((H.paradePhoneMs * (375 + 120)) / (375 + 48)), easing: "linear", fill: "both" });
+  test("on a phone the caption rides in one beat behind the last ghost of the train, so the gap to it holds on the way in", () => {
     expect(H.captionPhoneStart as number).toBe(H.paradeStart + 6 * H.paradePhoneStagger);
-    // and the moment still ends at 3000 on a phone: the caption is out of the band by then
-    expect(end(ride!)).toBeLessThanOrEqual(MOTION.haunt);
   });
 
-  test("on a phone a wide caption still leaves by 3000: its ride is cut to fit, never past the moment", () => {
-    const s = setup({ width: 320 });
-    const el = s.doc.body.appendChild(s.doc.createElement("div"));
-    el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
-    const proto = s.win.HTMLElement.prototype;
-    const own = Object.getOwnPropertyDescriptor(proto, "offsetWidth");
-    Object.defineProperty(proto, "offsetWidth", { configurable: true, get(this: HTMLElement) { return this.classList.contains("found") ? 200 : (own?.get?.call(this) ?? 0); } });
-    try {
-      playHaunt(el, false, [], [], 123);
-    } finally {
-      own ? Object.defineProperty(proto, "offsetWidth", own) : delete (proto as unknown as Record<string, unknown>).offsetWidth;
-    }
-    const [ride] = on(s.recs, el.querySelector("#fx .found"));
-    expect(end(ride!)).toBe(MOTION.haunt);
-  });
-
-  test("on a phone the address is unveiled behind the last ghost, so no ghost of the train ever crosses the bar's text", () => {
+  test("on a phone the address is never veiled: the train keeps under the bar, so the address shows the whole show", () => {
     const s = setup({ width: 375 });
     const el = s.doc.body.appendChild(s.doc.createElement("div"));
     el.innerHTML =
       `<div id="starfield"></div><div id="top-bands"><div id="neighborhood"><span class="where">You are in: <b>Area51/Hangar/1998</b></span></div></div>` +
       `<div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
-    const where = el.querySelector<HTMLElement>(".where")!;
-    where.getBoundingClientRect = () => ({ left: 10, right: 190, width: 180, top: 5, bottom: 19, height: 14, x: 10, y: 5, toJSON() {} });
     playHaunt(el, false);
-    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")];
-    const [last] = on(s.recs, spirits.at(-1)!);
-    const [veil] = on(s.recs, where);
-    expect(veil, "the address's own reveal").toBeDefined();
-    // the same timing as the last ghost's ride, held before it starts and dropped after it ends
-    expect(veil!.opts).toMatchObject({ delay: last!.opts.delay, duration: last!.opts.duration, easing: "linear", fill: "backwards" });
-    // the shown part ends 8px behind the last ghost's left edge (clear of its glow) at both ends of the ride
-    const ghostLeft = last!.keyframes.map((k) => Number(String(k.transform).match(/translate\((-?[\d.]+)px/)![1]));
-    const shownTo = veil!.keyframes.map((k) => 190 - Number(String(k.clipPath).match(/^inset\(0px (-?[\d.]+)px 0px 0px\)$/)![1]));
-    expect(shownTo).toEqual(ghostLeft.map((x) => x - 8));
-    expect(shownTo[0]).toBeLessThanOrEqual(10); // nothing shown while the train is still to come
-    expect(shownTo[1]).toBeGreaterThanOrEqual(190); // all of it once the last ghost is out
+    const where = el.querySelector<HTMLElement>(".where")!;
+    expect(on(s.recs, where)).toEqual([]);
+    expect(s.recs.filter((r) => el.querySelector("#neighborhood")!.contains(r.el))).toEqual([]);
   });
 
   test("paradeOf: companies in lane order (ghosts by count, then vampires) with their lane tints", () => {
@@ -499,9 +508,9 @@ describe("hero haunt moment", () => {
     for (const sel of [".spirit", ".spirit.near", ".spirit.far"]) expect(rule(sel) ?? "", sel).not.toMatch(/opacity/);
     expect(rule(".spirit.near svg")).toMatch(/opacity:\s*\.92/);
     expect(rule(".spirit.far svg")).toMatch(/opacity:\s*\.6\b/);
-    // and the tag itself is an opaque crypt plaque
-    expect(rule(".spirit .name")).toMatch(new RegExp(`background:\\s*${PALETTE.crypt}`));
-    expect(rule(".spirit .name")).not.toMatch(/opacity/);
+    // and the tag itself is an opaque plaque: its ground is the hem tint, set on it (never a see-through colour)
+    expect(rule(".spirit .name")).not.toMatch(/opacity|background/);
+    for (const t of HEM_TINTS) expect(t).toMatch(/^#[0-9a-f]{6}$/);
   });
 
   test("reduced motion: no FX root, no lids, no rise, no stagger, no phase, tags shown at once", () => {
