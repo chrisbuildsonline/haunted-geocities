@@ -348,6 +348,24 @@ describe("hero haunt moment", () => {
     // one beat after the last ghost, at the 48px ghosts' speed, so the gap to it holds all the way
     expect(ride!.opts).toMatchObject({ delay: H.captionPhoneStart, duration: Math.round((H.paradePhoneMs * (375 + 120)) / (375 + 48)), easing: "linear", fill: "both" });
     expect(H.captionPhoneStart as number).toBe(H.paradeStart + 6 * H.paradePhoneStagger);
+    // and the moment still ends at 3000 on a phone: the caption is out of the band by then
+    expect(end(ride!)).toBeLessThanOrEqual(MOTION.haunt);
+  });
+
+  test("on a phone a wide caption still leaves by 3000: its ride is cut to fit, never past the moment", () => {
+    const s = setup({ width: 320 });
+    const el = s.doc.body.appendChild(s.doc.createElement("div"));
+    el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+    const proto = s.win.HTMLElement.prototype;
+    const own = Object.getOwnPropertyDescriptor(proto, "offsetWidth");
+    Object.defineProperty(proto, "offsetWidth", { configurable: true, get(this: HTMLElement) { return this.classList.contains("found") ? 200 : (own?.get?.call(this) ?? 0); } });
+    try {
+      playHaunt(el, false, [], [], 123);
+    } finally {
+      own ? Object.defineProperty(proto, "offsetWidth", own) : delete (proto as unknown as Record<string, unknown>).offsetWidth;
+    }
+    const [ride] = on(s.recs, el.querySelector("#fx .found"));
+    expect(end(ride!)).toBe(MOTION.haunt);
   });
 
   test("on a phone the address is unveiled behind the last ghost, so no ghost of the train ever crosses the bar's text", () => {

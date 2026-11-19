@@ -218,7 +218,8 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
     const lastSize = paradeSize(PARADE[last]!.near, vw);
     run(caption, [{ transform: "translate(-100%, 0px)" }, { transform: `translate(${vw}px, 0px)` }], {
       delay: H.captionPhoneStart,
-      duration: Math.round((H.paradePhoneMs * (vw + w)) / (vw + lastSize)),
+      // a very wide caption rides a little faster, so it is still out by the end of the moment
+      duration: Math.min(Math.round((H.paradePhoneMs * (vw + w)) / (vw + lastSize)), M.haunt - H.captionPhoneStart),
       easing: "linear",
       fill: "both",
     });
