@@ -135,7 +135,7 @@ button:focus-visible { ${ring} }
 #graveyard .gy-icon svg { display: block; image-rendering: pixelated; }
 #graveyard .stones { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
 #graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: auto; min-width: 48px; height: auto; justify-content: flex-end; }
-#graveyard .tag { margin-top: 4px; }
+#graveyard .tag { margin-top: 4px; white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-align: center; }
 #graveyard .stamp { top: 14px; }
 #graveyard .gy-empty { margin: 0; padding: 4px 10px; color: ${P.bone}; font: 13px/18px ${COMIC}; }
 

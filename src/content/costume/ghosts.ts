@@ -125,6 +125,13 @@ export function exorciseOut(el: HTMLElement): Animation[] {
 const kindOf = (hit: CompanyHit) => (hit.vampire ? "vampire" : "ghost");
 const byName = (a: CompanyHit, b: CompanyHit) => (a.company < b.company ? -1 : a.company > b.company ? 1 : 0);
 
+/**
+ * The name on a sprite's tag: the company without its owner in brackets ("Google Analytics (Google)"
+ * reads "Google Analytics"), so companies of one owner never share a cut-off prefix. The full name
+ * stays in the accessible name and the card.
+ */
+export const tagName = (company: string) => company.replace(/\s*\([^()]*\)$/, "") || company;
+
 function label(hit: CompanyHit): string {
   if (!hit.vampire) return `${hit.company}, tracker ghost, seen ${hit.count} ${hit.count === 1 ? "time" : "times"}`;
   return hit.vampire.caught.length ? `${hit.company}, vampire, caught doing ${caughtLine(hit.vampire.caught)}` : `${hit.company}, vampire, known to fingerprint`;
@@ -159,7 +166,7 @@ export function makeSprite(doc: Document, hit: CompanyHit, tint: string | undefi
     kind === "ghost"
       ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(tint!)}</span></span></span><span class="tag"></span>`
       : `<span class="bob"><span class="sprite">${vampireSvg()}</span></span><span class="tag"></span>`;
-  el.querySelector(".tag")!.textContent = hit.company;
+  el.querySelector(".tag")!.textContent = tagName(hit.company);
   el.addEventListener("click", () => opts.onOpen(hit.company, el));
   el.classList.toggle("known", !!hit.vampire?.knownOnly);
   if (opts.rise) kind === "ghost" ? riseIn(el) : vampireIn(el);

@@ -2,7 +2,7 @@
 // 64px gutter (full-overlay mode), and the sprite builder it shares with the lanes.
 import { describe, expect, test } from "bun:test";
 import { buildGraveyard, updateDocked } from "../../src/content/costume/graveyard";
-import { orderCompanies, updateGhosts } from "../../src/content/costume/ghosts";
+import { orderCompanies, tagName, updateGhosts } from "../../src/content/costume/ghosts";
 import { costumeCss } from "../../src/content/costume/styles";
 import type { CompanyHit } from "../../src/data/types";
 import { setup } from "./helpers";
@@ -79,6 +79,30 @@ describe("updateDocked", () => {
     expect(names(g)).toContain("Microsoft, tracker ghost, seen 1 time");
     expect(names(g)).toContain("Hotjar, vampire, caught doing canvas readback");
     expect(names(g)).toContain("Taboola, vampire, known to fingerprint");
+  });
+
+  test("name tags drop the owner in brackets, so same-prefix companies read differently; the label keeps the full name", () => {
+    const { doc, g } = strip();
+    const google = [hit("Google Analytics (Google)", 2), hit("Google Ads (Google)", 1, known), hit("Criteo", 1)];
+    updateDocked(g, google, opts());
+    const tags = (root: Element) => Object.fromEntries([...root.querySelectorAll<HTMLElement>(".ghost, .vampire")].map((b) => [b.dataset.company, b.querySelector(".tag")!.textContent]));
+    expect(tags(g)).toEqual({ "Google Analytics (Google)": "Google Analytics", "Google Ads (Google)": "Google Ads", Criteo: "Criteo" });
+    expect(sprites(g)[0]!.getAttribute("aria-label")).toBe("Google Analytics (Google), tracker ghost, seen 2 times");
+    // the lanes wear the same short tags
+    const lanes = doc.createElement("div");
+    updateGhosts(lanes, google, Array.from({ length: 4 }, (_, i) => ({ side: "left" as const, x: 0, y: i * 72, w: 64 })), opts());
+    expect(tags(lanes)).toEqual(tags(g));
+    expect(tagName("(Google)")).toBe("(Google)"); // never an empty tag
+  });
+
+  test("a docked tag may take two lines, clamped with an ellipsis; a lane tag stays on one", () => {
+    const css = costumeCss({ stars: "a", twinkle: "b" });
+    const rule = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+    const docked = rule("#graveyard .tag");
+    for (const d of ["white-space: normal", "display: -webkit-box", "-webkit-box-orient: vertical", "-webkit-line-clamp: 2", "text-align: center"]) {
+      expect({ d, ok: docked.includes(d) }).toEqual({ d, ok: true });
+    }
+    expect(rule(".tag, .stack")).toContain("white-space: nowrap");
   });
 
   test("click, Enter and Space call onOpen with the sprite as opener", () => {
