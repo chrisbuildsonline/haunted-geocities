@@ -107,7 +107,10 @@ for (const width of [1280, 700] as const) {
         captionShot = true;
         await page.screenshot({ path: `${OUT}/parade-caption-${width}.png` });
       }
-      if (!restShot && s.found && s.found.top < s.bandsBottom && s.spirits.every((b) => !visible(b, s.vw, s.vh))) {
+      // at rest: on screen, centred in the band, every ghost gone (before the parade the caption waits
+      // off-screen left with every ghost below the viewport, so "no ghost visible" alone is not enough)
+      const centred = s.found && visible(s.found, s.vw, s.vh) && s.found.top < s.bandsBottom && Math.abs(s.found.left + s.found.width / 2 - s.vw / 2) <= 1;
+      if (!restShot && centred && s.spirits.every((b) => !visible(b, s.vw, s.vh))) {
         restShot = true;
         await page.screenshot({ path: `${OUT}/parade-rest-${width}.png` });
       }
@@ -253,7 +256,7 @@ test("@375: the parade keeps off the reading column and the address bar, a train
       captionShot = true;
       await page.screenshot({ path: `${OUT}/parade-caption-375.png` });
     }
-    if (!restShot && s.found && Math.abs(s.found.left + s.found.width / 2 - s.vw / 2) < 1 && s.spirits.every((b) => !visible(b, s.vw, s.vh))) {
+    if (!restShot && s.found && visible(s.found, s.vw, s.vh) && Math.abs(s.found.left + s.found.width / 2 - s.vw / 2) < 1 && s.spirits.every((b) => !visible(b, s.vw, s.vh))) {
       restShot = true;
       await page.screenshot({ path: `${OUT}/parade-rest-375.png` });
     }
@@ -322,6 +325,7 @@ test("@375: the parade keeps off the reading column and the address bar, a train
   expect(samples.at(-1)!.fx).toBe(false);
   expect(shot).toBe(true);
   expect(captionShot).toBe(true);
+  expect(restShot).toBe(true);
 });
 
 test("@1280: a page without trackers still gets six parade ghosts, all decorative fillers with no name", async ({ context, sw }) => {
