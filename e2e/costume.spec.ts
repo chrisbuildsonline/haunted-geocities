@@ -14,7 +14,7 @@ const center = async (inShadow: InShadow, selector: string) =>
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }, selector);
 
-const settle = (page: Page) => page.waitForTimeout(3100);
+const settle = (page: Page) => page.waitForTimeout(3700);
 
 test("haunt renders the starfield gutters, top bands and HUD inside the closed shadow root", async ({ context, sw }) => {
   const page = await context.newPage();

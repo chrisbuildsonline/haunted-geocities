@@ -148,7 +148,7 @@ test("exorcise from a docked card stamps the sprite and the popup agrees", async
   await popup.getByRole("button", { name: "Haunt this page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
-  await page.waitForTimeout(3100);
+  await page.waitForTimeout(3700);
   const inShadow = await shadowOf(page);
   const at = await spriteCenter(inShadow, "Criteo");
   await page.mouse.click(at.x, at.y);

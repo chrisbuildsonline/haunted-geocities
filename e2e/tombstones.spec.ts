@@ -307,7 +307,7 @@ for (const reduced of [false, true]) {
     await page.bringToFront();
     const inShadow = await shadowOf(page);
     await expect.poll(() => inShadow(function () { return this.querySelectorAll(".tomb-marker").length; })).toBe(3);
-    await page.waitForTimeout(3100); // the haunt moment settles
+    await page.waitForTimeout(3700); // the haunt moment settles
     for (const width of [1280, 375]) {
       await page.setViewportSize({ width, height: 800 });
       await expect.poll(() => inShadow(function () { return [...this.querySelectorAll<HTMLElement>(".tomb-marker")].some((m) => getComputedStyle(m).display !== "none"); })).toBe(true);
@@ -344,7 +344,7 @@ test("every open stone card keeps at least 8px from both viewport edges at 1280 
   await page.bringToFront();
   const inShadow = await shadowOf(page);
   await expect.poll(() => inShadow(function () { return this.querySelectorAll(".tomb-marker").length; })).toBe(3);
-  await page.waitForTimeout(3100); // the haunt moment settles
+  await page.waitForTimeout(3700); // the haunt moment settles
   await page.screenshot({ path: `${SHOTS}/edge-1280-haunted.png` });
 
   for (const width of [1280, 375]) {

@@ -138,7 +138,7 @@ test("unhaunt mid-moment and after it: outerHTML and adoptedStyleSheets equal pr
   expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(before);
   // The whole moment, then un-haunt.
   await haunt(sw, page);
-  await page.waitForTimeout(3100);
+  await page.waitForTimeout(3700);
   await unhaunt(sw, tabId);
   await expect(page.locator("hg-crypt")).toHaveCount(0);
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(0);

@@ -11,7 +11,7 @@ async function hauntAt(context: BrowserContext, sw: Worker, width: number, path:
   await page.setViewportSize({ width, height });
   await page.goto(fixture(path));
   await haunt(sw, page);
-  await page.waitForTimeout(3100); // the haunt moment settles
+  await page.waitForTimeout(3700); // the haunt moment settles
   return { page, inShadow: await shadowOf(page) };
 }
 

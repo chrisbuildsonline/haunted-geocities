@@ -3,7 +3,7 @@
 import type { Page, Worker } from "@playwright/test";
 import { expect, fixture, haunt, shadowOf, test } from "./fixtures";
 
-const settle = (page: Page) => page.waitForTimeout(3100);
+const settle = (page: Page) => page.waitForTimeout(3700);
 const SHOTS = "test-results/column-costume";
 
 async function unhaunt(sw: Worker, tabId: number) {

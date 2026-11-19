@@ -57,7 +57,7 @@ function makeGif(frames: string, n: number, fps: number, gif: string, scale = ""
 /** The haunt moment has played out: no finite animation (fade-ins, the haunt flash) still runs, bar the 20s marquee. */
 async function settled(page: Page) {
   const inShadow = await shadowOf(page);
-  await page.waitForTimeout(3100);
+  await page.waitForTimeout(3700);
   const finite = () =>
     inShadow(function () {
       return this.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations !== Infinity && (a as CSSAnimation).animationName !== "hg-marquee").length;
@@ -161,7 +161,7 @@ test("haunted page with ghosts, the stone card and the popup", async ({ context,
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await expect(popup.locator(".ghost-row")).not.toHaveCount(0);
   await page.bringToFront();
-  await page.waitForTimeout(3100); // the haunt moment settles
+  await page.waitForTimeout(3700); // the haunt moment settles
   await page.screenshot({ path: `${OUT}/haunted.png` });
 
   // Popup: the same page, listing the ghosts. Just the 360px Win95 window, not the tab around it.
