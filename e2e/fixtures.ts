@@ -47,7 +47,9 @@ export const CROWD_HOSTS = {
  * google-analytics.com is HSTS-preloaded, so e2e/photo-page.spec.ts answers its upgraded request with a route.
  */
 export const GOOGLE_HOSTS = { "Google Analytics (Google)": "google-analytics.com", "Google Ads (Google)": "doubleclick.net" } as const;
-const HOST_RULES = [...new Set([...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS), ...Object.values(CROWD_HOSTS), ...Object.values(GOOGLE_HOSTS)])]
+/** A long company name, as on nps.gov and cdc.gov: its graveyard tag needs a third line to read whole (fixtures/hero.html). */
+export const GSA_HOST = { "U.S. General Services Administration": "digitalgov.gov" } as const;
+const HOST_RULES = [...new Set([...Object.values(TRACKER_HOSTS), ...Object.values(VAMPIRE_HOSTS), ...Object.values(TINT_HOSTS), ...Object.values(CROWD_HOSTS), ...Object.values(GOOGLE_HOSTS), ...Object.values(GSA_HOST)])]
   .map((h) => `MAP ${h} 127.0.0.1`)
   .join(",");
 

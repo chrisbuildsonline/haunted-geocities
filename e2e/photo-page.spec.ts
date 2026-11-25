@@ -1,17 +1,20 @@
 // Real-site presentation on a photo-heavy, full-width page (fixtures/hero.html, shaped like a big public
-// site): the graveyard tells same-prefix companies apart, the strip and the HUD never hide the page's end
-// or a focused link, and the dark hero blocks and the search box wear the costume too.
+// site): the graveyard tells same-prefix companies apart and reads a long name whole, the strip and the HUD
+// never hide the page's end or a focused link, the dark hero blocks, the search box and the search launcher
+// wear the costume too, and links on a dark gradient band read light.
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, GOOGLE_HOSTS, haunt, scrollToEnd, shadowOf, test, type InShadow } from "./fixtures";
+import { contrastRatio, parseColour, relativeLuminance } from "../src/content/costume/page-theme";
+import { expect, fixture, GOOGLE_HOSTS, GSA_HOST, haunt, scrollToEnd, shadowOf, test, type InShadow } from "./fixtures";
 
 const SHOTS = "test-results/photo-page";
 const COMPANIES = Object.keys(GOOGLE_HOSTS);
+const GSA = Object.keys(GSA_HOST)[0]!;
 
 async function hauntHero(context: BrowserContext, sw: Worker, width: number) {
-  // google-analytics.com is on Chromium's HSTS preload list, so its http:// pixel is upgraded to https://
-  // before the host-resolver rule can send it to the plain-HTTP fixture server: answer it here instead.
-  // It is still a real request from the page, so it lands in Resource Timing like any other.
-  await context.route(/^https?:\/\/google-analytics\.com:4321\//, (route) =>
+  // google-analytics.com (and many .gov names) are on Chromium's HSTS preload list, so an http:// pixel is
+  // upgraded to https:// before the host-resolver rule can send it to the plain-HTTP fixture server: answer
+  // it here instead. It is still a real request from the page, so it lands in Resource Timing like any other.
+  await context.route(/^https?:\/\/(google-analytics\.com|digitalgov\.gov):4321\//, (route) =>
     route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>' }),
   );
   const page = await context.newPage();
@@ -66,6 +69,85 @@ for (const width of [1280, 375]) {
     await page.screenshot({ path: `${SHOTS}/tags-${width}.png` });
   });
 
+  test(`${width}px: the long U.S. General Services Administration tag reads whole on three lines, no word broken, clear of its neighbours`, async ({ context, sw }) => {
+    const { page, inShadow } = await hauntHero(context, sw, width);
+    const tag = await inShadow(function (company: string) {
+      const row = this.querySelector("#graveyard .stones")!.getBoundingClientRect();
+      const btn = this.querySelector<HTMLElement>(`#graveyard button[data-company="${company}"]`)!;
+      const t = btn.querySelector<HTMLElement>(".tag")!;
+      const cs = getComputedStyle(t);
+      const r = t.getBoundingClientRect();
+      // each word's text on one line box: a word split over two lines has two client rects
+      const text = t.firstChild!;
+      const split = [...t.textContent!.matchAll(/\S+/g)].filter((m) => {
+        const range = document.createRange();
+        range.setStart(text, m.index!);
+        range.setEnd(text, m.index! + m[0].length);
+        return new Set([...range.getClientRects()].map((x) => Math.round(x.top))).size > 1;
+      }).map((m) => m[0]);
+      const tags = [...this.querySelectorAll<HTMLElement>("#graveyard .tag")].map((x) => x.getBoundingClientRect());
+      const i = tags.findIndex((x) => x.left === r.left && x.top === r.top);
+      return {
+        text: t.textContent,
+        fontSize: cs.fontSize,
+        lineHeight: cs.lineHeight,
+        lines: Math.round((t.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight)),
+        cut: t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1,
+        split,
+        inRow: r.top >= row.top - 1 && r.bottom <= row.bottom + 1,
+        gapBefore: i > 0 ? r.left - tags[i - 1]!.right : 12,
+        gapAfter: i < tags.length - 1 ? tags[i + 1]!.left - r.right : 12,
+      };
+    }, GSA);
+    expect(tag).toMatchObject({ text: GSA, fontSize: "12px", lineHeight: "16px", lines: 3, cut: false, split: [], inRow: true });
+    expect(tag.gapBefore).toBeGreaterThanOrEqual(12 - 1);
+    expect(tag.gapAfter).toBeGreaterThanOrEqual(12 - 1);
+    await page.screenshot({ path: `${SHOTS}/long-tag-${width}.png` });
+  });
+
+  test(`${width}px: the "ask" search launcher becomes a square sunken field whose label reads whole`, async ({ context, sw }) => {
+    const { page, tabId } = await hauntHero(context, sw, width);
+    const look = () =>
+      page.evaluate(() => {
+        const ask = document.getElementById("ask")!;
+        const label = document.getElementById("ask-label")!.getBoundingClientRect();
+        const box = ask.getBoundingClientRect();
+        const cs = getComputedStyle(ask);
+        return {
+          radius: cs.borderRadius,
+          bg: cs.backgroundColor,
+          label: getComputedStyle(document.getElementById("ask-label")!).color,
+          clipped: ask.scrollWidth > ask.clientWidth + 1 || label.right > box.right - 1 || label.left < box.left,
+          onScreen: box.left >= 0 && box.right <= window.innerWidth,
+        };
+      });
+    expect(await look()).toEqual({ radius: "0px", bg: "rgb(255, 255, 255)", label: "rgb(0, 0, 0)", clipped: false, onScreen: true });
+    await page.screenshot({ path: `${SHOTS}/ask-${width}.png`, clip: { x: 0, y: 0, width, height: 260 } });
+    // the page's own launcher clips its label (as nps.gov's does); un-haunt gives that back
+    await sw.evaluate(async (id) => chrome.tabs.sendMessage(id, { type: "unhaunt" }), tabId);
+    await expect(page.locator("hg-crypt")).toHaveCount(0);
+    expect(await look()).toMatchObject({ radius: "40px", clipped: true, label: "rgb(255, 255, 255)" });
+  });
+
+  test(`${width}px: links on the dark gradient strip of slide titles read light, 4.5:1 or more on all of it`, async ({ context, sw }) => {
+    const { page } = await hauntHero(context, sw, width);
+    const links = await page.evaluate(() =>
+      ["slide-link", "slide-on-link"].map((id) => {
+        const a = document.getElementById(id)!;
+        // the gradient behind the link: the nearest box with a background image
+        let g: Element | null = a;
+        while (g && getComputedStyle(g).backgroundImage === "none") g = g.parentElement;
+        return { id, color: getComputedStyle(a).color, stops: getComputedStyle(g!).backgroundImage.match(/rgba?\([^)]*\)/g) ?? [] };
+      }),
+    );
+    for (const l of links) {
+      const c = parseColour(l.color)!.hex;
+      const worst = Math.min(...l.stops.map((s) => contrastRatio(c, parseColour(s)!.hex)));
+      expect({ id: l.id, light: relativeLuminance(c) >= 0.4, readable: worst >= 4.5, stops: l.stops.length > 1 }).toEqual({ id: l.id, light: true, readable: true, stops: true });
+    }
+    await page.screenshot({ path: `${SHOTS}/slides-${width}.png` });
+  });
+
   test(`${width}px: the strip and the HUD never hide the page's end or a focused link`, async ({ context, sw }) => {
     const { page, inShadow } = await hauntHero(context, sw, width);
     // scrolled to the end, the footer's last line, the main column's last line and the "Featured stories"
@@ -82,7 +164,7 @@ for (const width of [1280, 375]) {
     await page.evaluate(() => {
       const story = document.getElementById("story")!;
       window.scrollBy(0, story.getBoundingClientRect().top - (window.innerHeight - 40));
-      document.getElementById("find-link")!.focus({ preventScroll: true });
+      document.getElementById("slide-on-link")!.focus({ preventScroll: true });
     });
     expect((await rectOf(page, "story")).top).toBeGreaterThan(await overlayTop(inShadow)); // under the overlay before Tab
     await page.keyboard.press("Tab");

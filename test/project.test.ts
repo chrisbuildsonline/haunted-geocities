@@ -69,7 +69,7 @@ describe("fixtures", () => {
     expect(pages().length).toBeGreaterThanOrEqual(2);
     for (const p of pages()) {
       // trackers.html, vampires.html, news.html and hero.html name tracker (and one made-up) hosts, which e2e/fixtures.ts maps to the local fixture server.
-      const html = read(`fixtures/${p}`).replaceAll(/http:\/\/(?:(?:criteo|hotjar|taboola|adentifi|quantcount|scorecardresearch|google-analytics)\.com|(?:chartbeat|doubleclick)\.net|nightowl-metrics\.test):4321\//g, "/");
+      const html = read(`fixtures/${p}`).replaceAll(/http:\/\/(?:(?:criteo|hotjar|taboola|adentifi|quantcount|scorecardresearch|google-analytics)\.com|(?:chartbeat|doubleclick)\.net|digitalgov\.gov|nightowl-metrics\.test):4321\//g, "/");
       expect({ [p]: html.match(/(?:src|href|action)\s*=\s*["']?(?:https?:)?\/\//)?.[0] ?? null }).toEqual({ [p]: null });
       expect({ [p]: /url\(\s*["']?(?:https?:)?\/\//.test(html) }).toEqual({ [p]: false });
     }

@@ -7,8 +7,8 @@
     <title>Pinecrest Valley Parks</title>
     <style>
       /* A made-up photo-heavy page, shaped like a big public site: a dark top bar with a pill search box,
-         a full-width photo hero with a dark translucent text panel, a black "find a park" band, then a tall
-         light page. Full width, so no gutter is 64px wide at any size and the graveyard strip docks. */
+         a bar with an "ask" search launcher, a full-width photo hero with a dark translucent text panel, a
+         black "find a park" band, a gradient strip of slide titles, then a tall light page. Full width, so no gutter is 64px wide at any size and the graveyard strip docks. */
       body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #222; background: #ffffff; }
       .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; background: #000000; color: #ffffff; }
       .brand { font-weight: 700; }
@@ -23,6 +23,16 @@
       .panel .cta { display: block; padding: 10px; border-radius: 4px; background: #ffffcc; color: #224422; text-align: center; font-weight: 700; text-decoration: none; }
       .find { padding: 24px 64px; background: #000000; color: #ffffcc; }
       .find h2 { margin: 0 0 8px; }
+      /* An "ask" launcher like nps.gov's: a button in a fixed-width translucent pill that clips its own label. */
+      .ask-bar { display: flex; justify-content: flex-end; padding: 12px 20px; background: #000000; }
+      .ask { width: 200px; height: 44px; border-radius: 40px; overflow: hidden; background: rgba(255, 255, 255, 0.12); }
+      .ask-launch { display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; padding: 0 20px 0 12px; border: 0; background: transparent; color: #ffffff; font: 600 16px system-ui, sans-serif; }
+      .ask-label { white-space: nowrap; }
+      /* A strip of slide titles like cdc.gov's: white links on a dark gradient band only 80px tall. */
+      .slides { display: flex; height: 80px; background-image: linear-gradient(90deg, rgb(76, 43, 100) 0px, rgb(76, 43, 100) 12%, rgb(0, 94, 162) 51%, rgb(0, 129, 161) 98%); }
+      .slide { flex: 1; display: flex; align-items: center; padding: 10px 18px; color: #ffffff; }
+      .slide-on { background-image: linear-gradient(90deg, rgb(12, 67, 120) 0px, rgb(0, 81, 138) 95%); }
+      .slide a { color: #ffffff; }
       main { padding: 16px 20px 24px; }
       p { margin: 0 0 1rem; }
       img { display: block; width: 1px; height: 1px; }
@@ -40,6 +50,15 @@
       </form>
     </div>
 
+    <div class="ask-bar">
+      <div class="ask" id="ask">
+        <button class="ask-launch" id="ask-launch" type="button" aria-label="Search or ask the parks office">
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="2" /></svg>
+          <span class="ask-label" id="ask-label">Search or ask anything</span>
+        </button>
+      </div>
+    </div>
+
     <section class="hero" id="hero">
       <div class="panel" id="panel">
         <p class="title">Winter is Coming</p>
@@ -52,6 +71,11 @@
       <h2>Find a Park</h2>
       <p>Browse <a id="find-link" href="/index.html">every park by county</a> or by activity.</p>
     </section>
+
+    <div class="slides" id="slides">
+      <span class="slide"><a id="slide-link" href="/index.html">Winter Road Closures</a></span>
+      <span class="slide slide-on" id="slide-on"><a id="slide-on-link" href="/index.html">Boots Kept Warm</a></span>
+    </div>
 
     <main>
       <h1>Pinecrest Valley Parks</h1>
@@ -70,12 +94,14 @@
       <p id="last">Last line: the parks office closes for the holidays on the twenty-third and opens again on the second of January.</p>
 
       <!--
-        Third-party requests, by company: Google Analytics (Google) 2, Google Ads (Google) 1 (a known vampire).
-        Two companies whose names share their first eight letters, so the graveyard tags must tell them apart.
+        Third-party requests, by company: Google Analytics (Google) 2, U.S. General Services Administration 1,
+        Google Ads (Google) 1 (a known vampire). Two companies whose names share their first eight letters, so
+        the graveyard tags must tell them apart, and one long name that needs a third line to read whole.
         The e2e browser maps these real tracker domains to the local fixture server (e2e/fixtures.ts).
       -->
       <img alt="" src="http://google-analytics.com:4321/t/p.svg?n=h1" />
       <img alt="" src="http://google-analytics.com:4321/t/p.svg?n=h2" />
+      <img alt="" src="http://digitalgov.gov:4321/t/p.svg?n=h1" />
       <img alt="" src="http://doubleclick.net:4321/t/p.svg?n=h1" />
     </main>
 
