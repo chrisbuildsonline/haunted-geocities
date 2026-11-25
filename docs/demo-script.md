@@ -8,23 +8,23 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Voiceover:** This news page, one of our fixtures, looks calm. One click and the companies watching you come out by name: Criteo, Chartbeat, comScore, Quantcast, Hotjar and Taboola.
 
-**Fixture note:** `news.html` is a fixture, a made-up page in `fixtures/` served locally with its tracker domains pointed at the local server, not a real site. The same haunt on real pages over the real network is in `docs/real-site-haunt.gif`: the live nps.gov home page shows `Trackers found: 4` and cdc.gov `Trackers found: 3` (stills and record in `docs/`, made by `bun run docs:realsite`). The video stays on fixtures because the rules keep third-party marks out of it.
+Fixture note: `news.html` is a made-up page in `fixtures/`, served from my machine with its tracker domains pointed at the local server. The same haunt on real pages over the real network is in `docs/real-site-haunt.gif`: the live nps.gov home page shows `Trackers found: 4` and cdc.gov `Trackers found: 3` (stills and record in `docs/`, made by `bun run docs:realsite`). The video stays on fixtures because the rules keep third-party marks out of it.
 
 ## 0:15-0:40 The costume
 
-**Shot:** The settled costume: the page restyled as a 1998 page in its guestbook frame, the night sky, the neighborhood bar at the top with the page's GeoCities address, and the HUD with its hit counter and marquee along the bottom. Ghosts drift in the gutters.
+**Shot:** The settled costume: the page restyled as a 1998 page in its guestbook frame under a night sky. The neighborhood bar at the top shows the page's GeoCities address, and the HUD along the bottom has its hit counter and marquee. Ghosts drift in the gutters. (On a phone they stand in a graveyard strip above the HUD instead.)
 
 **Voiceover:** Haunted GeoCities dresses the page as a 1998 GeoCities crypt, and every piece of the costume is real. Each ghost is a tracking company from the DuckDuckGo Tracker Radar.
 
 ## 0:40-1:05 Exorcise
 
-**Shot:** Click the Criteo ghost: its card names the company and its domains. Press **Exorcise**: the ghost spirals out as an EXORCISED stamp slams on, and the HUD count of ghosts still haunting ticks down from 4 to 3. Reopen the popup to show Criteo blocked for this tab.
+**Shot:** Click the Criteo ghost: its card names the company and its domains. Press **Exorcise**: the ghost spirals out as an EXORCISED stamp slams on, and the HUD count of ghosts still haunting ticks down from 4 to 3. Reopen the popup to show Criteo blocked for this tab (until you un-haunt or leave the page).
 
 **Voiceover:** Click a ghost to see who it is. Exorcise blocks that company in this tab, and the count of ghosts still haunting goes down.
 
 ## 1:05-1:35 Vampires, tombstones and curses
 
-**Shot:** On `vampires.html` a vampire appears when a script reads the canvas. On `links.html` dead links get tombstones; click one for its stone card with the path and the 404. On `dark-patterns.html` a CURSED! badge sits on "Only 2 left in stock" and its card quotes the page's own words.
+**Shot:** On `vampires.html` a vampire appears when a script reads the canvas. On `links.html` dead links get tombstones; click one for its stone card with the path and the 404 (a real HEAD request to the local server answered it). On `dark-patterns.html` a CURSED! badge sits on "Only 2 left in stock" and its card quotes the page's own words.
 
 **Voiceover:** Scripts caught fingerprinting become vampires. Dead links get tombstones. Fake scarcity, countdowns, confirmshaming and pre-ticked boxes get cursed, in the page's own words.
 
@@ -32,13 +32,13 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Shot:** The `.kiro/` folder: 6 steering files, 11 specs, 5 hooks and 2 custom agents, `costume-reviewer` (a read-only era reviewer with only `fs_read`) and `rule-factory`. In a terminal, run `kiro-cli chat --agent rule-factory "add a scarcity phrase: Last one in the shop"`. The agent writes a positive and a near-miss test under `test/dark-patterns/`, runs `bun run test` and the new test fails, then adds the regex to `src/content/dark-patterns.ts` and runs `bun run typecheck` and `bun run test` to green. Its `fs_write` is limited to `src/content/dark-patterns.ts`, `src/data/neighborhoods.json`, `src/data/types.ts`, `test/dark-patterns/` and `test/neighborhoods/`, its `execute_bash` to `bun run test` and `bun run typecheck`, and it never commits. Saving `src/content/dark-patterns.ts` fires the `rule-factory` hook, which checks the new rule has its tests.
 
-**Voiceover:** Kiro wrote the steering, a spec before every feature, the hooks and 2 custom agents. The rule-factory agent turns one line into a failing test, then the rule, then a green suite, and it can only touch the rule files and their tests. One run of this exact request is recorded, unedited, in docs/rule-factory-run.md, and the "Last one in the shop" curse it added is committed as it wrote it.
+**Voiceover:** Kiro wrote the steering, a spec before every feature, the hooks and 2 custom agents. The rule-factory agent turns one line into a failing test and then the rule that makes it pass, and it can only touch the rule files and their tests. One run of this exact request is recorded, unedited, in docs/rule-factory-run.md, and the "Last one in the shop" curse it added is committed as it wrote it.
 
 ## 2:15-2:40 The whole site
 
-**Shot:** On `index.html`, open the popup: **Haunt this page** is the default button, and under it sits **Haunt this whole site** with its hint, "Follows every link on 127.0.0.1. Chrome asks once." Press **Haunt this whole site** and Chrome asks for access to the site: press **Allow**. Reopen the popup, which says "Haunting all of 127.0.0.1", then click the page's "Quiet page" link: the next page arrives already haunted, with no three-second show and no second click. Then, in a new tab, press **Haunt this whole site** again and choose **Deny**: that page is haunted, and its "Quiet page" link loads plain.
+**Shot:** On `index.html`, open the popup. The bold default button is Haunt this page; under it sits Haunt this whole site, with the hint "Follows every link on 127.0.0.1. Chrome asks once." Press the whole-site button and Chrome asks for access to that one site. Press Allow. Reopen the popup (Chrome's prompt can close it) and it says "Haunting all of 127.0.0.1". Click the page's "Quiet page" link: the next page shows up already haunted, without the 3-second show. In a new tab, press the whole-site button again and choose Deny this time. That page is haunted, and its "Quiet page" link loads plain.
 
-**Voiceover:** One click haunts this page and asks for nothing. The second button asks Chrome once, then every link on the same site stays haunted until you leave it. Say no, and you get the one page.
+**Voiceover:** The big button haunts this page and asks for nothing. The second one asks Chrome once, and after that every link on the site stays haunted until you leave it. Say no and you still get this page.
 
 ## 2:40-2:55 Sound and un-haunt
 
