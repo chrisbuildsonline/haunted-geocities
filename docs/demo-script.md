@@ -8,7 +8,7 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Voiceover:** This news page, one of our fixtures, looks calm. One click and the companies watching you come out by name: Criteo, Chartbeat, comScore, Quantcast, Hotjar and Taboola.
 
-Fixture note: `news.html` is a made-up page in `fixtures/`, served from my machine with its tracker domains pointed at the local server. The same haunt on real pages over the real network is in `docs/real-site-haunt.gif`: the live nps.gov home page shows `Trackers found: 4` and cdc.gov `Trackers found: 3` (stills and record in `docs/`, made by `bun run docs:realsite`). The video stays on fixtures because the rules keep third-party marks out of it.
+Fixture note: `news.html` is a fixture, a made-up page in `fixtures/` served from my machine with its tracker domains pointed at the local server, and it is not a real site. The same haunt on real pages over the real network is in `docs/real-site-haunt.gif`: the live nps.gov home page shows `Trackers found: 4` and cdc.gov `Trackers found: 3` (stills and record in `docs/`, made by `bun run docs:realsite`). The video stays on fixtures because the rules keep third-party marks out of it.
 
 ## 0:15-0:40 The costume
 
@@ -36,7 +36,7 @@ Fixture note: `news.html` is a made-up page in `fixtures/`, served from my machi
 
 ## 2:15-2:40 The whole site
 
-**Shot:** On `index.html`, open the popup. The bold default button is Haunt this page; under it sits Haunt this whole site, with the hint "Follows every link on 127.0.0.1. Chrome asks once." Press the whole-site button and Chrome asks for access to that one site. Press Allow. Reopen the popup (Chrome's prompt can close it) and it says "Haunting all of 127.0.0.1". Click the page's "Quiet page" link: the next page shows up already haunted, without the 3-second show. In a new tab, press the whole-site button again and choose Deny this time. That page is haunted, and its "Quiet page" link loads plain.
+**Shot:** On `index.html`, open the popup. The bold default button is Haunt this page; under it sits Haunt this whole site, with the hint "Follows every link on 127.0.0.1. Chrome asks once." Press the whole-site button and Chrome asks for access to that one site. Press Allow. Reopen the popup (Chrome's prompt can close it) and it says "Haunting all of 127.0.0.1". Click the page's "Quiet page" link: the next page shows up already haunted, without the 3-second show (`e2e/site-haunt.spec.ts` follows the same link). In a new tab, press the whole-site button again and choose Deny this time. That page is haunted, and its "Quiet page" link loads plain.
 
 **Voiceover:** The big button haunts this page and asks for nothing. The second one asks Chrome once, and after that every link on the site stays haunted until you leave it. Say no and you still get this page.
 
