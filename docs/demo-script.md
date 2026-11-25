@@ -28,13 +28,19 @@ The written plan for the demo video, under three minutes. It is recorded in Chro
 
 **Voiceover:** Scripts caught fingerprinting become vampires. Dead links get tombstones. Fake scarcity, countdowns, confirmshaming and pre-ticked boxes get cursed, in the page's own words.
 
-## 1:35-2:30 Kiro and the rule-factory agent
+## 1:35-2:15 Kiro and the rule-factory agent
 
-**Shot:** The `.kiro/` folder: 6 steering files, 10 specs, 5 hooks and 2 custom agents, `costume-reviewer` (a read-only era reviewer with only `fs_read`) and `rule-factory`. In a terminal, run `kiro-cli chat --agent rule-factory "add a scarcity phrase: Last one in the shop"`. The agent writes a positive and a near-miss test under `test/dark-patterns/`, runs `bun run test` and the new test fails, then adds the regex to `src/content/dark-patterns.ts` and runs `bun run typecheck` and `bun run test` to green. Its `fs_write` is limited to `src/content/dark-patterns.ts`, `src/data/neighborhoods.json`, `src/data/types.ts`, `test/dark-patterns/` and `test/neighborhoods/`, its `execute_bash` to `bun run test` and `bun run typecheck`, and it never commits. Saving `src/content/dark-patterns.ts` fires the `rule-factory` hook, which checks the new rule has its tests.
+**Shot:** The `.kiro/` folder: 6 steering files, 11 specs, 5 hooks and 2 custom agents, `costume-reviewer` (a read-only era reviewer with only `fs_read`) and `rule-factory`. In a terminal, run `kiro-cli chat --agent rule-factory "add a scarcity phrase: Last one in the shop"`. The agent writes a positive and a near-miss test under `test/dark-patterns/`, runs `bun run test` and the new test fails, then adds the regex to `src/content/dark-patterns.ts` and runs `bun run typecheck` and `bun run test` to green. Its `fs_write` is limited to `src/content/dark-patterns.ts`, `src/data/neighborhoods.json`, `src/data/types.ts`, `test/dark-patterns/` and `test/neighborhoods/`, its `execute_bash` to `bun run test` and `bun run typecheck`, and it never commits. Saving `src/content/dark-patterns.ts` fires the `rule-factory` hook, which checks the new rule has its tests.
 
 **Voiceover:** Kiro wrote the steering, a spec before every feature, the hooks and 2 custom agents. The rule-factory agent turns one line into a failing test, then the rule, then a green suite, and it can only touch the rule files and their tests. One run of this exact request is recorded, unedited, in docs/rule-factory-run.md, and the "Last one in the shop" curse it added is committed as it wrote it.
 
-## 2:30-2:50 Sound and un-haunt
+## 2:15-2:40 The whole site
+
+**Shot:** On `index.html`, open the popup: **Haunt this page** is the default button, and under it sits **Haunt this whole site** with its hint, "Follows every link on 127.0.0.1. Chrome asks once." Press **Haunt this whole site** and Chrome asks for access to the site: press **Allow**. Reopen the popup, which says "Haunting all of 127.0.0.1", then click the page's "Quiet page" link: the next page arrives already haunted, with no three-second show and no second click. Then, in a new tab, press **Haunt this whole site** again and choose **Deny**: that page is haunted, and its "Quiet page" link loads plain.
+
+**Voiceover:** One click haunts this page and asks for nothing. The second button asks Chrome once, then every link on the same site stays haunted until you leave it. Say no, and you get the one page.
+
+## 2:40-2:55 Sound and un-haunt
 
 **Shot:** In the popup, switch sounds on (they are off by default) and open a ghost card to hear its "ooo". Then press **Un-haunt** and the page is back exactly as it was.
 
