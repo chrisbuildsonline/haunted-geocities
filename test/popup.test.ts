@@ -5,6 +5,7 @@ import { Window } from "happy-dom";
 import { mountPopup } from "../src/popup/app";
 import { AUDIO_KEY, LINK_CHECK_ORIGINS, type TabState } from "../src/data/types";
 import { asChrome, createChromeMock } from "./chrome-mock";
+import { siteOrigins } from "../src/background/site-haunt";
 
 const ATTRIBUTION = "Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0";
 
@@ -26,7 +27,8 @@ async function mount(opts: Opts = {}) {
   let state: TabState = { haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], curses: [], ...opts.state };
   m.backgroundReply = async (msg: { type: string }) => {
     if (msg.type === "HAUNT") state = { ...state, haunted: true };
-    if (msg.type === "UNHAUNT") state = { ...state, haunted: false };
+    if (msg.type === "UNHAUNT") state = { ...state, haunted: false, site: undefined };
+    if (msg.type === "FOLLOW_SITE") state = { ...state, site: "example.org" };
     return state;
   };
   await mountPopup(root, asChrome(m), opts.search ?? "");
@@ -182,6 +184,67 @@ describe("primary action", () => {
     await flush();
     expect(root.dataset.screen).toBe("idle");
     expect(text(root.querySelector('[role="alert"]'))).toBe("Couldn't haunt this page. Reload it and try again.");
+  });
+});
+
+describe("haunting the whole site", () => {
+  const types = (m: { calls: { runtimeMessages: unknown[] } }) => (m.calls.runtimeMessages as { type: string }[]).map((x) => x.type);
+  test("the Haunt click asks Chrome for the site's origins before anything is awaited", async () => {
+    const { root, m } = await mount({ grant: true });
+    buttons(root)[0]!.click();
+    // synchronously, inside the click's user gesture
+    expect(m.calls.request).toEqual([{ origins: siteOrigins("example.org") }]);
+    await flush();
+  });
+  test("granted: FOLLOW_SITE after HAUNT, and the haunted screen says Haunting all of the site", async () => {
+    const { root, m } = await mount({ grant: true });
+    buttons(root)[0]!.click();
+    await flush();
+    expect(types(m).slice(1)).toEqual(["HAUNT", "FOLLOW_SITE"]);
+    expect(root.dataset.screen).toBe("haunted");
+    expect(text(root.querySelector(".site-line"))).toBe("Haunting all of example.org");
+  });
+  test("declined: no FOLLOW_SITE and no site line, a one-page haunt", async () => {
+    const { root, m } = await mount({ grant: false });
+    buttons(root)[0]!.click();
+    await flush();
+    expect(types(m)).not.toContain("FOLLOW_SITE");
+    expect(root.dataset.screen).toBe("haunted");
+    expect(root.querySelector(".site-line")).toBeNull();
+  });
+  test("a rejected request haunts the page alone", async () => {
+    const { root, m } = await mount();
+    m.chrome.permissions.request = async () => {
+      throw new Error("Permissions request failed");
+    };
+    buttons(root)[0]!.click();
+    await flush();
+    expect(types(m)).not.toContain("FOLLOW_SITE");
+    expect(root.dataset.screen).toBe("haunted");
+  });
+  test("a failed haunt sends no FOLLOW_SITE", async () => {
+    const { root, m } = await mount({ grant: true });
+    m.backgroundReply = async () => ({ haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], curses: [], error: "nope" });
+    buttons(root)[0]!.click();
+    await flush();
+    expect(types(m)).not.toContain("FOLLOW_SITE");
+    expect(root.querySelector('[role="alert"]')).not.toBeNull();
+  });
+  test("Un-haunt asks for nothing and the site line goes", async () => {
+    const { root, m } = await mount({ grant: true, state: { haunted: true, site: "example.org" } });
+    expect(text(root.querySelector(".site-line"))).toBe("Haunting all of example.org");
+    buttons(root)[0]!.click();
+    await flush();
+    expect(m.calls.request).toEqual([]);
+    expect(root.dataset.screen).toBe("idle");
+    expect(root.querySelector(".site-line")).toBeNull();
+  });
+  test("a page with no site (file://) asks for nothing", async () => {
+    const { root, m } = await mount({ grant: true, state: { url: "file:///tmp/a.html" } });
+    buttons(root)[0]!.click();
+    await flush();
+    expect(m.calls.request).toEqual([]);
+    expect(types(m)).not.toContain("FOLLOW_SITE");
   });
 });
 

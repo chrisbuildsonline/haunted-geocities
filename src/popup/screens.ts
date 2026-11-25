@@ -185,6 +185,7 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
   const title = h(doc, "h1", { class: "title" }, screen === "restricted" ? "This page is protected" : hostname(state.url));
   const address = screen === "haunted" ? addressOf(state.url) : null;
   const addressLine = address ? h(doc, "p", { class: "address muted" }, address) : null;
+  const siteLine = screen === "haunted" && state.site ? h(doc, "p", { class: "site-line muted" }, `Haunting all of ${state.site}`) : null;
 
   const primary = (label: string) => {
     const b = h(doc, "button", { type: "button", class: "primary" }, label);
@@ -285,6 +286,6 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onExor
     h(doc, "p", { class: "status-field", "data-status": screen }, STATUS[screen]),
     h(doc, "p", { class: "status-field attribution" }, `${source}, `, h(doc, "span", { class: "nowrap" }, licence)),
   );
-  const client = h(doc, "div", { class: "client" }, title, addressLine, ...groups, settings);
+  const client = h(doc, "div", { class: "client" }, title, addressLine, siteLine, ...groups, settings);
   return [titlebar, client, statusbar];
 }

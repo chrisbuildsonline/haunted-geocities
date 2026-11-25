@@ -141,6 +141,12 @@ body.popup #app {
   overflow-wrap: anywhere;
 }
 
+/* "Haunting all of nps.gov": the site haunt, read with the address above it */
+.site-line {
+  margin-top: -6px;
+  overflow-wrap: anywhere;
+}
+
 /* Group box: etched, 2px in all. The outer shadow adds the white line, so the box has a 1px margin. */
 .group {
   min-width: 0;

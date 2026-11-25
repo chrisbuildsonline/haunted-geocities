@@ -1,4 +1,5 @@
 import type { SoundKind } from "../audio/sound";
+import { siteOf, siteOrigins } from "../background/site-haunt";
 import type { PopupRequest, TabState } from "../data/types";
 import { HAUNT_ERROR, renderScreen, screenFor } from "./screens";
 import { createSettings } from "./settings";
@@ -21,7 +22,7 @@ export interface PopupOptions {
 export async function mountPopup(root: HTMLElement, api: typeof chrome, search: string, opts: PopupOptions = {}): Promise<void> {
   const doc = root.ownerDocument;
   const tabId = await resolveTab(api, search);
-  const ask = async (type: "HAUNT" | "UNHAUNT" | "GET_STATE"): Promise<TabState> => {
+  const ask = async (type: "HAUNT" | "UNHAUNT" | "GET_STATE" | "FOLLOW_SITE"): Promise<TabState> => {
     if (tabId === undefined) return NO_TAB;
     const res = (await api.runtime.sendMessage({ type, tabId } satisfies PopupRequest).catch(() => undefined)) as
       | TabState
@@ -70,11 +71,23 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
       button.disabled = true;
       button.setAttribute("aria-busy", "true");
     }
+    const hauntNow = !current.haunted && !current.restricted;
+    // Asked first, inside the click's user gesture: Chrome's access to this whole site, so the
+    // haunt follows links on it. No means this page only. The prompt may close the popup before
+    // it answers; then the background picks up the grant from permissions.onAdded.
+    const site = hauntNow ? siteOf(current.url) : null;
+    let asked: Promise<boolean> = Promise.resolve(false);
+    try {
+      if (site) asked = api.permissions.request({ origins: siteOrigins(site) }).catch(() => false);
+    } catch {
+      // a request Chrome refuses outright: this page only
+    }
     // In the click's own task, so the popup's AudioContext starts with the gesture. Never awaited.
-    if (!current.haunted && !current.restricted) opts.play?.("whoosh");
+    if (hauntNow) opts.play?.("whoosh");
     busy = true;
     epoch++;
-    const next = await ask(current.haunted ? "UNHAUNT" : "HAUNT");
+    let next = await ask(current.haunted ? "UNHAUNT" : "HAUNT");
+    if (!current.haunted && !next.error && (await asked) === true) next = await ask("FOLLOW_SITE");
     busy = false;
     epoch++;
     render(next, { focus: true, error: next.error && !current.haunted ? HAUNT_ERROR : undefined });
