@@ -44,7 +44,7 @@ describe("source manifest (production)", () => {
 
 describe("e2e manifest", () => {
   test("adds host_permissions for the local fixture server only", () => {
-    expect(buildManifest("e2e").host_permissions).toEqual(["http://127.0.0.1/*", "http://localhost/*"]);
+    expect(buildManifest("e2e").host_permissions).toEqual(["http://127.0.0.1/*", "https://127.0.0.1/*", "http://localhost/*", "https://localhost/*"]);
   });
   test("is otherwise identical to the shipping manifest", () => {
     const { host_permissions: _, ...rest } = buildManifest("e2e");

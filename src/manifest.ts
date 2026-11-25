@@ -16,10 +16,12 @@ const base = {
  *
  * Mode "e2e" (dist-e2e/, tests only) adds host_permissions for the local fixture server.
  * activeTab is granted only by a real toolbar click, which Playwright cannot perform, so
- * without this the e2e popup could not inject into fixture pages. The shipping build
+ * without this the e2e popup could not inject into fixture pages. The https twins make the
+ * Haunt click's site request (http and https) already granted, so Chrome shows no prompt that
+ * Playwright could not answer. The shipping build
  * (any other mode, dist/) never declares host_permissions; test/manifest.test.ts proves it.
  */
 export function buildManifest(mode: string): typeof base & { host_permissions?: string[] } {
-  if (mode === "e2e") return { ...base, host_permissions: ["http://127.0.0.1/*", "http://localhost/*"] };
+  if (mode === "e2e") return { ...base, host_permissions: ["http://127.0.0.1/*", "https://127.0.0.1/*", "http://localhost/*", "https://localhost/*"] };
   return { ...base };
 }
