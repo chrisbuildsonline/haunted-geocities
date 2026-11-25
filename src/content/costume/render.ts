@@ -65,8 +65,11 @@ const costumes = ((globalThis as Record<string, unknown>)[KEY] ??= new WeakMap<D
 
 const el = (doc: Document, id: string) => Object.assign(doc.createElement("div"), { id });
 
-/** Haunt `doc` and dress it in the costume. Idempotent. */
-export function renderCostume(doc: Document = document): ShadowRoot {
+/**
+ * Haunt `doc` and dress it in the costume. Idempotent. `quiet` (the next page of a haunted site)
+ * skips the haunt moment and arrives settled, as a background tab does.
+ */
+export function renderCostume(doc: Document = document, { quiet = false }: { quiet?: boolean } = {}): ShadowRoot {
   const root = haunt(doc);
   const existing = costumes.get(doc);
   if (existing?.root === root) {
@@ -405,7 +408,7 @@ export function renderCostume(doc: Document = document): ShadowRoot {
   });
 
   // Nobody sees a wipe in a background tab: arrive settled there.
-  const animate = !doc.hidden;
+  const animate = !doc.hidden && !quiet;
   showLine(animate && !motion.matches ? 1100 : 0);
   // The restyle lands at t=0 with the padding (one reflow); the tint and frame wipe in behind the ghost.
   // The parade is the companies found so far (the scanner reads the buffered requests at once); its caption counts them all.

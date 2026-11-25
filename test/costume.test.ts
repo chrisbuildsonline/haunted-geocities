@@ -500,6 +500,20 @@ describe("renderCostume", () => {
 // ---------- haunt moment ----------
 
 describe("haunt moment", () => {
+  test("quiet (the next page of a haunted site): no haunt moment, no caption, no animation, arrives settled", () => {
+    const { win, doc, recs } = setup();
+    windows.push(win);
+    const root = renderCostume(doc, { quiet: true });
+    expect(byId(root, "fx")).toBeNull();
+    expect(root.querySelector(".found")).toBeNull();
+    expect(recs.filter((r) => r.keyframes.length)).toEqual([]);
+  });
+  test("without quiet the haunt moment runs", () => {
+    const { win, doc } = setup();
+    windows.push(win);
+    expect(byId(renderCostume(doc), "fx")).not.toBeNull();
+  });
+
   test("FX layer: vignette, a 96×96 Webmaster's Ghost and a 32px ectoplasm dither strip", () => {
     const { win, doc } = setup();
     windows.push(win);

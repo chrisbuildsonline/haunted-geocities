@@ -1,12 +1,16 @@
 // Injected on demand by the background via chrome.scripting.executeScript (never declared
 // as a static content script). Built as a self-contained IIFE: injected files cannot import.
-import type { ContentMessage } from "../data/types";
+import { QUIET_FLAG, type ContentMessage } from "../data/types";
 import { addTombstones, applyExorcised, leaveCostume, renderCostume, startVampires } from "./costume/render";
 
 const LISTENING = "__hauntedGeoCitiesListening";
 const g = globalThis as Record<string, unknown>;
 
-renderCostume();
+// The background sets the flag right before a quiet re-injection (the next page of a haunted site).
+// Deleted at once, so a later Haunt click in this document plays the haunt moment.
+const quiet = g[QUIET_FLAG] === true;
+delete g[QUIET_FLAG];
+renderCostume(document, { quiet });
 
 if (!g[LISTENING]) {
   g[LISTENING] = true;
