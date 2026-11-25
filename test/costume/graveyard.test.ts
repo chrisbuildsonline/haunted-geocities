@@ -95,11 +95,14 @@ describe("updateDocked", () => {
     expect(tagName("(Google)")).toBe("(Google)"); // never an empty tag
   });
 
-  test("a docked tag may take two lines, clamped with an ellipsis; a lane tag stays on one", () => {
+  test("a docked tag may take three lines, clamped with an ellipsis, and widens to its longest word (to 16ch) so no word breaks; a lane tag stays on one", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const rule = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
     const docked = rule("#graveyard .tag");
-    for (const d of ["white-space: normal", "display: -webkit-box", "-webkit-box-orient: vertical", "-webkit-line-clamp: 2", "text-align: center"]) {
+    for (const d of [
+      "white-space: normal", "display: -webkit-box", "-webkit-box-orient: vertical", "-webkit-line-clamp: 3", "text-align: center",
+      "overflow-wrap: break-word", "min-width: calc-size(min-content, min(size, 16ch))",
+    ]) {
       expect({ d, ok: docked.includes(d) }).toEqual({ d, ok: true });
     }
     expect(rule(".tag, .stack")).toContain("white-space: nowrap");
