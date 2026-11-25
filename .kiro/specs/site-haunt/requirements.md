@@ -4,11 +4,13 @@
 
 Today a haunt lasts one page. A click on any link, or a reload, throws the overlay away with the old document, and the user has to open the popup and press Haunt again. This spec adds **site haunt**: after Haunt, the same tab keeps haunting every page of the same site until the tab leaves the site.
 
-Following a site means the background must inject `content.js` into pages the user never clicked the toolbar for, so `activeTab` is not enough. The extension asks for access to that one site, at the Haunt click, through the optional host permissions it already declares (`http://*/*` and `https://*/*`). The manifest does not change. If the user says no, Haunt works exactly as it does today.
+Following a site means the background must inject `content.js` into pages the user never clicked the toolbar for, so `activeTab` is not enough. The extension asks for access to that one site through the optional host permissions it already declares (`http://*/*` and `https://*/*`). The manifest does not change.
+
+The whole-site haunt is an explicit, separate choice (F26, owner decision, jury run 154). The idle popup has two actions. **Haunt this page** is the primary button and the safe default: it never asks for a permission and gives the one-page haunt, exactly as before F25. **Haunt this whole site** is a second, ordinary button that asks once. If the user says no, the result is the one-page haunt.
 
 | Piece | What it does |
 | --- | --- |
-| Popup | Asks for the site's origins inside the Haunt click, sends `HAUNT` at once, then `FOLLOW_SITE` if the answer is yes. Shows `Haunting all of SITE`. |
+| Popup | `Haunt this page` sends `HAUNT` and never calls `permissions.request`. `Haunt this whole site` asks for the site's origins inside its click, sends `HAUNT` at once, then `FOLLOW_SITE` if the answer is yes. Shows `Haunting all of SITE`. |
 | Background | Stores `site:<tabId>` in `storage.session`, re-injects `content.js` quietly on each new page of the site, and ends the site haunt and gives the permission back when the tab leaves. |
 | Content script | A quiet haunt skips the three-second haunt moment and arrives settled. |
 
@@ -35,15 +37,15 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 5. The function `siteOrigins(site)` shall return `http://SITE/*`, `https://SITE/*`, `http://*.SITE/*` and `https://*.SITE/*`, and for an IP address or a dotless host only the first two.
 6. Every pattern `siteOrigins` returns shall be covered by `optional_host_permissions` (`http://*/*` and `https://*/*`), and the shipping manifest shall still have no `host_permissions`.
 
-### Asking, in the click
+### Two actions, and asking in the site click
 
-7. When the user clicks **Haunt this page** on a tab whose URL has a site, the popup shall call `chrome.permissions.request({ origins: siteOrigins(site) })` before any `await` in the click handler, so the call is made inside the user gesture.
-8. In the same click, the popup shall send `HAUNT` without waiting for the permission answer, so the current page haunts as it does today, with `activeTab`.
-9. When the tab's URL has no site (a restricted page, a `file:` page), the popup shall not call `permissions.request`.
-10. The popup shall keep the Haunt button busy (disabled, `aria-busy`) until both the `HAUNT` answer and the permission answer have arrived, and shall refresh its screen once, after both.
-11. When the request resolves `true` and `HAUNT` did not fail, the popup shall send `FOLLOW_SITE` with the tab id, and shall show the state that answer returns.
-12. When the request resolves `false` or rejects, the popup shall send no `FOLLOW_SITE`, and the haunt shall be one page only, as before this spec: a reload or a navigation clears it.
-13. When `HAUNT` fails, the popup shall show the existing haunt error and shall not send `FOLLOW_SITE`.
+7. The idle popup shall show **Haunt this page** in the Haunt group box as its one primary button (class `primary`, the default and the safe choice). Clicking it shall never call `chrome.permissions.request` and shall send `HAUNT` only, so the haunt is one page, exactly as before F25. No other button in the popup shall have class `primary`.
+8. When the tab's URL has a site (`siteOf(url)` is not `null`, so `http` or `https`), the idle popup shall also show, in the same group box, a second ordinary Win95 button **Haunt this whole site** (class `btn site-haunt`). Under it shall be a hint, linked to the button by `aria-describedby`: `Follows every link on SITE. Chrome asks once.` where SITE is `siteOf(url)`, in lower case.
+9. When the user clicks **Haunt this whole site**, the popup shall call `chrome.permissions.request({ origins: siteOrigins(site) })` before any `await` in the click handler, so the call is made inside the user gesture, and shall send `HAUNT` at once without waiting for the permission answer, so the current page haunts with `activeTab`.
+10. When the tab's URL has no site (a restricted page, a `file:` page), the popup shall show no **Haunt this whole site** button, and no click shall call `permissions.request`. While either action is in flight, both buttons shall be disabled and the clicked one shall have `aria-busy="true"`, until the `HAUNT` answer and, for the site button, the permission answer have arrived. The popup shall then refresh its screen once.
+11. When the request resolves `true` and `HAUNT` did not fail, the popup shall send `FOLLOW_SITE` with the tab id, and shall show the state that answer returns. Every later page of the same site in that tab is then haunted without further clicks, and without the haunt moment (criteria 18 to 26).
+12. When the request resolves `false` or rejects, the popup shall send no `FOLLOW_SITE`, and the haunt shall be one page only: a reload or a navigation clears it.
+13. When `HAUNT` fails, from either button, the popup shall show the existing haunt error and shall not send `FOLLOW_SITE`. After a granted site request the popup shall also hand the site origins back with `permissions.remove`, ignoring its error. The whoosh (sound effects) plays once on either click.
 
 ### Storing the site entry
 
@@ -96,6 +98,7 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 
 43. Unit tests in `test/site-haunt.test.ts` shall cover `siteOf`, `onSite` and `siteOrigins` (criteria 1 to 6), including `evilnps.gov`, IP and dotless hosts, and non-http URLs.
 44. Unit tests in the same file shall drive the background with the mock in `test/chrome-mock.ts` through every transition of the state machine in `design.md` (criteria 14 to 23, 27, 29 to 35, 40, 42).
-45. Popup tests in `test/popup.test.ts` shall cover the request inside the click, `HAUNT` sent at once, `FOLLOW_SITE` after a `true`, no `FOLLOW_SITE` after `false`, a rejection, a failed haunt and a restricted page, the busy state, and the site line (criteria 7 to 13, 36, 37).
-46. E2E tests in `e2e/site-haunt.spec.ts` shall show: haunt then an internal link gives a haunted next page with no haunt moment; a link to another site gives a clean page; a reload stays haunted; a declined permission keeps the one-page behaviour (criteria 12, 19, 20, 22, 26).
-47. `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest` and `bun run docker:test` shall pass, with the popup's haunted-screen baselines regenerated in Docker and reviewed.
+45. Popup tests in `test/popup.test.ts` shall cover: the page button never calls `permissions.request`; the site button requests the origins before any `await`; `HAUNT` sent at once; `FOLLOW_SITE` after `HAUNT` on a `true`; none after `false`, a rejection or a failed haunt; the hint names the site; no site button for a `file:` or restricted tab; one `.primary` button only; both buttons disabled and the clicked one `aria-busy`; and the site line (criteria 7 to 13, 36, 37).
+46. E2E tests in `e2e/site-haunt.spec.ts` shall show: the page click never requests the permission; the site click then an internal link gives a haunted next page with no haunt moment; a link to another site gives a clean page; a reload stays haunted; a denied permission gives one page (criteria 7, 11, 12, 19, 20, 22, 26).
+47. `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest` and `bun run docker:test` shall pass, with the popup's baselines regenerated in Docker and reviewed (the haunted screen for the site line, the idle screen for the second button).
+48. The README, `docs/devpost.md` and `docs/demo-script.md` shall describe both buttons, and the demo shall show the Allow path and the Deny path.

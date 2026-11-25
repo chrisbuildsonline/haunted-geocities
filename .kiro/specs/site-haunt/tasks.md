@@ -115,3 +115,31 @@ Do the tasks in order: each group builds on the one before. Run `bun run typeche
 - [x] 7.4 Run `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest` and `bun run docker:test`.
   - Req: 47
   - Test: all five exit 0.
+
+## 8. Two actions (F26)
+
+Owner decision, jury run 154: the whole-site haunt is a separate choice, so the default click never prompts. Requirements 7 to 13 and 48 changed. Tasks 5.1 and 6.x stay ticked as they were; group 8 changes what they built.
+
+- [ ] 8.1 Write the popup unit tests first, in `test/popup.test.ts`, and see them fail.
+  - Req: 7, 8, 9, 10, 11, 12, 13, 45
+  - Test: `"the page button never calls permissions.request"`, `"the site button requests the origins before any await"`, `"the site button sends HAUNT at once"`, `"granted sends FOLLOW_SITE after HAUNT"`, `"declined gives one page and no FOLLOW_SITE"`, `"rejected gives one page and no FOLLOW_SITE"`, `"a failed haunt sends no FOLLOW_SITE"`, `"the hint names the site in lower case and is linked by aria-describedby"`, `"no site button for a file:// tab"`, `"no site button for a restricted tab"`, `"only one .primary button"`, `"both buttons are disabled and the clicked one is aria-busy"`. The tests of 5.1 that click the primary button and expect a request are rewritten to click `.site-haunt`.
+
+- [ ] 8.2 In `src/popup/screens.ts`, add the `Haunt this whole site` button (`btn site-haunt`) and its hint to the idle Haunt group box, with an `onSite` callback in `ScreenProps`. In `src/popup/app.ts`, give `act` the `wholeSite` flag: only the site path calls `permissions.request`, before any `await`. Both buttons are disabled in flight and the clicked one is `aria-busy`. Add the `.site-hint` rule to the popup stylesheet with no new colour.
+  - Req: 7, 8, 9, 10, 11, 12, 13
+  - Test: the tests of 8.1 pass. `bun run typecheck` and `bun run test` exit 0.
+
+- [ ] 8.3 In `e2e/site-haunt.spec.ts`, add a request spy and the three paths.
+  - Req: 7, 11, 12, 19, 26, 46
+  - Test: `"the page button never requests the permission"`, `"the site button follows the next internal link with no haunt moment"`, `"a denied permission gives one page"`. The existing specs there use the site button.
+
+- [ ] 8.4 Update `README.md`, `docs/devpost.md` and `docs/demo-script.md`: the two buttons, the hint, and that only the site button asks. The demo shows both buttons, the Allow path and the Deny path.
+  - Req: 48
+  - Test: `grep -n "Haunt this whole site" README.md docs/devpost.md docs/demo-script.md` finds all three. `test/project.test.ts` still passes.
+
+- [ ] 8.5 Regenerate the popup baselines in Docker with `bun run visual:baselines` (the idle screens gain the second button), and review each changed PNG before committing it.
+  - Req: 47
+  - Test: `bun run test:visual` exits 0. `git status` shows changes only to popup PNGs under `e2e-visual/__screenshots__/`.
+
+- [ ] 8.6 Run `bun run typecheck` and `bun run test`. Run the host e2e for the popup, site-haunt, haunt and navigation specs. Run `bun run docker:test` once.
+  - Req: 47
+  - Test: all exit 0.

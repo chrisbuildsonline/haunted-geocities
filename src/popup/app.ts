@@ -37,7 +37,7 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
     const was = doc.activeElement as HTMLElement | null;
     const company = was?.dataset?.company;
     root.dataset.screen = screenFor(s);
-    root.replaceChildren(...renderScreen(doc, { state: s, settings, onPrimary: () => act(s), onExorcise, error: opts.error }));
+    root.replaceChildren(...renderScreen(doc, { state: s, settings, onPrimary: () => act(s), onSite: () => act(s, true), onExorcise, error: opts.error }));
     if (opts.focus || was?.classList.contains("primary")) root.querySelector<HTMLButtonElement>(".primary")?.focus();
     else if (company) [...root.querySelectorAll<HTMLElement>("[data-company]")].find((b) => b.dataset.company === company)?.focus();
   };
@@ -65,17 +65,15 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
     if (area === "session" && root.isConnected) void refresh();
   });
 
-  const act = async (current: TabState) => {
-    const button = root.querySelector<HTMLButtonElement>(".primary");
-    if (button) {
-      button.disabled = true;
-      button.setAttribute("aria-busy", "true");
-    }
+  /** Haunt or Un-haunt; `wholeSite` is the "Haunt this whole site" button, the only one that asks Chrome. */
+  const act = async (current: TabState, wholeSite = false) => {
+    for (const b of root.querySelectorAll<HTMLButtonElement>("button.primary, button.site-haunt")) b.disabled = true;
+    root.querySelector(wholeSite ? "button.site-haunt" : "button.primary")?.setAttribute("aria-busy", "true");
     const hauntNow = !current.haunted && !current.restricted;
     // Asked first, inside the click's user gesture: Chrome's access to this whole site, so the
     // haunt follows links on it. No means this page only. The prompt may close the popup before
     // it answers; then the background picks up the grant from permissions.onAdded.
-    const site = hauntNow ? siteOf(current.url) : null;
+    const site = hauntNow && wholeSite ? siteOf(current.url) : null;
     let asked: Promise<boolean> = Promise.resolve(false);
     try {
       if (site) asked = api.permissions.request({ origins: siteOrigins(site) }).catch(() => false);
