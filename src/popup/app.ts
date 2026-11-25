@@ -49,8 +49,19 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
   };
 
   // Trackers that load later, and changes made from the costume, arrive through storage.session.
-  api.storage.onChanged.addListener(async (_changes, area) => {
-    if (area === "session" && root.isConnected) render(await ask("GET_STATE"));
+  // While Haunt or Un-haunt is in flight its own answer wins: a refresh then could show Un-haunt
+  // before the haunt is in, or bring back a state from before the click. One refresh follows it.
+  let busy = false;
+  let missed = false;
+  let epoch = 0;
+  const refresh = async () => {
+    if (busy) return void (missed = true);
+    const asked = epoch;
+    const s = await ask("GET_STATE");
+    if (asked === epoch && !busy && root.isConnected) render(s);
+  };
+  api.storage.onChanged.addListener((_changes, area) => {
+    if (area === "session" && root.isConnected) void refresh();
   });
 
   const act = async (current: TabState) => {
@@ -61,8 +72,15 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
     }
     // In the click's own task, so the popup's AudioContext starts with the gesture. Never awaited.
     if (!current.haunted && !current.restricted) opts.play?.("whoosh");
+    busy = true;
+    epoch++;
     const next = await ask(current.haunted ? "UNHAUNT" : "HAUNT");
+    busy = false;
+    epoch++;
     render(next, { focus: true, error: next.error && !current.haunted ? HAUNT_ERROR : undefined });
+    // Not after a failed haunt: the refresh would wipe its alert.
+    if (missed && !next.error) void refresh();
+    missed = false;
   };
 
   render(state);

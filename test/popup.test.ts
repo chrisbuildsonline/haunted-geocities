@@ -131,6 +131,50 @@ describe("primary action", () => {
     expect(m.calls.runtimeMessages).toContainEqual({ type: "UNHAUNT", tabId: 5 });
     expect(root.dataset.screen).toBe("idle");
   });
+  test("storage refreshes during a Haunt do not show Un-haunt before the haunt has answered", async () => {
+    const { root, m } = await mount();
+    let finish!: () => void;
+    const answered = new Promise<void>((r) => (finish = r));
+    let haunted = false;
+    m.backgroundReply = async (msg: { type: string }) => {
+      if (msg.type === "HAUNT") {
+        haunted = true; // the background marks the tab before injecting, and storage tells the popup
+        await answered;
+      }
+      if (msg.type === "UNHAUNT") haunted = false;
+      return { haunted, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], curses: [] };
+    };
+    buttons(root)[0]!.click();
+    await flush();
+    for (const l of m.chrome.storage.onChanged.listeners) l({ "haunt:5": { newValue: true } }, "session");
+    await flush();
+    // still busy: an Un-haunt click now would race the haunt still injecting
+    expect(root.dataset.screen).toBe("idle");
+    expect(buttons(root)[0]!.disabled).toBe(true);
+    finish();
+    await flush();
+    expect(root.dataset.screen).toBe("haunted");
+  });
+  test("a refresh asked before Un-haunt and answered after it does not bring Haunted back", async () => {
+    const { root, m } = await mount({ state: { haunted: true } });
+    let late!: () => void;
+    const lateAnswer = new Promise<void>((r) => (late = r));
+    let haunted = true;
+    m.backgroundReply = async (msg: { type: string }) => {
+      const snapshot = haunted;
+      if (msg.type === "GET_STATE") await lateAnswer;
+      if (msg.type === "UNHAUNT") haunted = false;
+      return { haunted: msg.type === "GET_STATE" ? snapshot : haunted, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], curses: [] };
+    };
+    for (const l of m.chrome.storage.onChanged.listeners) l({ "ghosts:5": { newValue: {} } }, "session");
+    await flush();
+    buttons(root)[0]!.click();
+    await flush();
+    expect(root.dataset.screen).toBe("idle");
+    late();
+    await flush();
+    expect(root.dataset.screen).toBe("idle");
+  });
   test("a failed haunt stays idle and says so", async () => {
     const { root, m } = await mount();
     m.backgroundReply = async () => ({ haunted: false, restricted: false, url: "https://example.org/a", error: "nope" });
