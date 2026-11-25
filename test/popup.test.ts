@@ -229,6 +229,8 @@ describe("haunting the whole site", () => {
     await flush();
     expect(types(m)).not.toContain("FOLLOW_SITE");
     expect(root.querySelector('[role="alert"]')).not.toBeNull();
+    // the site access just granted is handed back: nothing haunts that site
+    expect(m.calls.remove).toEqual([{ origins: siteOrigins("example.org") }]);
   });
   test("Un-haunt asks for nothing and the site line goes", async () => {
     const { root, m } = await mount({ grant: true, state: { haunted: true, site: "example.org" } });

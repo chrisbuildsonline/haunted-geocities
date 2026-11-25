@@ -162,6 +162,11 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       // content.js goes to the document that got the flag (documentIds), not a later one.
       const target = quiet?.documentId ? { tabId, documentIds: [quiet.documentId] } : { tabId };
       await api.scripting.executeScript({ target, files: ["content.js"] });
+      // Un-haunt finished while this page was being dressed: take the costume off again.
+      if (!(await isHaunted(tabId))) {
+        await api.tabs.sendMessage(tabId, { type: "unhaunt" } satisfies ContentMessage).catch(() => undefined);
+        return;
+      }
       await installVampireHooks(tabId);
     } catch {
       // the page went on loading or away: status "complete" tries again
@@ -355,7 +360,9 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       const site = await siteEntry(tabId);
       const keep = !!site && (await isHaunted(tabId)) && onSite(info.url ?? tab?.url, site) && (await granted(site));
       if (info.status === "complete") {
-        if (keep) await rehaunt(tabId);
+        if (!keep) return;
+        await clearTab(tabId); // loading may have met the old page: its reports go here
+        await rehaunt(tabId);
         return;
       }
       if (keep) {
@@ -377,6 +384,13 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         const site = siteOf(t.url);
         if (site && siteOrigins(site).every((o) => added.has(o))) await session.set({ [siteKey(t.id)]: site });
       }
+    });
+    // A browser start wipes storage.session, so no tab haunts a site any more: hand back any site
+    // access a haunt left granted. "Check links to other sites" keeps its own grant.
+    api.runtime.onStartup.addListener(async () => {
+      const { origins = [] } = await api.permissions.getAll();
+      const stale = origins.filter((o) => !LINK_CHECK_ORIGINS.includes(o));
+      if (stale.length) await api.permissions.remove({ origins: stale }).catch(() => false);
     });
     // Site access taken away in Chrome: the page stays haunted, the next page is not.
     api.permissions.onRemoved.addListener(async () => {

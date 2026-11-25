@@ -10,7 +10,8 @@ export function siteOf(url: string | null | undefined): string | null {
   try {
     const u = new URL(url);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    return u.hostname.replace(/^www\./, "") || null;
+    // "www." comes off only when a dotted name is left: www.com stays www.com.
+    return u.hostname.replace(/^www\.(?=[^.]+\.)/, "") || null;
   } catch {
     return null;
   }

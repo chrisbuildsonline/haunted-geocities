@@ -42,6 +42,10 @@ describe("same-site rule", () => {
     expect(siteOrigins("127.0.0.1")).toEqual(["http://127.0.0.1/*", "https://127.0.0.1/*"]);
     expect(siteOrigins("localhost")).toEqual(["http://localhost/*", "https://localhost/*"]);
   });
+  test("a www host with no dot after it keeps its www (www.com is not the site com)", () => {
+    expect(siteOf("https://www.com/")).toBe("www.com");
+    expect(onSite("https://www.com/a", "www.com")).toBe(true);
+  });
   test("siteKey is site:<id>", () => {
     expect(siteKey(7)).toBe("site:7");
   });
@@ -212,6 +216,31 @@ describe("navigation while haunting a site", () => {
     for (const l of t.m.chrome.tabs.onUpdated.listeners) await l(7, { status: "complete" }, { ...t.m.tabsById.get(7) });
     expect(t.injected()).toEqual(["quiet", "content.js", "hooks"]);
   });
+  test("complete alone (loading saw the old page) clears the old page's reports before injecting", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    t.data[ghostsKey(7)] = { companies: [], total: 3 };
+    await t.navigate("https://www.nps.gov/a", "complete");
+    expect(t.data[ghostsKey(7)]).toBeUndefined();
+  });
+  test("an Un-haunt that lands while a page is being re-haunted takes the costume off again", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    const run = t.m.chrome.scripting.executeScript;
+    t.m.chrome.scripting.executeScript = async (i: any) => {
+      if (i.files) delete t.data[hauntKey(7)]; // UNHAUNT finished during the injection
+      return run(i);
+    };
+    t.m.calls.sendMessage.length = 0;
+    t.m.calls.executeScript.length = 0;
+    await t.navigate("https://www.nps.gov/a");
+    expect((t.m.calls.sendMessage as any[]).map((c) => c.msg.type)).toContain("unhaunt");
+    expect(t.injected()).not.toContain("hooks");
+  });
   test("the Haunt button injection is not quiet", async () => {
     const t = setup();
     await t.haunt();
@@ -285,6 +314,21 @@ describe("the end of a site haunt", () => {
     for (const l of t.m.chrome.permissions.onRemoved.listeners) await l({ origins: ORIGINS });
     expect(t.data[siteKey(7)]).toBeUndefined();
     expect(t.data[hauntKey(7)]).toBe(true);
+  });
+  test("at browser start no tab haunts a site, so site access left from before is handed back (link checks kept)", async () => {
+    const t = setup();
+    t.grant();
+    t.grant(LINK_CHECK_ORIGINS);
+    t.grant(siteOrigins("cdc.gov"));
+    for (const l of t.m.chrome.runtime.onStartup.listeners) await l();
+    expect(t.m.calls.remove).toEqual([{ origins: [...ORIGINS, ...siteOrigins("cdc.gov")] }]);
+    expect([...t.m.granted]).toEqual(LINK_CHECK_ORIGINS);
+  });
+  test("at browser start with nothing left over there is no permissions call", async () => {
+    const t = setup();
+    t.grant(LINK_CHECK_ORIGINS);
+    for (const l of t.m.chrome.runtime.onStartup.listeners) await l();
+    expect(t.m.calls.remove).toEqual([]);
   });
   test("nothing is written to storage.local", async () => {
     const t = setup();

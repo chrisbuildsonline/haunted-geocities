@@ -76,6 +76,7 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
       runtime: {
         id: "test-extension-id",
         onMessage: event(),
+        onStartup: event(),
         getURL: (path: string) => `chrome-extension://test-extension-id/${path.replace(/^\//, "")}`,
         async sendMessage(msg: unknown) {
           calls.runtimeMessages.push(msg);
@@ -133,6 +134,9 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
       permissions: {
         onAdded: event(),
         onRemoved: event(),
+        async getAll() {
+          return { permissions: [], origins: [...granted] };
+        },
         async contains(p: { origins?: string[] }) {
           return (p.origins ?? []).every((o) => granted.has(o));
         },

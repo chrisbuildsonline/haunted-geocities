@@ -87,7 +87,11 @@ export async function mountPopup(root: HTMLElement, api: typeof chrome, search: 
     busy = true;
     epoch++;
     let next = await ask(current.haunted ? "UNHAUNT" : "HAUNT");
-    if (!current.haunted && !next.error && (await asked) === true) next = await ask("FOLLOW_SITE");
+    if (site && (await asked) === true) {
+      if (!next.error) next = await ask("FOLLOW_SITE");
+      // The haunt failed: nothing haunts the site, so its access goes straight back.
+      else await api.permissions.remove({ origins: siteOrigins(site) }).catch(() => false);
+    }
     busy = false;
     epoch++;
     render(next, { focus: true, error: next.error && !current.haunted ? HAUNT_ERROR : undefined });
