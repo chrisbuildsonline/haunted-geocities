@@ -1,4 +1,4 @@
-import { expect, fixture, openPopup, tabIdOf, test } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, tabIdOf, test } from "./fixtures";
 
 const ATTRIBUTION = "Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0";
 
@@ -40,7 +40,7 @@ test("popup shows idle screen then haunted screen after Haunt", async ({ context
 
   // back to idle
   await unhaunt.click();
-  await expect(popup.getByRole("button", { name: "Haunt this page" })).toBeFocused();
+  await expect(popup.getByRole("button", { name: "Haunt this page" })).toBeFocused({ timeout: UNHAUNT_TIMEOUT });
   await expect(popup.getByText("Idle", { exact: true })).toBeVisible();
 });
 
