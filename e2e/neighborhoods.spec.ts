@@ -3,7 +3,7 @@
 // tints, the known vampire row, the card footnote and how long an Exorcise block lasts.
 // Every test also fails on any console error (the consoleErrors fixture).
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, openPopup, shadowOf, tabIdOf, test, TINT_HOSTS, TRACKER_HOSTS, trackerUrl, type InShadow } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, shadowOf, tabIdOf, test, TINT_HOSTS, TRACKER_HOSTS, trackerUrl, type InShadow } from "./fixtures";
 import { resolveNeighborhood } from "../src/data/neighborhood";
 import { assignTints, hemTint } from "../src/content/costume/ghosts";
 import { HEM_TINTS } from "../src/content/costume/tokens";
@@ -570,7 +570,7 @@ for (const width of WIDTHS) {
       expect((await barLook(await shadowOf(page))).where).toBe(`You are in: ${LOCAL.address}`);
       await popup.bringToFront();
       await popup.getByRole("button", { name: "Un-haunt" }).click();
-      await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle");
+      await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle", { timeout: UNHAUNT_TIMEOUT });
       await expect(page.locator("hg-crypt")).toHaveCount(0);
       expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(before);
     });

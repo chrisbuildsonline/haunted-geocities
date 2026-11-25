@@ -2,7 +2,7 @@
 // every context in a tab, the content script's isolated world included (a page script cannot).
 // Haunts go through the router's real HAUNT path, so the MAIN-world vampire hooks are in the page.
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, openPopup, shadowOf, tabIdOf, test, type InShadow } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, shadowOf, tabIdOf, test, type InShadow } from "./fixtures";
 import type { CompanyHit } from "../src/data/types";
 
 type Ctx = { context: BrowserContext; sw: Worker; extensionId: string };
@@ -213,7 +213,7 @@ test("the Haunt click plays from the popup only when sound is on", async ({ cont
     expect(pageAudio.created).toEqual([]); // the haunt moment on the page is silent
     // Un-haunt plays nothing more
     await popup.getByRole("button", { name: "Un-haunt" }).click();
-    await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle");
+    await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle", { timeout: UNHAUNT_TIMEOUT });
     await popup.waitForTimeout(300);
     expect(audio.created).toHaveLength(on ? 1 : 0);
     await popup.close();

@@ -2,7 +2,7 @@
 // site, without the 3-second haunt moment, until it leaves the site. The e2e build holds the fixture
 // origins already, so the Haunt click's site request is granted without a prompt; `decline` stubs a no.
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, openPopup, shadowOf, tabIdOf, test } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, shadowOf, tabIdOf, test } from "./fixtures";
 import { FIXTURE_PORT } from "../playwright.config";
 
 type Ctx = { context: BrowserContext; sw: Worker; extensionId: string };
@@ -99,7 +99,7 @@ test("Un-haunt ends the site haunt: the next page is clean", async ({ context, s
   const { page, tabId } = await hauntFromPopup(ctx);
   const popup = await openPopup(context, extensionId, tabId);
   await popup.getByRole("button", { name: "Un-haunt" }).click();
-  await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle");
+  await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle", { timeout: UNHAUNT_TIMEOUT });
   await popup.close();
   expect(await siteEntry(sw, tabId)).toBeNull();
   await follow(page, "clean.html");

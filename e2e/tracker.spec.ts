@@ -2,7 +2,7 @@
 // --host-resolver-rules): ghosts in the lanes, HUD counts, the popup list, Exorcise from the ghost
 // card, Let it back, narrow pages (the graveyard strip), reduced motion and a byte-identical page after un-haunt.
 import type { Page, Request } from "@playwright/test";
-import { expect, fixture, haunt, openPopup, shadowOf, tabIdOf, TRACKER_HOSTS, trackerUrl, test, type InShadow } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, haunt, openPopup, shadowOf, tabIdOf, TRACKER_HOSTS, trackerUrl, test, type InShadow } from "./fixtures";
 
 const SHOTS = "test-results/tracker";
 const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${name}.png` });
@@ -134,7 +134,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
 
   // Un-haunt from the popup: the page is byte-identical and no rule is left.
   await popup.getByRole("button", { name: "Un-haunt" }).click();
-  await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle");
+  await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle", { timeout: UNHAUNT_TIMEOUT });
   await expect(page.locator("hg-crypt")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(before);
   expect(await sw.evaluate(() => chrome.declarativeNetRequest.getSessionRules())).toEqual([]);

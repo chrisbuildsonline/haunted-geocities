@@ -1,4 +1,4 @@
-import { expect, fixture, openPopup, tabIdOf, test } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, tabIdOf, test } from "./fixtures";
 
 test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for byte", async ({ context, sw, extensionId }) => {
   const page = await context.newPage();
@@ -47,7 +47,7 @@ test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for by
   });
 
   await popup.getByRole("button", { name: "Un-haunt" }).click();
-  await expect(popup.getByText("Idle", { exact: true })).toBeVisible();
+  await expect(popup.getByText("Idle", { exact: true })).toBeVisible({ timeout: UNHAUNT_TIMEOUT });
   await expect(page.locator("hg-crypt")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(before);
 

@@ -1,5 +1,5 @@
 import type { Page, Worker } from "@playwright/test";
-import { expect, fixture, haunt, openPopup, shadowOf, tabIdOf, test, type InShadow } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, haunt, openPopup, shadowOf, tabIdOf, test, type InShadow } from "./fixtures";
 
 /** Un-haunt the way the background does; resolves when the content script answers. */
 async function unhaunt(sw: Worker, tabId: number) {
@@ -253,7 +253,7 @@ test("un-haunt from the popup plays out, then restores the page byte for byte", 
   await expect(page.locator("hg-crypt")).toHaveCount(1);
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(1);
   await popup.getByRole("button", { name: "Un-haunt" }).click();
-  await expect(popup.getByText("Idle", { exact: true })).toBeVisible();
+  await expect(popup.getByText("Idle", { exact: true })).toBeVisible({ timeout: UNHAUNT_TIMEOUT });
   await expect(page.locator("hg-crypt")).toHaveCount(0);
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(0);
   expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(before);

@@ -94,6 +94,15 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
+/**
+ * How long the popup may take to show Idle after Un-haunt. The popup waits for the page's 1.1s
+ * reverse animation (it shows Idle only once the page is restored). In real use the toolbar popup
+ * sits over the visible page; here the popup is its own tab, so the page is a background tab whose
+ * frames headless Chromium throttles while still reporting document.hidden false, and the 1.1s
+ * animation was measured at 2-5s, more on a loaded machine.
+ */
+export const UNHAUNT_TIMEOUT = 15_000;
+
 /** The chrome tab id of an open page, looked up from the service worker. */
 export async function tabIdOf(sw: Worker, page: Page): Promise<number> {
   const url = page.url();
