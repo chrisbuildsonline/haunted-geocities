@@ -25,13 +25,19 @@ export function contrastRatio(a: string, b: string): number {
 const STEPS = [0, 0x33, 0x66, 0x99, 0xcc, 0xff];
 export const WEB_SAFE: string[] = STEPS.flatMap((r) => STEPS.flatMap((g) => STEPS.map((b) => toHex([r, g, b]))));
 
-/** `colour` if it reaches 4.5:1 on `bg`, else the nearest web-safe colour (RGB distance) that does. */
-export function ensureContrast(colour: string, bg: string, min: number = L.minContrast): string {
-  if (contrastRatio(colour, bg) >= min) return colour;
+/**
+ * `colour` if it reaches 4.5:1 on `bg`, else the nearest web-safe colour (RGB distance) that does.
+ * `lighter`: only colours lighter than `bg` (on a gradient checked at its lightest colour, a lighter
+ * colour reads on all of it), white when none reaches 4.5:1.
+ */
+export function ensureContrast(colour: string, bg: string, min: number = L.minContrast, lighter = false): string {
+  const ok = (h: string) => contrastRatio(h, bg) >= min && (!lighter || relativeLuminance(h) > relativeLuminance(bg));
+  if (ok(colour)) return colour;
   const c = toRgb(colour);
   const dist = (h: string) => toRgb(h).reduce((s, v, i) => s + (v - c[i]!) ** 2, 0);
-  // Black or white always reaches 4.5:1 on any background, so there is always a candidate.
-  return WEB_SAFE.filter((h) => contrastRatio(h, bg) >= min).reduce((best, h) => (dist(h) < dist(best) ? h : best));
+  // Black or white always reaches 4.5:1 on any background, so without `lighter` there is always a candidate.
+  const pool = WEB_SAFE.filter(ok);
+  return pool.length ? pool.reduce((best, h) => (dist(h) < dist(best) ? h : best)) : "#ffffff";
 }
 
 const multiply = (a: string, b: string) => toHex(toRgb(a).map((v, i) => (v * toRgb(b)[i]!) / 255) as Rgb);

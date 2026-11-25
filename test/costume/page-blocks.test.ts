@@ -3,16 +3,23 @@
 // boxes become 1998 sunken fields, all as page-sheet rules addressed by a structural path.
 import { describe, expect, test } from "bun:test";
 import { addPageSheet } from "../../src/content/costume/body-padding";
-import { blocksCss, cssPath, findBlocks, isDarkBlock, type Blocks } from "../../src/content/costume/page-blocks";
-import { themeFor } from "../../src/content/costume/page-theme";
+import { blocksCss, cssPath, findBlocks, groundOf, isDarkBlock, type Blocks } from "../../src/content/costume/page-blocks";
+import { contrastRatio, relativeLuminance, themeFor } from "../../src/content/costume/page-theme";
 import { PALETTE as P } from "../../src/content/costume/tokens";
 import { domRect, pageCss, setup } from "./helpers";
 
 const PAGE = `<!doctype html><html><head><title>t</title></head><body style="background:#ffffff;color:#222222">
-<header style="background:#000000;color:#ffffff"><a id="logo" href="/">Parks</a></header>
+<header style="background:#000000;color:#ffffff"><a id="logo" href="/">Parks</a><button id="nav-search" type="button">Search</button></header>
 <div class="top" style="background:#000000;color:#ffffff">
   <form id="pill" role="search" style="background-color:#333333;border-radius:20px"><input id="q" type="search" placeholder="Search or ask anything" style="background-color:transparent"></form>
+  <div id="ask" style="background-color:rgba(255, 255, 255, 0.12);border-radius:40px;overflow:hidden"><button id="launch" type="button" aria-label="Search or ask DOI" style="background-color:transparent"><span>Search or ask anything</span></button></div>
+  <button id="lens" type="button" aria-label="Search" style="background-color:#333333;border-radius:20px"></button>
 </div>
+<div id="indicators" style="background-image:linear-gradient(90deg, rgb(76, 43, 100) 0px, rgb(0, 94, 162) 51%, rgb(0, 129, 161) 98%);color:#1c1d1f"><div>
+  <span id="slide" style="color:#ffffff"><a id="slide-link" href="/e" style="color:#ffffff">Ebola Situation Summary</a></span>
+  <span id="slide-on" style="background-image:linear-gradient(90deg, rgb(12, 67, 120) 0px, rgb(0, 81, 138) 95%);color:#ffffff"><a href="/f">Steps to Food Safety</a></span>
+  <span id="slide-plain" style="color:#ffffff">No link here</span>
+</div></div>
 <section id="hero" style="background-image:url(data:image/gif;base64,R0lGODlhAQABAAAAACw=);color:#ffffff">
   <div id="panel" style="background-color:rgba(0, 0, 0, 0.6);color:#ffffcc;border-radius:12px">
     <p>Winter is Coming</p><a id="cta" href="/x" style="background-color:#ffffcc;color:#224422">Plan</a>
@@ -25,12 +32,23 @@ const PAGE = `<!doctype html><html><head><title>t</title></head><body style="bac
 <main><p>Body text <a id="plain" href="/z">link</a></p><input id="name" name="name"><input id="find" name="site-search" type="text"><input id="hid" type="hidden" name="search"></main>
 </body></html>`;
 
-/** happy-dom has no layout: every block is 1280×300 except the 64px top bar, #small (1280×40), the pill and inputs. */
+/**
+ * happy-dom has no layout: every block is 1280×300 except the 64px top bar, #small (1280×40), the pill,
+ * inputs and search buttons, and the 80px slide band (three 427×80 slides).
+ */
 function sized(win: { Element: { prototype: object } }) {
   const proto = win.Element.prototype as { getBoundingClientRect(this: Element): DOMRect };
   proto.getBoundingClientRect = function (this: Element) {
     if (this.localName === "input") return this.getAttribute("type") === "hidden" ? domRect({ left: 0, right: 0, top: 0, bottom: 0 }) : domRect({ left: 0, right: 240, top: 0, bottom: 21 });
     if (this.id === "pill") return domRect({ left: 0, right: 260, top: 0, bottom: 40 });
+    if (this.id === "ask" || this.id === "launch") return domRect({ left: 0, right: 220, top: 0, bottom: 44 });
+    // the launcher's label overflows it by 16px (nps.gov: 236px of content in a 220px pill)
+    if (this.parentElement?.id === "launch") return domRect({ left: 31, right: 236, top: 14, bottom: 30 });
+    if (this.id === "lens") return domRect({ left: 0, right: 40, top: 0, bottom: 40 });
+    if (this.id === "nav-search") return domRect({ left: 0, right: 100, top: 0, bottom: 40 });
+    if (this.id === "indicators" || this.parentElement?.id === "indicators") return domRect({ left: 0, right: 1280, top: 0, bottom: 80 });
+    if (this.closest("#indicators")) return domRect({ left: 0, right: 427, top: 0, bottom: 80 });
+    if (this.id === "ask-wide") return domRect({ left: 0, right: 232, top: 0, bottom: 52 });
     if (this.classList.contains("top")) return domRect({ left: 0, right: 1280, top: 0, bottom: 64 });
     if (this.id === "small") return domRect({ left: 0, right: 1280, top: 0, bottom: 40 });
     return domRect({ left: 0, right: 1280, top: 0, bottom: 300 });
@@ -79,18 +97,59 @@ describe("findBlocks", () => {
   test("search boxes: the visible pill around a bare input, a named search field; never a plain or hidden input", () => {
     const { win, doc } = setup({ html: PAGE });
     sized(win);
-    const fields = findBlocks(doc).search.map((s) => [doc.querySelector(s.path)!.id, s.input]);
+    const fields = findBlocks(doc).search.filter((s) => !s.label).map((s) => [doc.querySelector(s.path)!.id, s.input]);
     expect(fields).toEqual([
       ["pill", false],
       ["find", true],
     ]);
   });
 
-  test("on a dark page nothing is a dark block (the whole page already wears the dark costume)", () => {
+  test("a search launcher (a button reading Search or ask anything) in a pill is a search box too, its button the label that must read whole at its measured width; an icon or a bare nav button is not", () => {
+    const { win, doc } = setup({ html: PAGE });
+    sized(win);
+    const fields = findBlocks(doc).search.map((s) => [doc.querySelector(s.path)!.id, s.input, s.width, s.label && [doc.querySelector(s.label.path)!.id, s.label.width]]);
+    expect(fields).toEqual([
+      ["pill", false, undefined, undefined],
+      ["ask", false, 236, ["launch", 236]],
+      ["find", true, undefined, undefined],
+    ]);
+    // a pill wider than its button (its padding) grows by the same amount
+    doc.getElementById("ask")!.id = "ask-wide";
+    expect(findBlocks(doc).search[1]).toMatchObject({ width: 248, label: { width: 236 } });
+  });
+
+  test("bands: light text on a dark gradient band, too small to be a block, has its links' ground noted (the band's lightest colour); text without links, light grounds and blocks are not bands", () => {
+    const { win, doc } = setup({ html: PAGE });
+    sized(win);
+    const b = findBlocks(doc);
+    // the current slide's own darker gradient sits on the band's: its links are checked on the lighter of
+    // the two, so they still read when a carousel moves the current slide on
+    expect(b.bands.map((x) => [doc.querySelector(x.path)!.id, x.on])).toEqual([
+      ["slide", "#0081a1"],
+      ["slide-on", "#0081a1"],
+    ]);
+    expect(b.dark.map((d) => doc.querySelector(d.path)!.id)).toEqual(["hero", "panel"]);
+  });
+
+  test("groundOf: a colour 40% opaque or more, a gradient's opaque stops (dark only if all are), a picture (dark, its links checked on the crypt); nothing for a faint or no ground", () => {
+    const none = "none";
+    expect(groundOf("rgb(0, 0, 0)", none)).toEqual({ dark: true, on: "#000000" });
+    expect(groundOf("rgb(238, 238, 238)", none)).toEqual({ dark: false, on: "#eeeeee" });
+    expect(groundOf("rgba(0, 0, 0, 0.1)", none)).toBeNull();
+    expect(groundOf("rgba(0, 0, 0, 0)", none)).toBeNull();
+    expect(groundOf("rgba(0, 0, 0, 0)", "linear-gradient(90deg, rgb(76, 43, 100) 0px, rgb(0, 129, 161) 98%)")).toEqual({ dark: true, on: "#0081a1" });
+    expect(groundOf("rgba(0, 0, 0, 0)", "linear-gradient(rgb(0, 0, 0), rgb(255, 255, 255))")).toEqual({ dark: false, on: "#ffffff" });
+    expect(groundOf("rgba(0, 0, 0, 0)", "linear-gradient(rgba(183, 218, 222, 0), rgba(0, 0, 0, 0.2))")).toBeNull();
+    expect(groundOf("rgba(0, 0, 0, 0)", 'url("x.jpg")')).toEqual({ dark: true, on: P.crypt });
+    expect(groundOf("rgba(0, 0, 0, 0)", 'linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("x.jpg")')).toEqual({ dark: true, on: P.crypt });
+  });
+
+  test("on a dark page nothing is a dark block or a band (the whole page already wears the dark costume)", () => {
     const { win, doc } = setup({ html: PAGE.replace("background:#ffffff;color:#222222", "background:#111111;color:#eeeeee") });
     sized(win);
     expect(findBlocks(doc, { darkPage: true }).dark).toEqual([]);
-    expect(findBlocks(doc, { darkPage: true }).search).toHaveLength(2);
+    expect(findBlocks(doc, { darkPage: true }).bands).toEqual([]);
+    expect(findBlocks(doc, { darkPage: true }).search).toHaveLength(3);
   });
 });
 
@@ -100,8 +159,13 @@ describe("blocksCss", () => {
       { path: "body > :nth-child(3)", ground: false, keep: [] },
       { path: "body > :nth-child(3) > :nth-child(1)", ground: true, keep: ["body > :nth-child(3) > :nth-child(1) > :nth-child(2)"] },
     ],
+    bands: [
+      { path: "body > :nth-child(4) > :nth-child(1) > :nth-child(1)", on: "#0081a1", keep: [] },
+      { path: "body > :nth-child(4) > :nth-child(1) > :nth-child(2)", on: "#00518a", keep: [] },
+    ],
     search: [
       { path: "body > :nth-child(2) > :nth-child(1)", input: false },
+      { path: "body > :nth-child(2) > :nth-child(2)", input: false, width: 248, label: { path: "body > :nth-child(2) > :nth-child(2) > :nth-child(1)", width: 236 } },
       { path: "body > :nth-child(6) > :nth-child(3)", input: true },
     ],
   };
@@ -140,8 +204,32 @@ describe("blocksCss", () => {
     expect(css).toMatch(/body > :nth-child\(6\) > :nth-child\(3\)::placeholder \{[^}]*color: #666666 !important/);
   });
 
+  test("bands: their text links take a light colour that reads 4.5:1 or more on the band's lightest colour", () => {
+    for (const [n, on] of [["1", "#0081a1"], ["2", "#00518a"]] as const) {
+      const path = `body > :nth-child(4) > :nth-child(1) > :nth-child(${n})`;
+      for (const state of [":link", ":visited", ":is(:link, :visited):hover"]) {
+        const rule = [...css.matchAll(/([^\n{}]*)\{([^}]*)\}/g)].find((m) => m[1]!.includes(path) && m[1]!.includes(`a${state}`));
+        expect({ path, state, found: !!rule }).toEqual({ path, state, found: true });
+        expect(rule![1]).toContain('[class*="btn"]'); // site chrome and button links keep theirs
+        const colour = rule![2]!.match(/color: (#[0-9a-f]{6}) !important/)![1]!;
+        expect({ path, state, light: relativeLuminance(colour) >= 0.4, readable: contrastRatio(colour, on) >= 4.5 }).toEqual({ path, state, light: true, readable: true });
+      }
+    }
+  });
+
+  test("a search launcher: its pill and button grow to the label's measured whole width (never clipped), the label black on the field", () => {
+    const field = "body > :nth-child(2) > :nth-child(2)";
+    const label = `${field} > :nth-child(1)`;
+    expect(css).toMatch(new RegExp(`${field.replace(/[()]/g, "\\$&")} \\{[^}]*border-radius: 0 !important[^}]*\\}`));
+    expect(css).toContain(`${field} { min-width: 248px !important; }`);
+    expect(css).toContain(`${label} { min-width: 236px !important; }`);
+    expect(css).toContain(`:is(${label}, ${label} *) { color: ${P.ink} !important; }`);
+    // the other fields keep their width
+    expect(css.match(/min-width/g)).toHaveLength(2);
+  });
+
   test("nothing found draws nothing", () => {
-    expect(blocksCss({ dark: [], search: [] })).toBe("");
+    expect(blocksCss({ dark: [], bands: [], search: [] })).toBe("");
   });
 
   test("the page sheet carries the block rules and drops them with the haunt", () => {
