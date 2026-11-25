@@ -9,6 +9,8 @@ import {
   hauntKey,
   LINK_CHECK_ORIGINS,
   nonceKey,
+  QUIET_FLAG,
+  siteKey,
   tombstonesKey,
   type CompanyHit,
   type ContentMessage,
@@ -24,10 +26,11 @@ import { createBadge } from "./badge";
 import { Exorcist } from "./exorcise";
 import { refusedHost } from "./link-guard";
 import { isRestrictedUrl } from "./restricted";
+import { onSite, siteOf, siteOrigins } from "./site-haunt";
 
 type Request = PopupRequest | ContentRequest;
 
-const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE", "CHECK_LINKS", "TOMBSTONE_UPDATE", "CURSE_UPDATE"]);
+const TYPES = new Set(["HAUNT", "UNHAUNT", "GET_STATE", "FOLLOW_SITE", "EXORCISE", "LET_BACK", "CLEAR_EXORCISE", "TRACKER_UPDATE", "CHECK_LINKS", "TOMBSTONE_UPDATE", "CURSE_UPDATE"]);
 
 const isCurse = (c: unknown): c is Curse =>
   typeof c === "object" && c !== null && (DARK_PATTERN_KINDS as readonly unknown[]).includes((c as Curse).kind) && typeof (c as Curse).snippet === "string";
@@ -77,8 +80,10 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
    * other sender with a tab it is sender.tab.id and a tabId in the body is ignored. An extension
    * page opened as a tab (the e2e popup) is not the target.
    */
+  const fromExtensionPage = (sender: chrome.runtime.MessageSender) => sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) ?? false;
+
   function tabOf(msg: Request, sender: chrome.runtime.MessageSender): number | undefined {
-    const fromPage = sender.url?.startsWith(`chrome-extension://${api.runtime.id}/`) ?? false;
+    const fromPage = fromExtensionPage(sender);
     let id: unknown;
     if (msg.type === "CLEAR_EXORCISE" || msg.type === "TRACKER_UPDATE" || msg.type === "TOMBSTONE_UPDATE" || msg.type === "CURSE_UPDATE" || msg.type === "CHECK_LINKS" || (sender.tab && !fromPage)) id = sender.tab?.id;
     else id = (msg as PopupRequest).tabId;
@@ -97,6 +102,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     const fileAccess = url?.startsWith("file:") ? await api.extension.isAllowedFileSchemeAccess() : false;
     const key = hauntKey(tabId);
     const stored = await session.get(key);
+    const site = stored[key] === true ? await siteEntry(tabId) : undefined;
     return {
       haunted: stored[key] === true,
       restricted: isRestrictedUrl(url ?? undefined, fileAccess),
@@ -105,7 +111,63 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       exorcised: await exorcist.exorcised(tabId),
       tombstones: ((await session.get(tombstonesKey(tabId)))[tombstonesKey(tabId)] as DeadLink[] | undefined) ?? [],
       curses: ((await session.get(cursesKey(tabId)))[cursesKey(tabId)] as Curse[] | undefined) ?? [],
+      ...(site ? { site } : {}),
     };
+  }
+
+  /** The site a tab keeps haunting across pages, if it does. */
+  async function siteEntry(tabId: number): Promise<string | undefined> {
+    const site = (await session.get(siteKey(tabId)))[siteKey(tabId)];
+    return typeof site === "string" ? site : undefined;
+  }
+
+  const granted = (site: string) => api.permissions.contains({ origins: siteOrigins(site) }).catch(() => false);
+
+  /** The user granted the tab's site at the Haunt click: keep haunting it. The site comes from the tab, never the message. */
+  async function followSite(tabId: number) {
+    const tab = await api.tabs.get(tabId);
+    const site = siteOf(tab.url || tab.pendingUrl);
+    if (!site || !(await isHaunted(tabId)) || !(await granted(site))) return;
+    await session.set({ [siteKey(tabId)]: site });
+  }
+
+  /**
+   * The site haunt ends: forget the site and hand Chrome's access to it back, unless another tab
+   * still haunts that site or "Check links to other sites" holds every site anyway.
+   */
+  async function dropSite(tabId: number) {
+    const site = await siteEntry(tabId);
+    if (!site) return;
+    await session.remove(siteKey(tabId));
+    const shared = Object.entries(await session.get(null)).some(([k, v]) => k.startsWith("site:") && v === site);
+    const links = await api.permissions.contains({ origins: LINK_CHECK_ORIGINS }).catch(() => false);
+    if (!shared && !links) await api.permissions.remove({ origins: siteOrigins(site) }).catch(() => false);
+  }
+
+  /** Tabs being re-haunted right now: loading and complete can both ask for the same new page. */
+  const injecting = new Set<number>();
+
+  /** Haunt the tab's new page on the same site quietly: no haunt moment, a short flicker at most. */
+  async function rehaunt(tabId: number) {
+    if (injecting.has(tabId)) return;
+    injecting.add(tabId);
+    try {
+      const [quiet] = await api.scripting.executeScript({
+        target: { tabId },
+        func: (flag: string) => {
+          (globalThis as Record<string, unknown>)[flag] = true;
+        },
+        args: [QUIET_FLAG],
+      });
+      // content.js goes to the document that got the flag (documentIds), not a later one.
+      const target = quiet?.documentId ? { tabId, documentIds: [quiet.documentId] } : { tabId };
+      await api.scripting.executeScript({ target, files: ["content.js"] });
+      await installVampireHooks(tabId);
+    } catch {
+      // the page went on loading or away: status "complete" tries again
+    } finally {
+      injecting.delete(tabId);
+    }
   }
 
   /** Drop everything the tab's haunt left behind: its block rules and what it reported. */
@@ -175,6 +237,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     } catch {
       // No receiving end: the page (and the overlay with it) is already gone.
     }
+    await dropSite(tabId);
     await session.remove(hauntKey(tabId));
     await clearTab(tabId);
     return getState(tabId);
@@ -220,6 +283,9 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         return haunt(tabId);
       case "UNHAUNT":
         return unhaunt(tabId);
+      case "FOLLOW_SITE":
+        if (fromExtensionPage(sender)) await followSite(tabId);
+        break;
       case "EXORCISE":
       case "LET_BACK":
         if (msg.type === "EXORCISE") await exorcise(tabId, msg.company, msg.domains);
@@ -273,16 +339,50 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       );
       return true; // keep the channel open for the async answer
     });
-    api.tabs.onRemoved.addListener((tabId) => Promise.all([session.remove(hauntKey(tabId)), clearTab(tabId)]));
+    api.tabs.onRemoved.addListener(async (tabId) => {
+      await dropSite(tabId);
+      return Promise.all([session.remove(hauntKey(tabId)), clearTab(tabId)]);
+    });
     // A navigation or reload throws the overlay away with the old document. Chrome also fires
     // status "loading" (with a url) for pushState and hash changes, where the document and its
-    // overlay survive, so only clear when our content script no longer answers.
-    api.tabs.onUpdated.addListener(async (tabId, info) => {
-      if (info.status !== "loading") return;
+    // overlay survive, so only act when our content script no longer answers. A tab haunting a
+    // site keeps its haunt on a new page of that site (re-injected quietly, again at "complete"
+    // if the first try missed); any other new page ends the haunt.
+    api.tabs.onUpdated.addListener(async (tabId, info, tab) => {
+      if (info.status !== "loading" && info.status !== "complete") return;
       const r = await api.tabs.sendMessage(tabId, { type: "ping" } satisfies ContentMessage).catch(() => null);
       if (r?.ok) return; // answered: same document
+      const site = await siteEntry(tabId);
+      const keep = !!site && (await isHaunted(tabId)) && onSite(info.url ?? tab?.url, site) && (await granted(site));
+      if (info.status === "complete") {
+        if (keep) await rehaunt(tabId);
+        return;
+      }
+      if (keep) {
+        await clearTab(tabId); // the old page's reports, exorcisms, nonce and badge
+        await rehaunt(tabId);
+        return;
+      }
+      await dropSite(tabId);
       await session.remove(hauntKey(tabId));
       await clearTab(tabId);
+    });
+    // The prompt can close the popup before it hears the answer: a grant of exactly a haunted tab's
+    // site origins starts the site haunt here instead.
+    api.permissions.onAdded.addListener(async (p) => {
+      const added = new Set(p.origins ?? []);
+      if (!added.size) return;
+      for (const t of await api.tabs.query({})) {
+        if (t.id === undefined || !(await isHaunted(t.id)) || (await siteEntry(t.id))) continue;
+        const site = siteOf(t.url);
+        if (site && siteOrigins(site).every((o) => added.has(o))) await session.set({ [siteKey(t.id)]: site });
+      }
+    });
+    // Site access taken away in Chrome: the page stays haunted, the next page is not.
+    api.permissions.onRemoved.addListener(async () => {
+      for (const [k, v] of Object.entries(await session.get(null))) {
+        if (k.startsWith("site:") && typeof v === "string" && !(await granted(v))) await session.remove(k);
+      }
     });
   }
 

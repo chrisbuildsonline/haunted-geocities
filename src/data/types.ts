@@ -56,6 +56,8 @@ export type PopupRequest =
   | { type: "HAUNT"; tabId: number }
   | { type: "UNHAUNT"; tabId: number }
   | { type: "GET_STATE"; tabId: number }
+  /** Sent after the user granted the tab's site origins at the Haunt click: keep haunting that site. */
+  | { type: "FOLLOW_SITE"; tabId: number }
   /** `domains` defaults to the hosts the tab reported for the company; the background filters them either way. */
   | { type: "EXORCISE"; tabId: number; company: string; domains?: string[] }
   | { type: "LET_BACK"; tabId: number; company: string };
@@ -95,6 +97,8 @@ export interface TabState {
   tombstones: DeadLink[];
   /** Dark patterns the costume reported; [] when none. */
   curses: Curse[];
+  /** The site this tab haunts page after page (e.g. "nps.gov"); absent for a one-page haunt. */
+  site?: string;
   /** Set when a HAUNT or UNHAUNT could not be carried out. */
   error?: string;
 }
@@ -104,6 +108,12 @@ export const hauntKey = (tabId: number) => `haunt:${tabId}`;
 
 /** chrome.storage.session key holding `{ companies: CompanyHit[], total: number }` last reported by the tab. */
 export const ghostsKey = (tabId: number) => `ghosts:${tabId}`;
+
+/** chrome.storage.session key holding the site (e.g. "nps.gov") a haunted tab keeps haunting across pages. */
+export const siteKey = (tabId: number) => `site:${tabId}`;
+
+/** Set on the isolated world's global right before a quiet re-injection: content.js skips the haunt moment. */
+export const QUIET_FLAG = "__hauntedGeoCitiesQuiet";
 
 /** chrome.storage.session key holding the `DeadLink[]` last reported by the tab. */
 export const tombstonesKey = (tabId: number) => `tombstones:${tabId}`;
