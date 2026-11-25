@@ -11,7 +11,10 @@ test("popup shows idle screen then haunted screen after Haunt", async ({ context
   await expect(popup.getByRole("heading", { level: 1, name: "127.0.0.1" })).toBeVisible();
   await expect(popup.getByText("Idle", { exact: true })).toBeVisible();
   await expect(popup.getByText("Turn this page into a 1998 crypt.")).toBeVisible();
-  await expect(popup.getByRole("button")).toHaveCount(1);
+  // One default button that never asks Chrome, and the whole-site one under it with its hint.
+  await expect(popup.getByRole("button")).toHaveText(["Haunt this page", "Haunt this whole site"]);
+  await expect(popup.locator("button.primary")).toHaveText("Haunt this page");
+  await expect(popup.getByRole("button", { name: "Haunt this whole site" })).toHaveAccessibleDescription("Follows every link on 127.0.0.1. Chrome asks once.");
   await expect(popup.getByText(ATTRIBUTION)).toBeVisible();
   await popup.screenshot({ path: "test-results/popup-idle.png", fullPage: true });
 
@@ -84,12 +87,13 @@ test("the popup wears the Win95 costume", async ({ context, sw, extensionId }) =
   expect(look.fonts).toBe(0); // no web fonts
 });
 
-test("keyboard: Tab reaches the primary button and both checkboxes, each with the accent focus ring", async ({ context, sw, extensionId }) => {
+test("keyboard: Tab reaches both Haunt buttons and both checkboxes, each with the accent focus ring", async ({ context, sw, extensionId }) => {
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
   const order = [
     popup.getByRole("button", { name: "Haunt this page" }),
+    popup.getByRole("button", { name: "Haunt this whole site" }),
     popup.getByRole("switch", { name: "Check links to other sites" }),
     popup.getByRole("switch", { name: "Sound effects" }),
   ];

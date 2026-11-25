@@ -83,12 +83,12 @@ test("injecting content.js twice keeps a single overlay", async ({ context, sw }
   await expect(page.locator("hg-crypt")).toHaveCount(1);
 });
 
-test("haunted state survives reopening the popup and is cleared by a reload (site access declined)", async ({ context, sw, extensionId }) => {
+test("haunted state survives reopening the popup and is cleared by a reload", async ({ context, sw, extensionId }) => {
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const tabId = await tabIdOf(sw, page);
-  // A one-page haunt: with the whole site granted a reload stays haunted (site-haunt.spec.ts).
-  const first = await openPopup(context, extensionId, tabId, { decline: true });
+  // "Haunt this page": one page. "Haunt this whole site" stays haunted on reload (site-haunt.spec.ts).
+  const first = await openPopup(context, extensionId, tabId);
   await first.getByRole("button", { name: "Haunt this page" }).click();
   await expect(first.getByRole("button", { name: "Un-haunt" })).toBeVisible();
   await first.close();

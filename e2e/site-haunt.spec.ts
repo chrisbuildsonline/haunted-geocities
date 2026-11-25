@@ -1,22 +1,45 @@
-// Site haunt (.kiro/specs/site-haunt): after Haunt, the tab stays haunted on every page of the same
-// site, without the 3-second haunt moment, until it leaves the site. The e2e build holds the fixture
-// origins already, so the Haunt click's site request is granted without a prompt; `decline` stubs a no.
+// Site haunt (.kiro/specs/site-haunt): "Haunt this whole site" keeps the tab haunted on every page of
+// the same site, without the 3-second haunt moment, until it leaves the site. "Haunt this page" never
+// asks Chrome for anything. The e2e build holds the fixture origins already, so the whole-site request
+// is granted without a prompt; "declined" stubs a no.
 import type { BrowserContext, Page, Worker } from "@playwright/test";
-import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, shadowOf, tabIdOf, test } from "./fixtures";
+import { expect, fixture, UNHAUNT_TIMEOUT, shadowOf, tabIdOf, test } from "./fixtures";
 import { FIXTURE_PORT } from "../playwright.config";
 
 type Ctx = { context: BrowserContext; sw: Worker; extensionId: string };
+type Mode = "site" | "declined" | "page";
 
-/** index.html haunted from the popup's button, then put in front so a haunt moment would play there. */
-async function hauntFromPopup({ context, sw, extensionId }: Ctx, decline = false) {
-  const page = await context.newPage();
+/** popup.html as a tab for `tabId`, with chrome.permissions.request recorded (and answering no when declined). */
+async function openPopup({ context, extensionId }: Ctx, tabId: number, declined = false) {
+  const popup = await context.newPage();
+  await popup.setViewportSize({ width: 360, height: 600 });
+  await popup.addInitScript((no) => {
+    const w = window as unknown as { __asks: unknown[] };
+    w.__asks = [];
+    const real = chrome.permissions.request.bind(chrome.permissions);
+    chrome.permissions.request = ((p: chrome.permissions.Permissions) => {
+      w.__asks.push(p.origins);
+      return no ? Promise.resolve(false) : real(p);
+    }) as typeof chrome.permissions.request;
+  }, declined);
+  await popup.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
+  await expect(popup.locator("#app[data-screen]")).toBeAttached();
+  const asks = () => popup.evaluate(() => (window as unknown as { __asks: unknown[] }).__asks);
+  return { popup, asks };
+}
+
+/** index.html haunted with one of the popup's two buttons, then put in front so a haunt moment would play there. */
+async function hauntFromPopup(ctx: Ctx, mode: Mode = "site") {
+  const page = await ctx.context.newPage();
   await page.goto(fixture("index.html"));
-  const tabId = await tabIdOf(sw, page);
-  const popup = await openPopup(context, extensionId, tabId, { decline });
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  const tabId = await tabIdOf(ctx.sw, page);
+  const { popup, asks } = await openPopup(ctx, tabId, mode === "declined");
+  await expect(popup.locator("#site-hint")).toHaveText("Follows every link on 127.0.0.1. Chrome asks once.");
+  await popup.getByRole("button", { name: mode === "page" ? "Haunt this page" : "Haunt this whole site" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
-  if (decline) await expect(popup.locator(".site-line")).toHaveCount(0);
-  else await expect(popup.locator(".site-line")).toHaveText("Haunting all of 127.0.0.1");
+  if (mode === "site") await expect(popup.locator(".site-line")).toHaveText("Haunting all of 127.0.0.1");
+  else await expect(popup.locator(".site-line")).toHaveCount(0);
+  expect(await asks()).toEqual(mode === "page" ? [] : [["http://127.0.0.1/*", "https://127.0.0.1/*"]]);
   await popup.close();
   await expect(page.locator("hg-crypt")).toHaveCount(1);
   await page.bringToFront();
@@ -33,8 +56,8 @@ async function follow(page: Page, href: string) {
 }
 
 /** The popup's screen and site line for the tab, read from a fresh popup. */
-async function popupSays({ context, extensionId }: Ctx, tabId: number) {
-  const popup = await openPopup(context, extensionId, tabId);
+async function popupSays(ctx: Ctx, tabId: number) {
+  const { popup } = await openPopup(ctx, tabId);
   const screen = await popup.locator("#app").getAttribute("data-screen");
   const site = (await popup.locator(".site-line").count()) ? await popup.locator(".site-line").textContent() : null;
   await popup.close();
@@ -50,7 +73,7 @@ async function expectClean(page: Page) {
 
 const siteEntry = (sw: Worker, tabId: number) => sw.evaluate(async (id) => (await chrome.storage.session.get(`site:${id}`))[`site:${id}`] ?? null, tabId);
 
-test("the next page of the site is haunted without the haunt moment", async ({ context, sw, extensionId }) => {
+test("Haunt this whole site: the next page of the site is haunted without the haunt moment", async ({ context, sw, extensionId }) => {
   const ctx = { context, sw, extensionId };
   const { page, tabId } = await hauntFromPopup(ctx);
   await follow(page, "clean.html");
@@ -84,9 +107,19 @@ test("a reload stays haunted", async ({ context, sw, extensionId }) => {
   expect(await popupSays(ctx, tabId)).toEqual({ screen: "haunted", site: "Haunting all of 127.0.0.1" });
 });
 
+test("Haunt this page never asks Chrome and haunts that page only", async ({ context, sw, extensionId }) => {
+  const ctx = { context, sw, extensionId };
+  const { page, tabId } = await hauntFromPopup(ctx, "page");
+  expect(await siteEntry(sw, tabId)).toBeNull();
+  await follow(page, "clean.html");
+  await expect(page).toHaveURL(/\/clean\.html$/);
+  await expectClean(page);
+  expect(await popupSays(ctx, tabId)).toEqual({ screen: "idle", site: null });
+});
+
 test("a declined permission keeps the one-page haunt", async ({ context, sw, extensionId }) => {
   const ctx = { context, sw, extensionId };
-  const { page, tabId } = await hauntFromPopup(ctx, true);
+  const { page, tabId } = await hauntFromPopup(ctx, "declined");
   expect(await siteEntry(sw, tabId)).toBeNull();
   await follow(page, "clean.html");
   await expect(page).toHaveURL(/\/clean\.html$/);
@@ -97,7 +130,7 @@ test("a declined permission keeps the one-page haunt", async ({ context, sw, ext
 test("Un-haunt ends the site haunt: the next page is clean", async ({ context, sw, extensionId }) => {
   const ctx = { context, sw, extensionId };
   const { page, tabId } = await hauntFromPopup(ctx);
-  const popup = await openPopup(context, extensionId, tabId);
+  const { popup } = await openPopup(ctx, tabId);
   await popup.getByRole("button", { name: "Un-haunt" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "idle", { timeout: UNHAUNT_TIMEOUT });
   await popup.close();
