@@ -28,20 +28,21 @@ These are Dribbble shots used as cues only. Nothing from them ships. Each author
 
 Everything renders inside one closed Shadow DOM.
 
-- The host is `<hg-crypt>`, appended to `document.documentElement` with `position: fixed; inset: 0; z-index: 2147483647; pointer-events: none`.
+- The host is `<hg-crypt>`, appended to `document.documentElement` after `<body>`, in normal flow (`position: static; display: block; pointer-events: none`): its own box is the crypt footer at the end of the page. Its fixed layers live in `#crypt-root` (`position: fixed; inset: 0; z-index: 2147483647`); the footer (`#crypt-footer`, `position: relative; z-index: 2147483646`) sits beside it in the same shadow root.
 - No page node is touched.
-- The only document-level change is one adopted stylesheet, the page sheet. It holds the body padding and scroll padding, the HUD lift variable, the content column restyle (fonts and links), the real-site blocks (dark hero blocks and search boxes), and the parchment tint and guestbook frame drawn as `html::before` / `html::after` (see "Content column costume"). Un-haunt removes it together with the host.
+- The only document-level change is one adopted stylesheet, the page sheet. It holds the top body padding and scroll padding (for the bands), the lift variable for the ghost icon, the content column restyle (fonts and links), the real-site blocks (dark hero blocks and search boxes), and the parchment tint and guestbook frame drawn as `html::before` / `html::after` (see "Content column costume"). Un-haunt removes it together with the host.
 
 Layers, bottom to top:
 
 | z | Layer | pointer-events | Notes |
 |---|-------|----------------|-------|
-| 0 | Page sheet: parchment tint, then guestbook frame | none | `html::before` / `html::after` at z-index 2147483646, one under the host, so every layer below sits above them |
+| 0 | Page sheet: parchment tint, then guestbook frame | none | `html::before` / `html::after` at z-index 2147483646, under `#crypt-root`; they end where the footer starts |
+| (flow) | Crypt footer: graveyard, HUD, badges, sign-off | `auto` on the footer | In normal flow after the page; the fixed starfield and lanes are clipped at its top while it is on screen |
 | 1 | Gutter starfield, or the 12px edge frame in full-overlay mode | none | The tile is never over the column's text (see below) |
 | 2 | Lanes: ghosts, vampires | sprites `auto`, lane `none` | Left/right gutter lanes, 64px wide |
 | 3 | Markers: tombstones, curse badges | marker `auto` | Pinned beside page elements |
 | 4 | Top bands: neighborhood bar + marquee | bar links `auto` | 24px + 24px |
-| 5 | HUD, and the graveyard strip above it | `auto` on their own boxes | Bottom control strip; the graveyard is drawn only in full-overlay mode, 4px above the HUD |
+| 5 | Ghost icon (`#show-tab`), bottom-right | `auto` | The only fixed thing at the bottom; jumps to the footer graveyard |
 | 6 | Cards | `auto` | One open at a time |
 | 7 | Haunt-moment FX | none | Exists only during the transition |
 
