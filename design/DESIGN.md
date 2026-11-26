@@ -188,7 +188,7 @@ Only on a haunted page (the listeners live and die with the costume), never touc
 - **Konami code** (`↑ ↑ ↓ ↓ ← → ← → B A`): a 3-second frenzy: the ghosts bob and sway three times faster, the marquee reads `!!! FULL HAUNT !!!`. Reduced motion: only the marquee line.
 - **Click the hit counter 13 times:** a 48px pixel skeleton dances beside the odometer for 5 seconds (4-frame step animation, 2 frames a second). Reduced motion: it stands still.
 - **Type `boo`:** every ghost and vampire flees off the bottom of its lane or row (600ms) and floats back 2 seconds later. Reduced motion: they fade out and back with no movement.
-- **Witching hour and Halloween:** at local midnight (00:00-00:59) and all day on Oct 31 the bands turn `#ff6600` on `#330066`, and the marquee opens with `It's the witching hour.` or `Happy Halloween from 1998!`. Static; the date is read once at haunt.
+- **Witching hour and Halloween:** at local midnight (00:00-00:59) and all day on Oct 31 the neighborhood bar's text turns `curse` `#ff9900` on `#330066`, and the marquee opens with `It's the witching hour.` or `Happy Halloween from 1998!`. Static; the date is read once at haunt.
 
 ### Vampires (runtime fingerprinting scripts)
 

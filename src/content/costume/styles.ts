@@ -118,7 +118,14 @@ button:focus-visible { ${ring} }
 .ghost, .vampire { position: absolute; display: flex; flex-direction: column; align-items: center; height: ${L.slotPitch}px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; pointer-events: auto; }
 .sway { display: block; animation: hg-sway ${M.ghostSway.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
 .bob { display: block; animation: hg-bob ${M.ghostBob.ms}ms ease-in-out var(--phase, 0ms) infinite alternate; }
-.sprite { display: block; width: 48px; height: 48px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); transition: opacity ${M.base}ms linear; }
+.sprite { display: block; width: 48px; height: 48px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); transition: opacity ${M.base}ms linear, transform 600ms ease-out; }
+/* Secrets (design/DESIGN.md): the frenzy at 3 Hz at most, the flight on "boo", the dancing skeleton, the special days */
+.frenzy .ghost, .frenzy .vampire, .frenzy .ghost *, .frenzy .vampire * { animation-duration: 334ms !important; }
+.fled .sprite { transform: translateY(120vh); opacity: 0; transition: opacity 600ms linear, transform 600ms ease-in; }
+.skeleton { display: inline-block; flex: none; width: 48px; height: 48px; animation: dance 2000ms steps(1) infinite; }
+.skeleton svg { display: block; image-rendering: pixelated; }
+@keyframes dance { 0% { transform: translateY(0) rotate(-8deg); } 25% { transform: translateY(-4px) rotate(8deg); } 50% { transform: translateY(0) rotate(-8deg) scaleX(-1); } 75% { transform: translateY(-4px) rotate(8deg) scaleX(-1); } }
+.halloween #neighborhood, .witching #neighborhood { color: ${P.curse}; }
 .sprite svg { display: block; image-rendering: pixelated; }
 @keyframes hg-bob { from { transform: translateY(-${M.ghostBob.px}px); } to { transform: translateY(${M.ghostBob.px}px); } }
 @keyframes hg-sway { from { transform: translateX(-${M.ghostSway.px}px); } to { transform: translateX(${M.ghostSway.px}px); } }
@@ -235,6 +242,7 @@ button:focus-visible { ${ring} }
 
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }
 .reduced-motion .sprite { transition: none !important; }
+.reduced-motion.fled .sprite { transform: none; }
 .reduced-motion .marquee-track { display: block; width: fit-content; max-width: 100%; box-sizing: border-box; padding: 0; overflow: hidden; text-overflow: ellipsis; transform: none; }
 #edge-frame, #edge-frame * { animation: none !important; transition: none !important; }
 `;

@@ -38,6 +38,17 @@ The GIF at the top is a real page, not a fixture: the shipping build on the live
 
 ![The neighborhood bar at the top of a haunted page, with its address and tagline](docs/screenshots/neighborhood.png)
 
+## Secrets
+
+Four small surprises, only on a haunted page (they go with Un-haunt and never touch the page's own markup), and never while you type into a field:
+
+- **Konami code** (`↑ ↑ ↓ ↓ ← → ← → B A`): three seconds of full haunt, every ghost bobbing three times faster and `!!! FULL HAUNT !!!` on the marquee.
+- **Click the hit counter 13 times** (each click within 3 seconds of the last): a pixel skeleton dances beside it for 5 seconds.
+- **Type `boo`**: every ghost and vampire flees off the bottom of the screen and floats back 2 seconds later.
+- **Midnight and Halloween**: between 00:00 and 00:59 local time the marquee opens with `It's the witching hour.`, and all day on October 31 with `Happy Halloween from 1998!`, with the address bar in pumpkin orange.
+
+With reduced motion on, the frenzy is only its marquee line, the skeleton stands still and the ghosts fade instead of flying.
+
 ## Load it
 
 You need [bun](https://bun.sh) and Chrome.

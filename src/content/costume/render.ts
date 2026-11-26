@@ -23,6 +23,7 @@ import { markKnownVampires, mergeVampire } from "../vampire";
 import { closeCard, openCard, openCurseCard, openTombstoneCard, setCardCount, setCardExorcised } from "./card";
 import { planSlots, updateGhosts, type Slot } from "./ghosts";
 import { buildGraveyard, updateDocked } from "./graveyard";
+import { mountSecrets } from "./secrets";
 import { mountTombstones } from "./tombstones";
 import { mountCurses } from "./curses";
 import { detectDarkPatterns, mergeCurses, type DarkPattern } from "../dark-patterns";
@@ -431,6 +432,23 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   // Nobody sees a wipe in a background tab: arrive settled there.
   const animate = !doc.hidden && !quiet;
   showLine(animate && !motion.matches ? 1100 : 0);
+  // The secrets: Konami frenzy, 13 clicks on the hit counter, "boo", the witching hour and Halloween.
+  const secrets = mountSecrets({
+    win,
+    croot,
+    footer,
+    hud,
+    reduced: () => motion.matches,
+    say: (said) => {
+      track.textContent = said;
+      track.style.animation = "none";
+      void track.offsetWidth; // restart the CSS animation
+      track.style.animation = "";
+      track.style.animationDuration = `${marqueeSeconds(track.scrollWidth) || 20}s`;
+      track.style.animationDelay = "0ms";
+    },
+  });
+  onUnhaunt(doc, () => secrets.stop());
   // The restyle lands at t=0 with the padding (one reflow); the tint and frame wipe in behind the ghost.
   // The parade is the companies found so far (the scanner reads the buffered requests at once); its caption counts them all.
   if (animate) costume.moment = playHaunt(croot, motion.matches, reveals(), paradeOf(scan.companies), scan.companies.length);
