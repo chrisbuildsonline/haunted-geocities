@@ -33,10 +33,10 @@ async function hauntHero(context: BrowserContext, sw: Worker, width: number) {
 }
 
 /** Where the bottom overlay starts: the graveyard strip's top (or the HUD's, with no strip). */
-const overlayTop = (inShadow: InShadow) =>
+/** The crypt footer's top edge (it follows the page in flow). */
+const footerTop = (inShadow: InShadow) =>
   inShadow(function () {
-    const g = this.getElementById("graveyard")!;
-    return (g.hidden ? this.getElementById("hud")! : g).getBoundingClientRect().top;
+    return this.getElementById("crypt-footer")!.getBoundingClientRect().top;
   });
 
 const rectOf = (page: Page, id: string) => page.evaluate((i) => document.getElementById(i)!.getBoundingClientRect().toJSON() as DOMRect, id);
@@ -58,6 +58,7 @@ for (const width of [1280, 375]) {
           inRow: r.top >= row.top - 1 && r.bottom <= row.bottom + 1,
           left: r.left,
           right: r.right,
+          top: r.top,
         };
       });
     }, COMPANIES);
@@ -65,7 +66,8 @@ for (const width of [1280, 375]) {
     expect(tags.map((t) => t.label)).toEqual(COMPANIES); // the full name stays in the accessible name and the card
     for (const t of tags) expect({ text: t.text, lines: t.lines <= 2, cut: t.cut, inRow: t.inRow }).toEqual({ text: t.text, lines: true, cut: false, inRow: true });
     expect(tags[0]!.lines).toBe(2); // "Google / Analytics"
-    expect(tags[0]!.right + 12).toBeLessThanOrEqual(tags[1]!.left + 1); // the 12px gap between neighbours holds
+    // neighbours on one row keep the 16px gap (the row wraps in the footer)
+    if (Math.abs(tags[0]!.top - tags[1]!.top) < 1) expect(tags[0]!.right + 16).toBeLessThanOrEqual(tags[1]!.left + 1);
     await page.screenshot({ path: `${SHOTS}/tags-${width}.png` });
   });
 
@@ -85,7 +87,8 @@ for (const width of [1280, 375]) {
         range.setEnd(text, m.index! + m[0].length);
         return new Set([...range.getClientRects()].map((x) => Math.round(x.top))).size > 1;
       }).map((m) => m[0]);
-      const tags = [...this.querySelectorAll<HTMLElement>("#graveyard .tag")].map((x) => x.getBoundingClientRect());
+      // neighbours on the same row only: the footer's row wraps
+      const tags = [...this.querySelectorAll<HTMLElement>("#graveyard .tag")].map((x) => x.getBoundingClientRect()).filter((x) => Math.abs(x.top - r.top) < 1);
       const i = tags.findIndex((x) => x.left === r.left && x.top === r.top);
       return {
         text: t.textContent,
@@ -148,28 +151,30 @@ for (const width of [1280, 375]) {
     await page.screenshot({ path: `${SHOTS}/slides-${width}.png` });
   });
 
-  test(`${width}px: the strip and the HUD never hide the page's end or a focused link`, async ({ context, sw }) => {
+  test(`${width}px: the crypt footer follows the page's end, and a focused link scrolls fully into view`, async ({ context, sw }) => {
     const { page, inShadow } = await hauntHero(context, sw, width);
-    // scrolled to the end, the footer's last line, the main column's last line and the "Featured stories"
-    // heading sit above the bottom overlay; the footer grows once it is seen, and the end is still the end
+    // scrolled to the end, the page's footer line, the main column's last line and the "Featured stories"
+    // heading all sit above the crypt footer, which comes after them in flow; the page's lazy footer
+    // grows once it is seen, and the end is still the end
     expect((await rectOf(page, "promo")).height).toBe(60);
     await scrollToEnd(page);
     expect((await rectOf(page, "promo")).height).toBe(112);
     const end = await page.evaluate(() => ({ y: Math.ceil(window.scrollY), max: document.scrollingElement!.scrollHeight - document.scrollingElement!.clientHeight }));
     expect(end.y).toBeGreaterThanOrEqual(end.max - 1);
-    const top = await overlayTop(inShadow);
-    for (const id of ["foot-last", "last", "featured"]) expect({ id, bottom: (await rectOf(page, id)).bottom <= top }).toEqual({ id, bottom: true });
+    const top = await footerTop(inShadow);
+    for (const id of ["foot-last", "last", "featured"]) expect({ id, above: (await rectOf(page, id)).bottom <= top + 1 }).toEqual({ id, above: true });
     await page.screenshot({ path: `${SHOTS}/end-${width}.png` });
-    // a link under the strip that takes keyboard focus is scrolled clear of it
+    // a link half below the viewport that takes keyboard focus is scrolled fully into view
     await page.evaluate(() => {
       const story = document.getElementById("story")!;
-      window.scrollBy(0, story.getBoundingClientRect().top - (window.innerHeight - 40));
+      window.scrollBy(0, story.getBoundingClientRect().top - (window.innerHeight - 10));
       document.getElementById("slide-on-link")!.focus({ preventScroll: true });
     });
-    expect((await rectOf(page, "story")).top).toBeGreaterThan(await overlayTop(inShadow)); // under the overlay before Tab
+    const vh = await page.evaluate(() => innerHeight);
+    expect((await rectOf(page, "story")).bottom).toBeGreaterThan(vh); // cut off before Tab
     await page.keyboard.press("Tab");
     expect(await page.evaluate(() => document.activeElement?.id)).toBe("story");
-    expect((await rectOf(page, "story")).bottom).toBeLessThanOrEqual(await overlayTop(inShadow));
+    expect((await rectOf(page, "story")).bottom).toBeLessThanOrEqual(vh + 1);
   });
 }
 

@@ -1,6 +1,6 @@
 import { expect, fixture, UNHAUNT_TIMEOUT, openPopup, tabIdOf, test } from "./fixtures";
 
-test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for byte", async ({ context, sw, extensionId }) => {
+test("haunt adds a closed-shadow host (fixed layers inside, the footer in flow); un-haunt restores the page byte for byte", async ({ context, sw, extensionId }) => {
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const before = await page.evaluate(() => document.documentElement.outerHTML);
@@ -28,8 +28,9 @@ test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for by
       hasShadowRoot,
       position: cs.position,
       pointerEvents: cs.pointerEvents,
-      zIndex: cs.zIndex,
-      coversViewport: r.left === 0 && r.top === 0 && r.width === innerWidth && r.height === innerHeight,
+      // in flow after <body>: the host's own box is the crypt footer at the end of the page
+      afterBody: host.previousElementSibling === document.body,
+      belowPage: r.top + scrollY >= document.body.getBoundingClientRect().bottom + scrollY - 1,
       hitTest: document.elementFromPoint(innerWidth / 2, 100)?.localName,
     };
   });
@@ -39,10 +40,10 @@ test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for by
     attributes: [],
     shadowRootVisibleToPage: false,
     hasShadowRoot: true,
-    position: "fixed",
+    position: "static",
     pointerEvents: "none",
-    zIndex: "2147483647",
-    coversViewport: true,
+    afterBody: true,
+    belowPage: true,
     hitTest: expect.not.stringMatching(/^hg-crypt$/),
   });
 

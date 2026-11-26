@@ -44,7 +44,9 @@ const look = (inShadow: InShadow) =>
 
 async function exorciseFromCard(page: Page, inShadow: InShadow) {
   const r = await inShadow(function (sel: string) {
-    const b = this.querySelector(sel)!.getBoundingClientRect();
+    const el = this.querySelector(sel)!;
+    el.scrollIntoView({ block: "center" }); // a footer sprite sits at the end of the page
+    const b = el.getBoundingClientRect();
     return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
   }, CRITEO);
   await page.mouse.click(r.x, r.y);

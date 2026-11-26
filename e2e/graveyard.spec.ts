@@ -1,6 +1,6 @@
-// The docked graveyard (no gutters): on a 375px page and on a full-width page the ghosts and vampires
-// stand in a strip 4px above the HUD, open their cards, take the exorcise stamp, hide with the HUD,
-// and leave the page byte-identical on un-haunt. Also the odometer's label.
+// The footer graveyard: on a 375px page and on a full-width page the ghosts and vampires stand in the
+// crypt footer at the end of the page, 12px above the HUD, open their cards, take the exorcise stamp,
+// hide with the HUD, and leave the page byte-identical on un-haunt. Also the odometer's label.
 import type { BrowserContext, Worker } from "@playwright/test";
 import { CROWD_HOSTS, expect, fixture, haunt, openPopup, shadowOf, tabIdOf, test, trackerUrl, type InShadow } from "./fixtures";
 
@@ -38,6 +38,7 @@ const strip = (inShadow: InShadow) =>
       region: [g.getAttribute("role"), g.getAttribute("aria-label")],
       scroll: [stones.scrollWidth, stones.clientWidth],
       top: r.top,
+      vh: innerHeight,
     };
   });
 
@@ -66,9 +67,9 @@ test("375px: graveyard shows one sprite per company in lane order", async ({ con
   expect(s.companies).toEqual(["Criteo", "Hotjar", "Taboola"]); // the ghost by count, then the known vampires by name
   expect(s.widthsFit).toBe(true);
   expect(s.lanes).toBe(0);
-  expect(s.gap).toBe(4);
+  expect(s.gap).toBe(12);
   expect(s.sameInsets).toBe(true);
-  expect(s.label).toBe("Graveyard");
+  expect(s.label).toBe("Graveyard of trackers");
   expect(s.region).toEqual(["region", "Graveyard of trackers"]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: `${SHOTS}/narrow-375.png` });
@@ -80,20 +81,20 @@ test("full-width page: graveyard shown, no lanes", async ({ context, sw }) => {
   expect(s.shown).toBe(true);
   expect(s.companies).toEqual(["Criteo", "AdTheorent", "Hotjar", "Taboola"]);
   expect(s.lanes).toBe(0);
-  expect([s.gap, s.sameInsets]).toEqual([4, true]);
+  expect([s.gap, s.sameInsets]).toEqual([12, true]);
   await page.screenshot({ path: `${SHOTS}/wide-1280.png` });
 });
 
-test("strip scrolls when sprites do not fit and the page does not", async ({ context, sw }) => {
+test("the row wraps onto more rows when sprites do not fit; nothing scrolls sideways", async ({ context, sw }) => {
   const { page, inShadow } = await hauntAt(context, sw, 375, "trackers.html");
   for (const host of Object.values(CROWD_HOSTS)) {
     await page.evaluate((url) => fetch(url, { mode: "no-cors" }).then(() => "loaded"), trackerUrl(host, `crowd-${host}`));
   }
   await expect.poll(async () => (await strip(inShadow)).companies.length).toBe(9);
   const s = await strip(inShadow);
-  expect(s.scroll[0]).toBeGreaterThan(s.scroll[1]!); // the row overflows sideways...
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true); // ...the page does not
-  // Tab walks the sprites in order; the last one is scrolled into view inside the strip.
+  expect(s.scroll[0]).toBeLessThanOrEqual(s.scroll[1]! + 1); // the row wraps, it does not overflow sideways...
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true); // ...nor does the page
+  // Tab walks the sprites in order; the last one is inside the row.
   const order = s.companies;
   await inShadow(function () { this.querySelector<HTMLElement>("#graveyard .stones > button")!.focus(); });
   for (let i = 1; i < order.length; i++) await page.keyboard.press("Tab");
@@ -110,12 +111,12 @@ test("strip scrolls when sprites do not fit and the page does not", async ({ con
 test("sprite opens its card by click, Enter and Space, focus returns", async ({ context, sw }) => {
   const { page, inShadow } = await hauntAt(context, sw, 375, "trackers.html");
   const s = await strip(inShadow);
-  // click the leftmost sprite: the card stands above the strip, 8px inside the viewport
+  // click the leftmost sprite (scrolled into view at the end of the page): the card stays 8px inside the viewport
   const at = await spriteCenter(inShadow, "Criteo");
   await page.mouse.click(at.x, at.y);
   let card = await openCardTitle(inShadow);
   expect(card).toMatchObject({ title: "Criteo", focused: true });
-  expect(card!.bottom).toBeLessThanOrEqual(s.top - 8 + 1);
+  expect(card!.bottom).toBeLessThanOrEqual(s.vh - 8 + 1);
   expect(card!.left).toBeGreaterThanOrEqual(8);
   expect(card!.right).toBeLessThanOrEqual(375 - 8);
   await page.keyboard.press("Escape");
@@ -128,7 +129,7 @@ test("sprite opens its card by click, Enter and Space, focus returns", async ({ 
   await page.keyboard.press("Enter");
   card = await openCardTitle(inShadow);
   expect(card).toMatchObject({ title: "Vampire identified", company: "Taboola", focused: true });
-  expect(card!.bottom).toBeLessThanOrEqual(s.top - 8 + 1);
+  expect(card!.bottom).toBeLessThanOrEqual(s.vh - 8 + 1);
   expect(card!.left).toBeGreaterThanOrEqual(8);
   await page.keyboard.press("Escape");
   expect(await focusedCompany(inShadow)).toBe("Taboola");

@@ -10,7 +10,9 @@ async function unhaunt(sw: Worker, tabId: number) {
 
 const center = async (inShadow: InShadow, selector: string) =>
   inShadow(function (sel: string) {
-    const r = this.querySelector(sel)!.getBoundingClientRect();
+    const el = this.querySelector(sel)!;
+    el.scrollIntoView({ block: "center" }); // the HUD sits in the footer at the end of the page
+    const r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }, selector);
 
@@ -38,7 +40,9 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
       sign: [box(".sign").width, box(".sign").height],
       marquee: [box("#marquee").top, box("#marquee").height, cs("#marquee").backgroundColor, cs("#marquee").color],
       marqueeRunning: this.getAnimations().some((a) => (a as CSSAnimation).animationName === "hg-marquee" && a.playState === "running"),
-      hud: { bottom: box("#hud").bottom, width: box("#hud").width, height: box("#hud").height, shadow: cs("#hud").boxShadow },
+      hud: { width: box("#hud").width, height: box("#hud").height, shadow: cs("#hud").boxShadow },
+      // the footer is the host's in-flow content, after the page: the HUD sits in it, below the page's end
+      footer: { inFooter: q("#crypt-footer")!.contains(q("#hud")), position: cs("#crypt-footer").position, top: box("#crypt-footer").top + scrollY, pageEnd: document.body.getBoundingClientRect().bottom + scrollY },
       hudText: q("#hud")!.innerText.replace(/\s+/g, " "),
       fxGone: q("#fx") === null,
       column: (() => {
@@ -49,7 +53,7 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
       vh: innerHeight,
     };
   });
-  expect(look.layers.slice(0, 7)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "graveyard", "cards"]);
+  expect(look.layers.slice(0, 5)).toEqual(["starfield", "lanes", "markers", "top-bands", "cards"]);
   expect(look.fxGone).toBe(true);
   expect(look.gutters).toHaveLength(2);
   expect(look.gutters[0]).toBeGreaterThanOrEqual(64);
@@ -63,7 +67,9 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   expect(look.sign).toEqual([48, 24]);
   expect(look.marquee).toEqual([24, 24, "rgb(0, 0, 51)", "rgb(102, 255, 153)"]);
   expect(look.marqueeRunning).toBe(true);
-  expect(look.hud.bottom).toBe(look.vh - 8);
+  expect(look.footer.inFooter).toBe(true);
+  expect(look.footer.position).toBe("relative");
+  expect(look.footer.top).toBeGreaterThanOrEqual(look.footer.pageEnd - 1);
   expect(look.hud.width).toBeLessThanOrEqual(800);
   expect(look.hud.height).toBeGreaterThanOrEqual(40);
   expect(look.hud.shadow).toContain("rgb(0, 0, 0) 4px 4px 0px 0px");
@@ -147,7 +153,7 @@ for (const width of [1280, 375]) {
   });
 }
 
-test("body padding grows on haunt (bands + HUD + lift over a fixed cookie bar) and is restored on un-haunt", async ({ context, sw }) => {
+test("body padding grows on haunt for the bands only, the ghost icon lifts over a fixed cookie bar, all restored on un-haunt", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("column.html"));
@@ -158,14 +164,13 @@ test("body padding grows on haunt (bands + HUD + lift over a fixed cookie bar) a
   const tabId = await haunt(sw, page);
   await settle(page);
   const inShadow = await shadowOf(page);
-  const hud = await inShadow(function () {
-    const r = this.getElementById("hud")!.getBoundingClientRect();
-    return { bottom: r.bottom, height: r.height };
+  const icon = await inShadow(function () {
+    return this.getElementById("show-tab")!.getBoundingClientRect().bottom;
   });
   const cookieTop = await page.evaluate(() => document.querySelector(".cookie")!.getBoundingClientRect().top);
-  expect(hud.bottom).toBe(cookieTop - 8); // lifted above the cookie bar
+  expect(icon).toBe(cookieTop - 8); // the ghost icon is lifted above the cookie bar
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hg-lift").trim())).toBe("56px");
-  expect(await pad()).toEqual(["72px", `${Math.round(hud.height) + 16 + 56}px`]);
+  expect(await pad()).toEqual(["72px", "0px"]); // the footer is in flow: nothing pads the page's end
 
   await unhaunt(sw, tabId);
   await expect(page.locator("hg-crypt")).toHaveCount(0);
@@ -174,7 +179,7 @@ test("body padding grows on haunt (bands + HUD + lift over a fixed cookie bar) a
   expect(await page.evaluate(() => document.documentElement.outerHTML)).toBe(html);
 });
 
-test("Hide fades the costume to a Show tab; Show brings it back; both work from the keyboard with the costume focus ring", async ({ context, sw }) => {
+test("Hide fades the costume and footer; the ghost icon brings them back; both work from the keyboard with the costume focus ring", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("column.html"));
@@ -188,7 +193,7 @@ test("Hide fades the costume to a Show tab; Show brings it back; both work from 
         hidden: this.getElementById("crypt-root")!.classList.contains("costume-hidden"),
         hudOpacity: getComputedStyle(this.getElementById("hud")!).opacity,
         bandsOpacity: getComputedStyle(this.getElementById("top-bands")!).opacity,
-        tab: tab.hidden ? null : (({ width, height, right, bottom }) => ({ width, height, right, bottom }))(tab.getBoundingClientRect()),
+        tab: (({ width, height, right, bottom }) => ({ width, height, right, bottom }))(tab.getBoundingClientRect()),
         focused: (this.activeElement as HTMLElement | null)?.className ?? null,
       };
     });
@@ -196,22 +201,23 @@ test("Hide fades the costume to a Show tab; Show brings it back; both work from 
   const hide = await center(inShadow, "#hud button.hide");
   await page.mouse.click(hide.x, hide.y);
   await expect.poll(async () => (await state()).hudOpacity).toBe("0");
+  await expect.poll(async () => (await state()).bandsOpacity).toBe("0"); // the bands fade on their own 200ms
   const hidden = await state();
   expect(hidden.hidden).toBe(true);
-  expect(hidden.bandsOpacity).toBe("0");
-  expect(hidden.tab).toEqual({ width: 40, height: 40, right: 1280 - 8, bottom: 800 - 8 - 56 });
+  expect(hidden.tab).toEqual({ width: 40, height: 48, right: 1280 - 8, bottom: 800 - 8 - 56 });
   expect(await page.locator("hg-crypt").count()).toBe(1);
 
   const tab = await center(inShadow, "#show-tab");
   await page.mouse.click(tab.x, tab.y);
   await expect.poll(async () => (await state()).hudOpacity).toBe("1");
-  expect((await state()).tab).toBeNull();
+  expect((await state()).tab).toEqual(hidden.tab); // the ghost icon stays
 
   // keyboard: the page's own controls first, then the costume's
   await page.mouse.click(5, 300);
   await page.keyboard.press("Tab"); // archive link
   await page.keyboard.press("Tab"); // cookie button
-  await page.keyboard.press("Tab"); // Hide
+  await page.keyboard.press("Tab"); // the ghost icon (fixed, first in the costume)
+  await page.keyboard.press("Tab"); // Hide, in the footer
   const ring = () =>
     inShadow(function () {
       const el = this.activeElement as HTMLElement | null;
@@ -222,10 +228,12 @@ test("Hide fades the costume to a Show tab; Show brings it back; both work from 
   const ringOf = { outline: "rgb(255, 255, 102) dotted 2px", offset: "2px", shadow: "rgb(0, 0, 0) 0px 0px 0px 5px" };
   expect(await ring()).toEqual({ label: "Hide", ...ringOf });
   await page.keyboard.press("Enter");
-  await expect.poll(async () => (await ring())?.label).toBe("Show the haunted costume");
+  await expect.poll(async () => (await ring())?.label).toBe("Jump to the graveyard: 0 trackers");
   expect(await ring()).toMatchObject(ringOf);
   await page.keyboard.press("Enter");
   await expect.poll(async () => (await state()).hidden).toBe(false);
+  expect((await ring())?.label).toBe("Graveyard of trackers"); // focus lands on the graveyard
+  await page.keyboard.press("Tab");
   expect((await ring())?.label).toBe("Hide");
   await page.keyboard.press("Tab");
   expect(await ring()).toEqual({ label: "« prev", ...ringOf });
@@ -346,8 +354,9 @@ test("at 375×740 the HUD wraps to two rows at most and nothing scrolls sideways
     return { left: r.left, right: r.right, height: r.height, rows };
   });
   await page.screenshot({ path: "test-results/costume/mobile-settled.png" });
-  expect(hud.left).toBe(4);
-  expect(hud.right).toBe(375 - 4);
+  // in the footer's 16px padding at this width
+  expect(hud.left).toBe(16);
+  expect(hud.right).toBe(375 - 16);
   expect(hud.height).toBeLessThanOrEqual(88);
   expect(hud.rows).toBeLessThanOrEqual(2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

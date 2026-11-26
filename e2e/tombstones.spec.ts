@@ -206,7 +206,8 @@ test("req 28-43, 46-48, 56-58: markers beside the dead links, the stone card wra
   };
   await page.evaluate(() => window.scrollTo(0, 0)); // the list is below the fold: every stone hidden
   await expect.poll(scrolled).toEqual(["hidden", "hidden", "hidden"]);
-  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); // scrolled to it: every stone back beside its link
+  // scrolled to it (the list, not the document's end: the crypt footer follows the page now): every stone back beside its link
+  await page.evaluate(() => [...document.querySelectorAll("a")].find((a) => /missing|gone|blog/.test(a.href))!.scrollIntoView({ block: "start" }));
   await expect.poll(scrolled).toEqual([true, true, true]);
   await page.setViewportSize({ width: 1280, height: 800 });
 

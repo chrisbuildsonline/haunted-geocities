@@ -130,8 +130,9 @@ async function capture(slug: string, url: string, gif: boolean) {
       makeGif(frames, n);
     }
 
-    // The page's end stays reachable: scrolled to the bottom, its last line of text sits above the
-    // bottom overlay (the graveyard strip, else the HUD). A frame of it for the record, not committed.
+    // The page's end stays whole: scrolled to the bottom, its last line of text sits above the crypt
+    // footer (which opens with the graveyard and follows the page in flow). A frame of it for the record,
+    // not committed: test-results/real-site-<slug>/end.png and end-375.png show the footer.
     // The bottom is the one the page has once its lazy footer content has loaded (scrollToEnd).
     await scrollToEnd(page, 1500);
     const overlayTop = await inShadow(function () {
@@ -153,7 +154,7 @@ async function capture(slug: string, url: string, gif: boolean) {
       return bottom;
     });
     await page.screenshot({ path: `${frames}/end.png` });
-    console.log(`real-site: ${slug} scrolled to the end: last text line ends at ${Math.round(lastText)}px, bottom overlay starts at ${Math.round(overlayTop)}px`);
+    console.log(`real-site: ${slug} scrolled to the end: last text line ends at ${Math.round(lastText)}px, the crypt footer starts at ${Math.round(overlayTop)}px`);
     expect(lastText).toBeLessThanOrEqual(overlayTop + 1);
     // The settled costume at 1280 and on a phone (375), top and end, for review (test-results only).
     await page.evaluate(() => window.scrollTo(0, 0));

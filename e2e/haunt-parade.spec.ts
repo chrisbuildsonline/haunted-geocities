@@ -28,7 +28,8 @@ const captionText = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
 /** The companies the costume shows (lanes and graveyard strip), in lane order. */
 const companiesShown = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
   inShadow(function () {
-    return [...this.querySelectorAll<HTMLElement>("#lanes > [data-company], #graveyard [data-company]")].map((g) => g.dataset.company!);
+    // a company stands in its lane and in the footer graveyard: count it once
+    return [...new Set([...this.querySelectorAll<HTMLElement>("#lanes > [data-company], #graveyard [data-company]")].map((g) => g.dataset.company!))];
   });
 
 /** The parade as drawn: company (null for a filler), its name tag's text and its tint. */
@@ -385,12 +386,13 @@ for (const [how, width] of [["click", 1280], ["key press", 375]] as const) {
 
     const settled = await inShadow(function () {
       const scripted = [...this.getAnimations(), ...document.getAnimations()].filter((a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition));
-      const hud = this.getElementById("hud")!.getBoundingClientRect();
+      const hud = this.getElementById("hud")!;
       return {
         running: scripted.filter((a) => a.playState === "running").length,
         sprites: [...this.querySelectorAll<HTMLElement>("#lanes > .ghost, #lanes > .vampire, #graveyard .ghost, #graveyard .vampire")].map((g) => +getComputedStyle(g).opacity),
         tags: [...this.querySelectorAll<HTMLElement>("#lanes .tag")].map((t) => +getComputedStyle(t).opacity),
-        hudIn: hud.bottom <= innerHeight && hud.top >= 0,
+        // the HUD (in the footer, in flow) has risen into place: no transform left on it
+        hudIn: ["none", "matrix(1, 0, 0, 1, 0, 0)"].includes(getComputedStyle(hud).transform),
       };
     });
     expect(settled.running).toBe(0);
