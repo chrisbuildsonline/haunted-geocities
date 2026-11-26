@@ -6,13 +6,16 @@ Today a haunt lasts one page. A click on any link, or a reload, throws the overl
 
 Following a site means the background must inject `content.js` into pages the user never clicked the toolbar for, so `activeTab` is not enough. The extension asks for access to that one site through the optional host permissions it already declares (`http://*/*` and `https://*/*`). The manifest does not change.
 
-The whole-site haunt is an explicit, separate choice (F26, owner decision, jury run 154). The idle popup has two actions. **Haunt this page** is the primary button and the safe default: it never asks for a permission and gives the one-page haunt, exactly as before F25. **Haunt this whole site** is a second, ordinary button that asks once. If the user says no, the result is the one-page haunt.
+F26 (jury run 154) split the idle popup into two buttons. **F27 (owner decision) replaces that with one button**: criteria 7 to 13 and 45 describe it, and group 8 of `tasks.md` is superseded by group 9. The idle popup has a single primary button, **Haunt page**, which does the whole-site haunt and asks Chrome once. If the user says no, the result is the one-page haunt.
+
+F27 also adds a **page-change cover** (criteria 49 to 63). A quiet re-haunt takes a moment to arrive, so the original page would flash on each follow-up page. A dynamic content script, `cover.js`, puts up a 1998 loading screen at `document_start` and removes it when the costume is in.
 
 | Piece | What it does |
 | --- | --- |
-| Popup | `Haunt this page` sends `HAUNT` and never calls `permissions.request`. `Haunt this whole site` asks for the site's origins inside its click, sends `HAUNT` at once, then `FOLLOW_SITE` if the answer is yes. Shows `Haunting all of SITE`. |
-| Background | Stores `site:<tabId>` in `storage.session`, re-injects `content.js` quietly on each new page of the site, and ends the site haunt and gives the permission back when the tab leaves. |
-| Content script | A quiet haunt skips the three-second haunt moment and arrives settled. |
+| Popup | `Haunt page` asks for the site's origins inside its click, sends `HAUNT` at once, then `FOLLOW_SITE` if the answer is yes. Shows `Haunting all of SITE`. |
+| Background | Stores `site:<tabId>` in `storage.session`, registers `cover.js` for the site, re-injects `content.js` quietly on each new page of the site, and ends the site haunt, the registration and the permission when the tab leaves. |
+| Cover script | `cover.js` covers a new page of a haunted site before it paints and removes the cover when the costume is rendered. |
+| Content script | A quiet haunt skips the three-second haunt moment and arrives settled, then tells the cover to go. |
 
 Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt restores it), `product.md` (permissions model: no `host_permissions` at install, optional hosts only on the user's say-so), `tech.md` (MV3 service worker, `storage.session`), `accessibility-and-motion.md` (the quiet haunt shows less motion, never more), `structure.md` (module placement). Related specs: `scaffold` (popup, router, `TabState`), `costume-renderer` (the haunt moment), `runtime-vampires` (nonce and MAIN-world hooks), `tombstones` (the optional link-check origins), `sound-effects` (the whoosh stays on the Haunt click).
 
@@ -25,6 +28,8 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 - **Link-check origins**: `http://*/*` and `https://*/*` (`LINK_CHECK_ORIGINS`), granted when the user turns on "Check links to other sites".
 - **New document**: a navigation or reload after which the old content script no longer answers a `ping`. A hash or `pushState` change keeps the document and the overlay.
 - **Quiet haunt**: a haunt that skips the haunt moment and arrives settled.
+- **Cover**: the full-viewport `hg-cover` loading screen `cover.js` shows while a new page of a haunted site waits for its quiet haunt.
+- **Marker**: `sessionStorage["__hauntedGeoCitiesSite"]`, per tab and per origin, set to `"1"` in a haunted tab. It tells `cover.js` at once, without a message, that this tab follows a site.
 
 ## EARS Acceptance Criteria
 
@@ -37,15 +42,15 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 5. The function `siteOrigins(site)` shall return `http://SITE/*`, `https://SITE/*`, `http://*.SITE/*` and `https://*.SITE/*`, and for an IP address or a dotless host only the first two.
 6. Every pattern `siteOrigins` returns shall be covered by `optional_host_permissions` (`http://*/*` and `https://*/*`), and the shipping manifest shall still have no `host_permissions`.
 
-### Two actions, and asking in the site click
+### One button, asking in its click (F27)
 
-7. The idle popup shall show **Haunt this page** in the Haunt group box as its one primary button (class `primary`, the default and the safe choice). Clicking it shall never call `chrome.permissions.request` and shall send `HAUNT` only, so the haunt is one page, exactly as before F25. No other button in the popup shall have class `primary`.
-8. When the tab's URL has a site (`siteOf(url)` is not `null`, so `http` or `https`), the idle popup shall also show, in the same group box, a second ordinary Win95 button **Haunt this whole site** (class `btn site-haunt`). Under it shall be a hint, linked to the button by `aria-describedby`: `Follows every link on SITE. Chrome asks once.` where SITE is `siteOf(url)`, in lower case.
-9. When the user clicks **Haunt this whole site**, the popup shall call `chrome.permissions.request({ origins: siteOrigins(site) })` before any `await` in the click handler, so the call is made inside the user gesture, and shall send `HAUNT` at once without waiting for the permission answer, so the current page haunts with `activeTab`.
-10. When the tab's URL has no site (a restricted page, a `file:` page), the popup shall show no **Haunt this whole site** button, and no click shall call `permissions.request`. While either action is in flight, both buttons shall be disabled and the clicked one shall have `aria-busy="true"`, until the `HAUNT` answer and, for the site button, the permission answer have arrived. The popup shall then refresh its screen once.
-11. When the request resolves `true` and `HAUNT` did not fail, the popup shall send `FOLLOW_SITE` with the tab id, and shall show the state that answer returns. Every later page of the same site in that tab is then haunted without further clicks, and without the haunt moment (criteria 18 to 26).
-12. When the request resolves `false` or rejects, the popup shall send no `FOLLOW_SITE`, and the haunt shall be one page only: a reload or a navigation clears it.
-13. When `HAUNT` fails, from either button, the popup shall show the existing haunt error and shall not send `FOLLOW_SITE`. After a granted site request the popup shall also hand the site origins back with `permissions.remove`, ignoring its error. The whoosh (sound effects) plays once on either click.
+7. The idle popup shall show one button in the Haunt group box, **Haunt page** (class `primary`), and it shall be the only `.primary` button in the popup. There shall be no **Haunt this whole site** button, no `.site-haunt` element and no second Haunt action.
+8. When the tab's URL has a site (`siteOf(url)` is not `null`, so `http` or `https`), the idle popup shall show under the button a muted line, linked to the button by `aria-describedby`: `Chrome may ask once to let the haunt follow you around SITE.` where SITE is `siteOf(url)`, in lower case. When the URL has no site, the line shall not be shown.
+9. When the user clicks **Haunt page** on a tab that has a site, the popup shall call `chrome.permissions.request({ origins: siteOrigins(site) })` before any `await` in the click handler, so the call is made inside the user gesture, and shall send `HAUNT` at once without waiting for the permission answer, so the current page haunts with `activeTab`.
+10. When the tab's URL has no site (a restricted page, a `file:` page), no click shall call `permissions.request`, and `HAUNT` is sent as before. While the click is in flight, the button shall be disabled and have `aria-busy="true"`, until the `HAUNT` answer and the permission answer have arrived. The popup shall then refresh its screen once.
+11. When the request resolves `true` and `HAUNT` did not fail, the popup shall send `FOLLOW_SITE` with the tab id, and shall show the state that answer returns. Every later page of the same site in that tab is then haunted without further clicks, without the haunt moment, and without a flash of the original page (criteria 18 to 26 and 49 to 63).
+12. When the request resolves `false`, rejects or throws, the popup shall send no `FOLLOW_SITE`, and the haunt shall be one page only: a reload or a navigation clears it. Nothing is registered for the site.
+13. When `HAUNT` fails, the popup shall show the existing haunt error and shall not send `FOLLOW_SITE`. After a granted request it shall also hand the site origins back with `permissions.remove`, ignoring its error. The whoosh (sound effects) plays once on the click.
 
 ### Storing the site entry
 
@@ -98,7 +103,25 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 
 43. Unit tests in `test/site-haunt.test.ts` shall cover `siteOf`, `onSite` and `siteOrigins` (criteria 1 to 6), including `evilnps.gov`, IP and dotless hosts, and non-http URLs.
 44. Unit tests in the same file shall drive the background with the mock in `test/chrome-mock.ts` through every transition of the state machine in `design.md` (criteria 14 to 23, 27, 29 to 35, 40, 42).
-45. Popup tests in `test/popup.test.ts` shall cover: the page button never calls `permissions.request`; the site button requests the origins before any `await`; `HAUNT` sent at once; `FOLLOW_SITE` after `HAUNT` on a `true`; none after `false`, a rejection or a failed haunt; the hint names the site; no site button for a `file:` or restricted tab; one `.primary` button only; both buttons disabled and the clicked one `aria-busy`; and the site line (criteria 7 to 13, 36, 37).
-46. E2E tests in `e2e/site-haunt.spec.ts` shall show: the page click never requests the permission; the site click then an internal link gives a haunted next page with no haunt moment; a link to another site gives a clean page; a reload stays haunted; a denied permission gives one page (criteria 7, 11, 12, 19, 20, 22, 26).
-47. `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest` and `bun run docker:test` shall pass, with the popup's baselines regenerated in Docker and reviewed (the haunted screen for the site line, the idle screen for the second button).
-48. The README, `docs/devpost.md` and `docs/demo-script.md` shall describe both buttons, and the demo shall show the Allow path and the Deny path.
+45. Popup tests in `test/popup.test.ts` shall cover: one `.primary` button and no `.site-haunt`; the click requests the origins before any `await`; `HAUNT` sent at once; `FOLLOW_SITE` after `HAUNT` on a `true`; none after `false`, a rejection, a throw or a failed haunt; the note names the site and is linked by `aria-describedby`; no note and no request for a `file:` or restricted tab; the button disabled and `aria-busy` until both answers arrive; and the site line (criteria 7 to 13, 36, 37).
+46. E2E tests in `e2e/site-haunt.spec.ts` shall show: one button only; the click then an internal link gives a haunted next page with no haunt moment; a link to another site gives a clean page; a reload stays haunted; a denied permission gives one page (criteria 7, 11, 12, 19, 20, 22, 26). The cover tests are criterion 63.
+47. `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest` and `bun run docker:test` shall pass, with the popup's baselines regenerated in Docker and reviewed (the idle screen for the one button and its note, the haunted screen for the site line).
+48. The README, `docs/devpost.md` and `docs/demo-script.md` shall describe the one button, the note, and the cover on the next page, and the demo shall show the Allow path and the Deny path.
+
+### The page-change cover (F27)
+
+49. When the background stores a site entry (`FOLLOW_SITE` or `permissions.onAdded`), it shall register a dynamic content script with `chrome.scripting.registerContentScripts`: `id` `"cover-" + site`, `matches` `siteOrigins(site)`, `js` `["cover.js"]`, `runAt` `"document_start"`, `allFrames` `false`, `persistAcrossSessions` `false`. It shall skip the call when `getRegisteredContentScripts({ ids })` already lists that id, and ignore any error.
+50. When a site entry is dropped, the background shall unregister `"cover-" + site` unless another tab still has a site entry for the same site. It shall not look at the link-check grant: the registration goes even when the access stays. It shall also unregister every `cover-` script at browser start, in the same handler that hands stale access back.
+51. `cover.js` shall run in the ISOLATED world at `document_start`, before the page paints. It shall change no page node except appending its one `hg-cover` element to `documentElement`.
+52. The marker shall be set by the background, with an ISOLATED-world `executeScript` in the haunted tab, when the site entry is stored and before each quiet re-haunt. `content.js` shall remove it on un-haunt.
+53. `cover.js` shall read the marker synchronously. With the marker, it shall put up the cover at once and then send `COVER_CHECK`. When the answer is `false` (a `sessionStorage` copied into a new tab) it shall remove the cover and the marker. Without the marker, it shall send `COVER_CHECK` and put up the cover only on `true` (a subdomain, which is another origin and has no marker). A tab that is not haunted shall never be covered.
+54. The background shall answer `COVER_CHECK` from `sender.tab.id` alone, with `true` only when that tab is haunted, has a site entry, and its URL is on that site, and `false` otherwise. It shall ignore a tab id in the body and a sender that is an extension page.
+55. The cover shall be a custom element `hg-cover` with a closed shadow root, full viewport, `position: fixed`, at the top `z-index`. It shall look like a 1998 GeoCities and Windows 95 loading screen: a dark crypt background, a small bobbing pixel ghost, the text `Loading crypt…` and a Win95 sunken progress bar with moving blue blocks. Every colour is web-safe, the ghost is original pixel art, and the face is Comic Sans MS with the stack in `design/DESIGN.md`.
+56. The text shall sit in an element with `role="status"` so a screen reader hears it. The cover shall have no focusable content, shall not set `inert` on the page, shall not move focus, and shall block pointer events only while it is shown.
+57. With `prefers-reduced-motion: reduce`, the cover shall be static: no bob, no moving blocks and no fade. The motion shall stay under 3 Hz.
+58. The cover shall be removed with a 200ms fade when the quiet costume render finishes: `content.js` calls the hook `cover.js` left on the ISOLATED world's global. It shall also be removed after 3000ms at the latest, and at once on un-haunt. Removal is idempotent and leaves no `hg-cover` node.
+59. The first haunt of a page shall keep its three-second haunt moment and shall never show the cover: the registration affects only documents that load after it.
+60. Leaving the site, Un-haunt, tab close and access removal shall unregister the script (criterion 50). After a denied permission nothing shall be registered.
+61. The cover shall add no permission, no `web_accessible_resources` and no manifest entry. `cover.js` is a self-contained IIFE in `dist/`, `bun run lint:manifest` shall still pass, and the cover makes no network request.
+62. The marker shall hold only the value `"1"`. It is per-tab session storage, so it keeps no history and is gone when the tab closes.
+63. Unit tests in `test/cover.test.ts` shall cover criteria 51 to 58 (marker, check answers, reduced motion, the 3s fallback, the removal hook, no focusable content). Background tests in `test/site-haunt.test.ts` shall cover criteria 49, 50, 52 and 54. `e2e/site-haunt.spec.ts` shall show that the next internal link is covered at `DOMContentLoaded` and before first paint, then uncovered and haunted with no intro, that Deny registers nothing, that an un-haunted tab on the same site is never covered, and that Un-haunt and leaving the site remove the registration.

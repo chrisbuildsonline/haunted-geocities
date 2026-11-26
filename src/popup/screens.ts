@@ -36,8 +36,6 @@ export interface ScreenProps {
   state: TabState;
   settings: HTMLElement;
   onPrimary: () => void;
-  /** "Haunt this whole site": the haunt follows every link on the site (Chrome asks once). */
-  onSite?: () => void;
   /** Exorcise (or, when `exorcised`, let back) a company. */
   onExorcise: (company: string, exorcised: boolean) => void;
   error?: string;
@@ -182,7 +180,7 @@ const addressOf = (url: string | null): string | null => {
 };
 
 /** Everything that goes inside #app for one screen. */
-export function renderScreen(doc: Document, { state, settings, onPrimary, onSite, onExorcise, error }: ScreenProps): Node[] {
+export function renderScreen(doc: Document, { state, settings, onPrimary, onExorcise, error }: ScreenProps): Node[] {
   const screen = screenFor(state);
   const titlebar = h(doc, "header", { class: "titlebar" }, sprite(doc, "ghost", 16, "mark"), h(doc, "span", { class: "brand" }, "Haunted GeoCities"));
   const title = h(doc, "h1", { class: "title" }, screen === "restricted" ? "This page is protected" : hostname(state.url));
@@ -199,15 +197,11 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onSite
 
   let groups: HTMLElement[];
   if (screen === "idle") {
-    // The second, ordinary button: the only one that makes Chrome ask for anything.
+    // One button for the whole site; the note says up front that Chrome may ask once for it.
     const site = siteOf(state.url);
-    let siteHaunt: HTMLElement[] = [];
-    if (site) {
-      const hint = h(doc, "p", { class: "muted site-hint", id: "site-hint" }, `Follows every link on ${site}. Chrome asks once.`);
-      const b = h(doc, "button", { type: "button", class: "btn site-haunt", "aria-describedby": hint.id }, "Haunt this whole site");
-      b.addEventListener("click", () => onSite?.());
-      siteHaunt = [b, hint];
-    }
+    const haunt = primary("Haunt page");
+    const note = site ? h(doc, "p", { class: "muted site-note", id: "site-note" }, `Chrome may ask once to let the haunt follow you around ${site}.`) : null;
+    if (note) haunt.setAttribute("aria-describedby", note.id);
     groups = [
       group(
         doc,
@@ -215,8 +209,8 @@ export function renderScreen(doc: Document, { state, settings, onPrimary, onSite
         "",
         h(doc, "p", { class: "lead" }, "Turn this page into a 1998 crypt."),
         h(doc, "p", { class: "muted" }, "Ghosts, vampires and dead links show up."),
-        primary("Haunt this page"),
-        ...siteHaunt,
+        haunt,
+        note,
         alert,
       ),
     ];

@@ -276,7 +276,8 @@ A Windows 95 window, the same era as the crypt. It is 360px wide and at most 600
 | +- Haunt -----------------------------------------------------------+ |
 | | Turn this page into a 1998 crypt.                                  | |
 | | Ghosts, vampires and dead links show up.            <- 12px #333   | |
-| | [#### Haunt this page ####]  <- default push button, 40px          | |
+| | [####### Haunt page #######]  <- the one default push button, 40px | |
+| | Chrome may ask once to let the haunt follow you around example.org.| |
 | +--------------------------------------------------------------------+ |
 | +- Settings ---------------------------------------------------------+ |
 | | [ ] Check links to other sites                                     | |
@@ -287,6 +288,8 @@ A Windows 95 window, the same era as the crypt. It is 360px wide and at most 600
 | [ Idle ]  [ Tracker data: DuckDuckGo Tracker Radar, CC BY-NC-SA 4.0 ]  | <- sunken status bar
 +========================================================================+
 ```
+
+One button. **Haunt page** haunts this page and, when Chrome's one-time prompt for the site is allowed, every later page of the same site in this tab (no second click). Deny gives this page only. The 12px muted note under it names the site (`siteOf`: lower case, no `www.`) so the prompt is no surprise; pages with no site (`file:`) have no note.
 
 ### Screen: haunted
 
@@ -403,6 +406,31 @@ While a tab is haunted, the extension icon carries that tab's total: ghosts (vam
 - **Default:** `Sound effects`, checkbox clear, sub-line `Muted`.
 - **When on:** the sub-line reads `On · plays only after you click`. Sound starts only from that gesture. There is no ambient loop.
 - **What plays:** the Haunt click plays the whoosh (see "Haunt moment"). Opening a card plays one short sound: a ghost card a soft "ooo", a vampire card a low organ stab, a tombstone card a stone thud, a curse card a short sting. Closing a card, or clicking the marker of the card already open, plays nothing.
+
+## Page-change cover
+
+What a whole-site haunt shows while the next page of the site loads, so the original page never flashes before the costume lands. Only follow-up pages in a tab that haunts the site get it; the first haunt keeps the haunt moment, and other tabs on the same site never see it.
+
+```text
++------------------------------------------------------------------+
+|                      (crypt #000033, full viewport)              |
+|                                                                  |
+|                           [ghost 48]   <- bobs 4px, 1.2s          |
+|                       Loading crypt...  <- Times 20 #ffffcc       |
+|          +[##][##][##][  ][  ][  ][  ][  ][  ][  ]+  <- 200x16    |
+|            Win95 sunken trough, #000080 blocks step right         |
+|                Under construction since 1998   <- 12px #ccccff    |
++------------------------------------------------------------------+
+```
+
+- Host `hg-cover` (closed shadow root, appended to `<html>` at `document_start`), `position: fixed; inset: 0; z-index: 2147483647`. Background `crypt` #000033 with the 1px `star` (#ffff66) dots of the starfield tile at 30% opacity.
+- Ghost: the 48px Webmaster's Ghost sprite (3px art pixels), centred, `ghostGlow` drop shadow; bob 4px up and down over 1200ms ease-in-out.
+- Label `Loading crypt…` in Times New Roman 20px `bone` #ffffcc, in a `role="status"` live region, 12px under the ghost.
+- Progress bar: 200 x 16px Win95 trough (`#c0c0c0` face, sunken 2px bevel), ten 16 x 12px blocks of `#000080`. Three lit blocks step one block to the right every 333ms (3 Hz cap) and wrap.
+- Footer line `Under construction since 1998`, 12px `#ccccff`.
+- Leaves with a 200ms opacity fade once the costume has painted, or after 3000ms at the latest; Un-haunt removes it at once.
+- Reduced motion: no bob, the blocks stand still (four lit), no fade.
+- Accessibility: nothing in it takes focus (no links, buttons or tabindex), the page is never made `inert` and focus never moves. Pointer events are blocked only while it is shown.
 
 ## Haunt moment
 

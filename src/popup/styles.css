@@ -192,21 +192,9 @@ body.popup .primary:disabled {
   cursor: progress;
 }
 
-/* "Haunt this whole site": a plain push button under the default one (no default frame, not bold) */
-.btn.site-haunt {
-  display: block;
-  width: 100%;
-  height: 28px;
-  margin-top: 8px;
-  font-size: 13px;
-}
-.btn.site-haunt:disabled {
-  color: var(--shadow);
-  text-shadow: 1px 1px 0 var(--hilite);
-  cursor: progress;
-}
-.site-hint {
-  margin-top: 4px;
+/* "Chrome may ask once…": the note under Haunt page */
+.site-note {
+  margin-top: 6px;
 }
 
 /* Small push buttons: Exorcise and Let it back */

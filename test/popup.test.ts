@@ -53,13 +53,13 @@ const toggle = async (input: HTMLInputElement) => {
 };
 
 describe("popup screens", () => {
-  test("idle: hostname title, Idle status, the two Haunt buttons, settings, attribution", async () => {
+  test("idle: hostname title, Idle status, the Haunt page button, settings, attribution", async () => {
     const { root } = await mount();
     expect(root.dataset.screen).toBe("idle");
     expect(text(root.querySelector("h1"))).toBe("example.org");
     expect(text(root.querySelector("header"))).toContain("Haunted GeoCities");
     expect(text(root.querySelector('[data-status]'))).toBe("Idle");
-    expect(buttons(root).map(text)).toEqual(["Haunt this page", "Haunt this whole site"]);
+    expect(buttons(root).map(text)).toEqual(["Haunt page"]);
     expect(text(root)).toContain("Turn this page into a 1998 crypt.");
     expect(text(root)).toContain(ATTRIBUTION);
     expect(root.querySelectorAll('input[type="checkbox"][role="switch"]')).toHaveLength(2);
@@ -187,47 +187,35 @@ describe("primary action", () => {
   });
 });
 
-describe("haunting the whole site (a second, explicit button)", () => {
+describe("Haunt page: one button that haunts the whole site", () => {
   const types = (m: { calls: { runtimeMessages: unknown[] } }) => (m.calls.runtimeMessages as { type: string }[]).map((x) => x.type);
-  const pageButton = (root: HTMLElement) => root.querySelector<HTMLButtonElement>("button.primary")!;
-  const siteButton = (root: HTMLElement) => root.querySelector<HTMLButtonElement>("button.site-haunt");
-  test("idle shows one primary Haunt this page and a second Haunt this whole site with its hint", async () => {
+  const haunt = (root: HTMLElement) => root.querySelector<HTMLButtonElement>("button.primary")!;
+  test("idle shows one button, Haunt page, and a note that Chrome may ask once for the site", async () => {
     const { root } = await mount();
-    expect(buttons(root).map(text)).toEqual(["Haunt this page", "Haunt this whole site"]);
-    expect(root.querySelectorAll("button.primary")).toHaveLength(1);
-    const site = siteButton(root)!;
-    expect(site.classList.contains("primary")).toBe(false);
-    expect(description(root, site)).toBe("Follows every link on example.org. Chrome asks once.");
+    expect(buttons(root).map(text)).toEqual(["Haunt page"]);
+    expect(root.querySelectorAll("button.site-haunt")).toHaveLength(0);
+    expect(description(root, haunt(root))).toBe("Chrome may ask once to let the haunt follow you around example.org.");
   });
-  test("the hint names the site as Chrome does: lower case, www. dropped", async () => {
+  test("the note names the site as Chrome does: lower case, www. dropped", async () => {
     const { root } = await mount({ state: { url: "https://WWW.NPS.gov/index.htm" } });
-    expect(description(root, siteButton(root)!)).toBe("Follows every link on nps.gov. Chrome asks once.");
+    expect(description(root, haunt(root))).toBe("Chrome may ask once to let the haunt follow you around nps.gov.");
   });
-  test("Haunt this page never asks Chrome for anything, even when it would say yes", async () => {
+  test("the click asks for the site's origins before anything is awaited", async () => {
     const { root, m } = await mount({ grant: true });
-    pageButton(root).click();
-    await flush();
-    expect(m.calls.request).toEqual([]);
-    expect(types(m)).not.toContain("FOLLOW_SITE");
-    expect(root.dataset.screen).toBe("haunted");
-    expect(root.querySelector(".site-line")).toBeNull();
-  });
-  test("Haunt this whole site asks for the site's origins before anything is awaited", async () => {
-    const { root, m } = await mount({ grant: true });
-    siteButton(root)!.click();
+    haunt(root).click();
     // synchronously, inside the click's user gesture
     expect(m.calls.request).toEqual([{ origins: siteOrigins("example.org") }]);
     await flush();
   });
   test("granted: FOLLOW_SITE after HAUNT, and the haunted screen says Haunting all of the site", async () => {
     const { root, m } = await mount({ grant: true });
-    siteButton(root)!.click();
+    haunt(root).click();
     await flush();
     expect(types(m).slice(1)).toEqual(["HAUNT", "FOLLOW_SITE"]);
     expect(root.dataset.screen).toBe("haunted");
     expect(text(root.querySelector(".site-line"))).toBe("Haunting all of example.org");
   });
-  test("while it is in flight both buttons are disabled and the clicked one is busy", async () => {
+  test("while it is in flight the button is disabled and busy", async () => {
     const { root, m } = await mount({ grant: true });
     let finish!: () => void;
     const answered = new Promise<void>((r) => (finish = r));
@@ -236,18 +224,17 @@ describe("haunting the whole site (a second, explicit button)", () => {
       if (msg.type === "HAUNT") await answered;
       return reply(msg);
     };
-    siteButton(root)!.click();
+    haunt(root).click();
     await flush();
-    expect([pageButton(root).disabled, siteButton(root)!.disabled]).toEqual([true, true]);
-    expect(siteButton(root)!.getAttribute("aria-busy")).toBe("true");
-    expect(pageButton(root).getAttribute("aria-busy")).toBeNull();
+    expect(haunt(root).disabled).toBe(true);
+    expect(haunt(root).getAttribute("aria-busy")).toBe("true");
     finish();
     await flush();
     expect(root.dataset.screen).toBe("haunted");
   });
-  test("declined: no FOLLOW_SITE and no site line, a one-page haunt", async () => {
+  test("denied: no FOLLOW_SITE and no site line, a one-page haunt", async () => {
     const { root, m } = await mount({ grant: false });
-    siteButton(root)!.click();
+    haunt(root).click();
     await flush();
     expect(m.calls.request).toHaveLength(1);
     expect(types(m)).not.toContain("FOLLOW_SITE");
@@ -259,7 +246,7 @@ describe("haunting the whole site (a second, explicit button)", () => {
     m.chrome.permissions.request = async () => {
       throw new Error("Permissions request failed");
     };
-    siteButton(root)!.click();
+    haunt(root).click();
     await flush();
     expect(types(m)).not.toContain("FOLLOW_SITE");
     expect(root.dataset.screen).toBe("haunted");
@@ -267,7 +254,7 @@ describe("haunting the whole site (a second, explicit button)", () => {
   test("a failed haunt sends no FOLLOW_SITE and hands the site back", async () => {
     const { root, m } = await mount({ grant: true });
     m.backgroundReply = async () => ({ haunted: false, restricted: false, url: "https://example.org/a", ghosts: [], exorcised: [], tombstones: [], curses: [], error: "nope" });
-    siteButton(root)!.click();
+    haunt(root).click();
     await flush();
     expect(types(m)).not.toContain("FOLLOW_SITE");
     expect(root.querySelector('[role="alert"]')).not.toBeNull();
@@ -282,10 +269,14 @@ describe("haunting the whole site (a second, explicit button)", () => {
     expect(root.dataset.screen).toBe("idle");
     expect(root.querySelector(".site-line")).toBeNull();
   });
-  test("a page with no site (file://) gets no whole-site button", async () => {
-    const { root } = await mount({ state: { url: "file:///tmp/a.html" } });
-    expect(siteButton(root)).toBeNull();
-    expect(buttons(root).map(text)).toEqual(["Haunt this page"]);
+  test("a page with no site (file://) asks for nothing and has no note", async () => {
+    const { root, m } = await mount({ grant: true, state: { url: "file:///tmp/a.html" } });
+    expect(haunt(root).hasAttribute("aria-describedby")).toBe(false);
+    expect(root.querySelector(".site-note")).toBeNull();
+    haunt(root).click();
+    await flush();
+    expect(m.calls.request).toEqual([]);
+    expect(types(m)).not.toContain("FOLLOW_SITE");
   });
 });
 
@@ -483,9 +474,9 @@ describe("popup costume (1998)", () => {
     expect(tombsOnly.root.querySelector(".list > .found-none")).toBe(tombsOnly.root.querySelector(".list")!.firstElementChild);
   });
 
-  test("idle screen has one primary push button labelled Haunt this page", async () => {
+  test("idle screen has one primary push button labelled Haunt page", async () => {
     const { root } = await mount();
-    expect([...root.querySelectorAll("button.primary")].map(text)).toEqual(["Haunt this page"]);
+    expect([...root.querySelectorAll("button.primary")].map(text)).toEqual(["Haunt page"]);
     expect(root.querySelector(".pill")).toBeNull();
   });
 
