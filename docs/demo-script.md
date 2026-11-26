@@ -12,7 +12,7 @@ Fixture note: `news.html` is a fixture, a made-up page in `fixtures/` served fro
 
 ## 0:15-0:40 The costume
 
-**Shot:** The settled costume: the page restyled as a 1998 page in its guestbook frame under a night sky. The neighborhood bar at the top shows the page's GeoCities address, and the HUD along the bottom has its hit counter and marquee. Ghosts drift in the gutters. (On a phone they stand in a graveyard strip above the HUD instead.)
+**Shot:** The settled costume: the page restyled as a 1998 page in its guestbook frame under a night sky. The neighborhood bar at the top shows the page's GeoCities address, and at the page's end a 1998 footer holds the graveyard of trackers, the hit counter and the 88x31 badges; the ghost icon in the corner jumps there. Ghosts drift in the gutters. (On a phone they stand in a graveyard strip above the HUD instead.)
 
 **Voiceover:** Haunted GeoCities dresses the page as a 1998 GeoCities crypt, and every piece of the costume is real. Each ghost is a tracking company from the DuckDuckGo Tracker Radar.
 
