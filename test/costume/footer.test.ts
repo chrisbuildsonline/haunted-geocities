@@ -5,7 +5,7 @@ import { describe, expect, test } from "bun:test";
 import { HOST_CSS, HOST_TAG } from "../../src/content/overlay";
 import { renderCostume } from "../../src/content/costume/render";
 import { costumeCss } from "../../src/content/costume/styles";
-import { setup } from "./helpers";
+import { pageCss, setup, stubMain } from "./helpers";
 
 const css = costumeCss({ stars: "s", twinkle: "t" });
 /** The declarations of the first rule whose selector is exactly `sel`. */
@@ -65,6 +65,41 @@ describe("crypt footer", () => {
     expect(text).toMatch(/padding-top/);
     expect(text).not.toMatch(/padding-bottom/);
     expect(text).not.toMatch(/scroll-padding-bottom/);
+  });
+});
+
+describe("the fixed layers stop at the footer", () => {
+  test("the starfield and the lanes are clipped at the footer's top while it is on screen", async () => {
+    const t = setup();
+    (t.win as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (cb: () => void) => setTimeout(cb, 0);
+    const root = renderCostume(t.doc);
+    const footer = root.getElementById("crypt-footer")!;
+    const croot = root.getElementById("crypt-root")!;
+    let top = 2000; // below the fold
+    footer.getBoundingClientRect = () => ({ top, bottom: top + 300, left: 0, right: 1280, width: 1280, height: 300, x: 0, y: top }) as DOMRect;
+    t.win.dispatchEvent(new t.win.Event("scroll"));
+    await new Promise((r) => setTimeout(r, 5));
+    expect(croot.style.getPropertyValue("--hg-footer-in")).toBe("0px");
+    top = 500; // scrolled to the end: the footer takes the bottom 300px of the 800px viewport
+    t.win.dispatchEvent(new t.win.Event("scroll"));
+    await new Promise((r) => setTimeout(r, 5));
+    expect(croot.style.getPropertyValue("--hg-footer-in")).toBe("300px");
+    const css = costumeCss({ stars: "s", twinkle: "t" });
+    expect(css).toMatch(/#starfield, #lanes \{ clip-path: inset\(0 0 var\(--hg-footer-in, 0px\) 0\); \}/);
+  });
+});
+
+describe("the page's tint and guestbook frame end where the footer starts", () => {
+  test("on a page shorter than the viewport their height is the footer's top, not the viewport's", async () => {
+    const t = setup();
+    stubMain(t.win, () => ({ left: 300, right: 980, top: 60, bottom: 400 }));
+    (t.win as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (cb: () => void) => setTimeout(cb, 0);
+    const root = renderCostume(t.doc);
+    const footer = root.getElementById("crypt-footer")!;
+    footer.getBoundingClientRect = () => ({ top: 500, bottom: 800, left: 0, right: 1280, width: 1280, height: 300, x: 0, y: 500 }) as DOMRect;
+    t.win.dispatchEvent(new t.win.Event("resize"));
+    await new Promise((r) => setTimeout(r, 10));
+    expect(pageCss(t.doc)).toMatch(/html::before \{[^}]*height: 500px !important/);
   });
 });
 

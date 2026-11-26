@@ -71,7 +71,9 @@ test("HUD @700", async ({ context, sw, extensionId }) => {
   await waitForHaunted(page);
   const inShadow = await shadowOf(page);
   const hud = await inShadow(function () {
-    const r = this.querySelector("#hud")!.getBoundingClientRect();
+    const el = this.querySelector("#hud")!;
+    el.scrollIntoView({ block: "center" }); // in the crypt footer, at the end of the page
+    const r = el.getBoundingClientRect();
     return { x: Math.floor(r.x), y: Math.floor(r.y), width: Math.ceil(r.width), height: Math.ceil(r.height) };
   });
   await page.mouse.move(0, 0);
@@ -206,6 +208,8 @@ for (const width of WIDTHS) {
       await page.bringToFront();
       await waitForHaunted(page);
       const inShadow = await shadowOf(page);
+      // the footer graveyard at the end of the page, scrolled into view the way the ghost icon does it
+      await inShadow(function () { this.getElementById("graveyard")!.scrollIntoView({ block: "end" }); });
       const press = (company: string) => inShadow(function (c: string) { this.querySelector<HTMLElement>(`#graveyard button[data-company="${c}"]`)!.click(); }, company);
       await press("Criteo");
       await inShadow(function () { this.querySelector<HTMLElement>("#cards .act")!.click(); });

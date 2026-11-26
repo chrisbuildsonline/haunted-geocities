@@ -34,6 +34,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 
 #starfield { position: absolute; inset: 0; z-index: 1; }
 #lanes { position: absolute; inset: 0; z-index: 2; }
+#starfield, #lanes { clip-path: inset(0 0 var(--hg-footer-in, 0px) 0); }
 #markers { position: absolute; inset: 0; z-index: 3; }
 #top-bands { position: absolute; top: 0; left: 0; right: 0; z-index: 4; }
 #crypt-footer { display: block; box-sizing: border-box; width: 100%; padding: 28px 24px 24px; position: relative; z-index: 2147483646; pointer-events: auto; font: 13px ${COMIC}; color: ${P.bone}; background-color: ${P.crypt}; background-image: ${stars}; border-top: 4px solid ${P.ectoplasm}; transition: opacity ${M.base}ms linear; }

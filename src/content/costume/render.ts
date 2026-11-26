@@ -159,7 +159,11 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     edgeFrame.hidden = !overlay;
     // Document x; in full-overlay mode the whole page is the column, so the tint spans it.
     const width = vw() + win.scrollX;
-    const span = { ...(overlay ? { left: 0, right: width } : { left: col.left + win.scrollX, right: col.right + win.scrollX }), height: documentHeight(doc) };
+    // The tint and the frame end where the crypt footer (in flow after the page) starts: on a page
+    // shorter than the viewport the footer starts inside it.
+    const foot = footer.getBoundingClientRect();
+    const pageEnd = foot.height > 0 ? Math.min(documentHeight(doc), Math.ceil(foot.top + win.scrollY)) : documentHeight(doc);
+    const span = { ...(overlay ? { left: 0, right: width } : { left: col.left + win.scrollX, right: col.right + win.scrollX }), height: pageEnd };
     const empty = col.right <= col.left;
     drawn = {
       tint: !empty && theme.tint ? tintBox(span, width) : null,
@@ -326,9 +330,24 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       placeGhosts();
       tombs.place();
       badges.place();
+      clipToFooter(); // the page may have grown: the footer moved
     });
   };
   win.addEventListener("resize", relayout);
+  // The fixed starfield and lanes stop at the footer's top while it is on screen (it is in flow, under them).
+  let clipQueued = false;
+  const clipToFooter = () => {
+    if (clipQueued) return;
+    clipQueued = true;
+    win.requestAnimationFrame(() => {
+      clipQueued = false;
+      const into = Math.max(0, Math.round(win.innerHeight - footer.getBoundingClientRect().top));
+      croot.style.setProperty("--hg-footer-in", `${into}px`);
+    });
+  };
+  win.addEventListener("scroll", clipToFooter, { passive: true });
+  win.addEventListener("resize", clipToFooter);
+  clipToFooter();
   const mo = new win.MutationObserver(() => {
     relayout();
     scheduleRescan();
@@ -425,6 +444,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     doc.fonts?.removeEventListener?.("loadingdone", relayout);
     ro?.disconnect();
     win.removeEventListener("resize", relayout);
+    win.removeEventListener("scroll", clipToFooter);
+    win.removeEventListener("resize", clipToFooter);
     doc.removeEventListener("visibilitychange", onVisibility);
     if (costumes.get(doc) === costume) costumes.delete(doc);
   });
