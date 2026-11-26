@@ -3,7 +3,7 @@
 import { describe, expect, test } from "bun:test";
 import { createBackground } from "../src/background/router";
 import { onSite, siteOf, siteOrigins } from "../src/background/site-haunt";
-import { ghostsKey, hauntKey, LINK_CHECK_ORIGINS, nonceKey, QUIET_FLAG, siteKey } from "../src/data/types";
+import { COVER_MARKER, ghostsKey, hauntKey, LINK_CHECK_ORIGINS, nonceKey, QUIET_FLAG, siteKey } from "../src/data/types";
 import { asChrome, createChromeMock } from "./chrome-mock";
 
 describe("same-site rule", () => {
@@ -75,7 +75,7 @@ function setup() {
     for (const l of m.chrome.tabs.onUpdated.listeners) await l(7, { status, url }, { ...m.tabsById.get(7) });
   };
   const injected = () =>
-    (m.calls.executeScript as any[]).map((i) => (i.files ? i.files[0] : i.world === "MAIN" ? "hooks" : i.args?.[0] === QUIET_FLAG ? "quiet" : "func"));
+    (m.calls.executeScript as any[]).map((i) => (i.files ? i.files[0] : i.world === "MAIN" ? "hooks" : i.args?.[0] === QUIET_FLAG ? "quiet" : i.args?.[0] === COVER_MARKER ? "marker" : "func"));
   return { m, bg, data, grant, haunt, follow, navigate, injected };
 }
 
@@ -338,5 +338,106 @@ describe("the end of a site haunt", () => {
     await t.navigate("https://www.nps.gov/b");
     await t.bg.handle({ type: "UNHAUNT", tabId: 7 }, self);
     expect(t.m.chrome.storage.local.data).toEqual({});
+  });
+});
+
+describe("the page-change cover's registration", () => {
+  const COVER = {
+    id: "cover-nps.gov",
+    matches: ORIGINS,
+    js: ["cover.js"],
+    runAt: "document_start",
+    allFrames: false,
+    persistAcrossSessions: false,
+  };
+  /** COVER_CHECK as a content script in tab `id` at `url` sends it. */
+  const check = (t: ReturnType<typeof setup>, id: number, url: string, fromPage = false) =>
+    new Promise((resolve) => {
+      const sender = fromPage ? self : ({ id: "test-extension-id", tab: { id, url }, url } as chrome.runtime.MessageSender);
+      const keep = t.m.chrome.runtime.onMessage.listeners[0]!({ type: "COVER_CHECK" }, sender, resolve);
+      if (keep !== true) resolve(undefined);
+    });
+
+  test("following a site registers its cover once, at document_start, top frame, this session only", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    expect([...t.m.registered.values()]).toEqual([COVER]);
+    await t.bg.handle({ type: "HAUNT", tabId: 8 }, self);
+    await t.bg.handle({ type: "FOLLOW_SITE", tabId: 8 }, self);
+    expect(t.m.registered.size).toBe(1);
+  });
+  test("following marks the tab (its sessionStorage) so its next page is covered at once", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    t.m.calls.executeScript.length = 0;
+    await t.follow();
+    expect(t.injected()).toEqual(["marker"]);
+    expect((t.m.calls.executeScript[0] as any).target).toEqual({ tabId: 7 });
+  });
+  test("the quiet re-haunt marks the new page too, in the same call as the quiet flag", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    t.m.calls.executeScript.length = 0;
+    await t.navigate("https://www.nps.gov/b");
+    expect((t.m.calls.executeScript[0] as any).args).toEqual([QUIET_FLAG, COVER_MARKER]);
+  });
+  test("a declined site (no follow) registers nothing", async () => {
+    const t = setup();
+    await t.haunt();
+    await t.follow();
+    expect(t.m.calls.register).toEqual([]);
+  });
+  test("the end of the site haunt unregisters it, but not while another tab still follows the site", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    await t.bg.handle({ type: "HAUNT", tabId: 8 }, self);
+    await t.bg.handle({ type: "FOLLOW_SITE", tabId: 8 }, self);
+    await t.bg.handle({ type: "UNHAUNT", tabId: 7 }, self);
+    expect(t.m.registered.size).toBe(1);
+    await t.navigate("https://www.cdc.gov/"); // tab 7 is no longer haunted: nothing changes
+    await t.bg.handle({ type: "UNHAUNT", tabId: 8 }, self);
+    expect(t.m.registered.size).toBe(0);
+  });
+  test("leaving the site unregisters it, even when link checks keep the access", async () => {
+    const t = setup();
+    t.grant();
+    t.grant(LINK_CHECK_ORIGINS);
+    await t.haunt();
+    await t.follow();
+    await t.navigate("https://www.cdc.gov/");
+    expect(t.m.registered.size).toBe(0);
+  });
+  test("Chrome taking the access away unregisters it", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    t.m.granted.clear();
+    for (const l of t.m.chrome.permissions.onRemoved.listeners) await l({ origins: ORIGINS });
+    expect(t.m.registered.size).toBe(0);
+  });
+  test("at browser start every cover left registered goes", async () => {
+    const t = setup();
+    t.m.registered.set("cover-cdc.gov", { id: "cover-cdc.gov" });
+    t.m.registered.set("other", { id: "other" });
+    for (const l of t.m.chrome.runtime.onStartup.listeners) await l();
+    expect([...t.m.registered.keys()]).toEqual(["other"]);
+  });
+  test("COVER_CHECK: yes only for a tab that haunts the site its page is on", async () => {
+    const t = setup();
+    t.grant();
+    await t.haunt();
+    await t.follow();
+    expect(await check(t, 7, "https://home.nps.gov/yell/")).toBe(true);
+    expect(await check(t, 8, "https://www.nps.gov/subjects/")).toBe(false); // same site, not haunted
+    expect(await check(t, 7, "https://www.cdc.gov/")).toBe(false); // off the site
+    expect(await check(t, 7, "https://www.nps.gov/", true)).toBe(false); // an extension page
   });
 });

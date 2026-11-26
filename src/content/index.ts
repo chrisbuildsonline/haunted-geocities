@@ -1,6 +1,6 @@
 // Injected on demand by the background via chrome.scripting.executeScript (never declared
 // as a static content script). Built as a self-contained IIFE: injected files cannot import.
-import { QUIET_FLAG, type ContentMessage } from "../data/types";
+import { COVER_DONE, COVER_MARKER, QUIET_FLAG, type ContentMessage } from "../data/types";
 import { addTombstones, applyExorcised, leaveCostume, renderCostume, startVampires } from "./costume/render";
 
 const LISTENING = "__hauntedGeoCitiesListening";
@@ -11,6 +11,9 @@ const g = globalThis as Record<string, unknown>;
 const quiet = g[QUIET_FLAG] === true;
 delete g[QUIET_FLAG];
 renderCostume(document, { quiet });
+// The next page of a haunted site: once the costume has painted (two frames), take down the
+// page-change cover cover.js put up at document_start, if there is one.
+if (quiet) requestAnimationFrame(() => requestAnimationFrame(() => (g[COVER_DONE] as ((now?: boolean) => void) | undefined)?.()));
 
 if (!g[LISTENING]) {
   g[LISTENING] = true;
@@ -33,6 +36,12 @@ if (!g[LISTENING]) {
       return false;
     }
     if (msg?.type !== "unhaunt") return false;
+    // This tab no longer haunts its site: no cover on its next page.
+    try {
+      sessionStorage.removeItem(COVER_MARKER);
+    } catch {
+      // storage off limits: the background's check still says no
+    }
     // Answer once the reverse animation is over and the page is restored, so the popup only
     // shows Idle when that is true.
     leaveCostume().then(() => sendResponse({ ok: true }));

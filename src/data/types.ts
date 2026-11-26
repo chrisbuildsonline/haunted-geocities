@@ -115,6 +115,12 @@ export const siteKey = (tabId: number) => `site:${tabId}`;
 /** Set on the isolated world's global right before a quiet re-injection: content.js skips the haunt moment. */
 export const QUIET_FLAG = "__hauntedGeoCitiesQuiet";
 
+/** sessionStorage key (the page's own, per tab and origin) set in a tab that haunts its site: cover.js covers that tab at once. */
+export const COVER_MARKER = "__hauntedGeoCitiesSite";
+
+/** On the isolated world's global: the hook cover.js leaves for content.js to take the cover down once the costume is painted. */
+export const COVER_DONE = "__hauntedGeoCitiesCoverDone";
+
 /** chrome.storage.session key holding the `DeadLink[]` last reported by the tab. */
 export const tombstonesKey = (tabId: number) => `tombstones:${tabId}`;
 

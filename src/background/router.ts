@@ -8,6 +8,7 @@ import {
   ghostsKey,
   hauntKey,
   LINK_CHECK_ORIGINS,
+  COVER_MARKER,
   nonceKey,
   QUIET_FLAG,
   siteKey,
@@ -128,7 +129,56 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     const tab = await api.tabs.get(tabId);
     const site = siteOf(tab.url || tab.pendingUrl);
     if (!site || !(await isHaunted(tabId)) || !(await granted(site))) return;
+    await startSite(tabId, site);
+  }
+
+  /** The tab haunts `site` from now on: remember it, cover its next pages from document_start, mark the tab. */
+  async function startSite(tabId: number, site: string) {
     await session.set({ [siteKey(tabId)]: site });
+    await registerCover(site);
+    await setMarker(tabId);
+  }
+
+  const coverId = (site: string) => `cover-${site}`;
+
+  /** cover.js on every page of the site from document_start (it stays down in tabs that do not haunt the site). */
+  async function registerCover(site: string) {
+    try {
+      const ids = [coverId(site)];
+      if ((await api.scripting.getRegisteredContentScripts({ ids })).length) return;
+      await api.scripting.registerContentScripts([
+        { id: ids[0]!, matches: siteOrigins(site), js: ["cover.js"], runAt: "document_start", allFrames: false, persistAcrossSessions: false },
+      ]);
+    } catch {
+      // no cover: the next page still re-haunts, with a flash of the original
+    }
+  }
+
+  const unregisterCover = (site: string) => api.scripting.unregisterContentScripts({ ids: [coverId(site)] }).catch(() => undefined);
+
+  /** The page's own sessionStorage (per tab, per origin) tells cover.js at document_start that this tab haunts its site. */
+  async function setMarker(tabId: number) {
+    await api.scripting
+      .executeScript({
+        target: { tabId },
+        func: (key: string) => {
+          try {
+            sessionStorage.setItem(key, "1");
+          } catch {
+            // storage off limits: cover.js waits for the background's answer
+          }
+        },
+        args: [COVER_MARKER],
+      })
+      .catch(() => undefined);
+  }
+
+  /** cover.js asks: is this tab haunting the site its page is on? */
+  async function coverCheck(sender: chrome.runtime.MessageSender): Promise<boolean> {
+    const tabId = sender.tab?.id;
+    if (tabId === undefined || fromExtensionPage(sender)) return false;
+    const site = await siteEntry(tabId);
+    return !!site && (await isHaunted(tabId)) && onSite(sender.url ?? sender.tab?.url, site);
   }
 
   /**
@@ -140,6 +190,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     if (!site) return;
     await session.remove(siteKey(tabId));
     const shared = Object.entries(await session.get(null)).some(([k, v]) => k.startsWith("site:") && v === site);
+    if (!shared) await unregisterCover(site); // even when link checks keep the access
     const links = await api.permissions.contains({ origins: LINK_CHECK_ORIGINS }).catch(() => false);
     if (!shared && !links) await api.permissions.remove({ origins: siteOrigins(site) }).catch(() => false);
   }
@@ -154,10 +205,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     try {
       const [quiet] = await api.scripting.executeScript({
         target: { tabId },
-        func: (flag: string) => {
+        func: (flag: string, marker: string) => {
           (globalThis as Record<string, unknown>)[flag] = true;
+          try {
+            sessionStorage.setItem(marker, "1"); // the page after this one is covered at once too
+          } catch {
+            // storage off limits: cover.js waits for the background's answer
+          }
         },
-        args: [QUIET_FLAG],
+        args: [QUIET_FLAG, COVER_MARKER],
       });
       // content.js goes to the document that got the flag (documentIds), not a later one.
       const target = quiet?.documentId ? { tabId, documentIds: [quiet.documentId] } : { tabId };
@@ -338,7 +394,12 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
 
   function register() {
     api.runtime.onMessage.addListener((msg: unknown, sender, sendResponse) => {
-      if (sender.id !== api.runtime.id || !isRequest(msg) || tabOf(msg, sender) === undefined) return false;
+      if (sender.id !== api.runtime.id) return false;
+      if ((msg as { type?: string } | null)?.type === "COVER_CHECK") {
+        coverCheck(sender).then(sendResponse, () => sendResponse(false));
+        return true;
+      }
+      if (!isRequest(msg) || tabOf(msg, sender) === undefined) return false;
       handle(msg, sender).then(sendResponse, (e) =>
         sendResponse({ haunted: false, restricted: true, url: null, ghosts: [], exorcised: [], tombstones: [], curses: [], error: message(e) } satisfies TabState),
       );
@@ -382,12 +443,15 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
       for (const t of await api.tabs.query({})) {
         if (t.id === undefined || !(await isHaunted(t.id)) || (await siteEntry(t.id))) continue;
         const site = siteOf(t.url);
-        if (site && siteOrigins(site).every((o) => added.has(o))) await session.set({ [siteKey(t.id)]: site });
+        if (site && siteOrigins(site).every((o) => added.has(o))) await startSite(t.id, site);
       }
     });
     // A browser start wipes storage.session, so no tab haunts a site any more: hand back any site
     // access a haunt left granted. "Check links to other sites" keeps its own grant.
     api.runtime.onStartup.addListener(async () => {
+      const covers = await api.scripting.getRegisteredContentScripts().catch(() => []);
+      const ids = covers.map((c) => c.id).filter((id) => id.startsWith("cover-"));
+      if (ids.length) await api.scripting.unregisterContentScripts({ ids }).catch(() => undefined);
       const { origins = [] } = await api.permissions.getAll();
       const stale = origins.filter((o) => !LINK_CHECK_ORIGINS.includes(o));
       if (stale.length) await api.permissions.remove({ origins: stale }).catch(() => false);
@@ -395,7 +459,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
     // Site access taken away in Chrome: the page stays haunted, the next page is not.
     api.permissions.onRemoved.addListener(async () => {
       for (const [k, v] of Object.entries(await session.get(null))) {
-        if (k.startsWith("site:") && typeof v === "string" && !(await granted(v))) await session.remove(k);
+        if (k.startsWith("site:") && typeof v === "string" && !(await granted(v))) await dropSite(Number(k.slice(5)));
       }
     });
   }

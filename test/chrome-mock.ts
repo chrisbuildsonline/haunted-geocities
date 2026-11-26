@@ -48,7 +48,11 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
     runtimeMessages: [] as unknown[],
     action: [] as { fn: string; arg: Record<string, unknown> }[],
     createTab: [] as unknown[],
+    register: [] as unknown[],
+    unregister: [] as unknown[],
   };
+  // chrome.scripting dynamic content scripts, with the real API's rule: a duplicate id registers nothing.
+  const registered = new Map<string, Record<string, unknown>>();
   // chrome.action badge state per tab; a call for a tab that does not exist rejects, as Chrome does.
   const badges = new Map<number, { text?: string; color?: string; textColor?: string }>();
   const actionCall = (fn: string, field: "text" | "color" | "textColor", key: "text" | "color") => async (arg: Record<string, any>) => {
@@ -63,6 +67,7 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
     calls,
     dnr,
     tabsById: tabs,
+    registered,
     granted,
     grant: opts.grant ?? false,
     badges,
@@ -129,6 +134,18 @@ export function createChromeMock(opts: { tabs?: MockTab[]; fileAccess?: boolean;
         async executeScript(injection: unknown) {
           calls.executeScript.push(injection);
           return [{ result: undefined }];
+        },
+        async registerContentScripts(scripts: { id: string }[]) {
+          calls.register.push(scripts);
+          if (scripts.some((x) => registered.has(x.id))) throw new Error(`Duplicate script ID '${scripts[0]!.id}'`);
+          for (const x of scripts) registered.set(x.id, structuredClone(x));
+        },
+        async unregisterContentScripts(filter?: { ids?: string[] }) {
+          calls.unregister.push(filter);
+          for (const id of filter?.ids ?? [...registered.keys()]) registered.delete(id);
+        },
+        async getRegisteredContentScripts(filter?: { ids?: string[] }) {
+          return [...registered.values()].filter((x) => !filter?.ids || filter.ids.includes(x.id as string)).map((x) => structuredClone(x));
         },
       },
       permissions: {

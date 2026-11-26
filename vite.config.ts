@@ -6,14 +6,15 @@ import { buildManifest } from "./src/manifest.ts";
 // `vite build` → dist/ (shipping). `vite build --mode e2e` → dist-e2e/ (tests only, see src/manifest.ts).
 const root = import.meta.dirname;
 
-// background.js and content.js are each built as their own self-contained IIFE: content.js is
-// injected with chrome.scripting.executeScript, which cannot load ES modules or shared chunks.
+// background.js, content.js and cover.js are each built as their own self-contained IIFE: content.js is
+// injected with chrome.scripting.executeScript and cover.js registered as a content script, and
+// neither can load ES modules or shared chunks.
 function scripts(outDir: string, mode: string): Plugin {
   return {
     name: "hg-scripts-and-manifest",
     apply: "build",
     async closeBundle() {
-      for (const name of ["background", "content"]) {
+      for (const name of ["background", "content", "cover"]) {
         await build({
           configFile: false,
           root,
