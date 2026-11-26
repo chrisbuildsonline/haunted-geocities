@@ -369,19 +369,18 @@ describe("HUD", () => {
     expect(hud.querySelector(".hits")!.getAttribute("aria-label")).toBe("Souls counted: 001234, tracker requests blocked or seen");
   });
 
-  test("HUD CSS: fixed bottom with lift, 8px insets, max 800, min 40, bevel, hard shadow, 2-row wrap at ≤400px", () => {
+  test("HUD CSS: in the footer's flow, max 800, min 40, bevel, hard shadow, 2-row wrap at ≤400px", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const hud = css.match(/#hud\s*\{([^}]*)\}/)![1]!;
-    for (const d of [
-      "position: fixed", "bottom: calc(8px + var(--hg-lift, 0px))", "left: 8px", "right: 8px", "max-width: 800px",
-      "margin: 0 auto", "min-height: 40px", "z-index: 5", "background-color: #000033", "border: 1px solid #000000",
-    ]) {
+    expect(hud).not.toMatch(/position: fixed|bottom:/);
+    expect(css).toMatch(/#crypt-footer > \*\s*\{[^}]*max-width: 800px/);
+    for (const d of ["position: relative", "min-height: 40px", "background-color: #000033", "border: 1px solid #000000"]) {
       expect({ d, ok: hud.includes(d) }).toEqual({ d, ok: true });
     }
     expect(hud).toMatch(/box-shadow:[^;]*inset 2px 2px 0 #9999cc[^;]*inset -2px -2px 0 #333366[^;]*4px 4px 0 #000000/);
     expect(css).toMatch(/#hud::before\s*\{[^}]*opacity:\s*0?\.3/);
     const narrow = css.slice(css.indexOf("@media (max-width: 400px)"));
-    expect(narrow).toMatch(/#hud\s*\{[^}]*left:\s*4px[^}]*right:\s*4px[^}]*flex-wrap:\s*wrap[^}]*row-gap:\s*4px/);
+    expect(narrow).toMatch(/#hud\s*\{[^}]*flex-wrap:\s*wrap[^}]*row-gap:\s*4px/);
     expect(css).toMatch(/\.win95\s*\{[^}]*height:\s*24px[^}]*padding:\s*0 8px[^}]*background:\s*#cccccc[^}]*color:\s*#000000[^}]*border-color:\s*#ffffff #666666 #666666 #ffffff/);
   });
 
@@ -406,24 +405,26 @@ describe("HUD", () => {
 // ---------- render, body padding, non-destructive ----------
 
 describe("renderCostume", () => {
-  test("builds the seven layers in z order inside the closed shadow root", () => {
+  test("builds the fixed layers in z order inside the closed shadow root, and the footer beside them", () => {
     const { win, doc } = setup();
     windows.push(win);
     const root = renderCostume(doc);
     expect(root.mode).toBe("closed");
+    expect([...root.children].map((c) => c.id)).toEqual(["crypt-root", "crypt-footer"]);
     const ids = [...byId(root, "crypt-root")!.children].map((c) => c.id);
-    expect(ids.slice(0, 7)).toEqual(["starfield", "lanes", "markers", "top-bands", "hud", "graveyard", "cards"]);
+    expect(ids.slice(0, 5)).toEqual(["starfield", "lanes", "markers", "top-bands", "cards"]);
     expect(ids).toContain("show-tab");
+    expect([...byId(root, "crypt-footer")!.children].map((c) => c.id || c.className)).toEqual(["graveyard", "hud", "badges", "signoff"]);
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const z = (id: string) => Number(css.match(new RegExp(`#${id}\\s*\\{[^}]*z-index:\\s*(\\d+)`))![1]);
-    expect(["starfield", "lanes", "markers", "top-bands", "hud", "cards", "fx"].map(z)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(["starfield", "lanes", "markers", "top-bands", "show-tab", "cards", "fx"].map(z)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(root.adoptedStyleSheets).toHaveLength(2);
   });
 
-  test("only the HUD, the graveyard strip, the Show tab, ghost sprites, tombstone markers and cards take pointer events", () => {
+  test("only the footer, the HUD, the graveyard, the ghost icon, ghost sprites, tombstone markers and cards take pointer events", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const autos = [...css.matchAll(/([^{}]+)\{[^}]*pointer-events:\s*auto/g)].map((m) => m[1]!.trim());
-    expect(autos.sort()).toEqual(["#graveyard", "#hud", "#show-tab", ".card", ".curse-badge", ".ghost, .vampire", ".tomb-marker"]);
+    expect(autos.sort()).toEqual(["#crypt-footer", "#graveyard", "#hud", "#show-tab", ".card", ".curse-badge", ".ghost, .vampire", ".tomb-marker"]);
     expect(css).toMatch(/#crypt-root\s*\{[^}]*pointer-events:\s*none/);
   });
 
@@ -450,7 +451,7 @@ describe("renderCostume", () => {
     const css = [...doc.adoptedStyleSheets[0]!.cssRules].map((r) => r.cssText).join("\n");
     expect(css).toMatch(/--hg-lift:\s*0px/);
     expect(css).toMatch(/padding-top:\s*calc\(5px \+ 48px\)\s*!important/);
-    expect(css).toMatch(/padding-bottom:\s*calc\(7px \+ \d+px \+ 16px \+ var\(--hg-lift\)\)\s*!important/);
+    expect(css).not.toMatch(/padding-bottom/); // the footer is in flow after the page
   });
 
   test("leaveCostume removes host and sheet together; documentElement.outerHTML is byte-identical", async () => {
@@ -465,29 +466,29 @@ describe("renderCostume", () => {
     expect(doc.documentElement.outerHTML).toBe(before);
   });
 
-  test("Hide fades the costume and leaves a 40×40 Show tab; Show brings it back; haunt state is kept", () => {
+  test("Hide fades the costume and the footer, the 40×48 ghost icon stays and brings them back; haunt state is kept", () => {
     const { win, doc } = setup();
     windows.push(win);
     const root = renderCostume(doc);
     const croot = byId(root, "crypt-root")!;
     const tab = byId(root, "show-tab")!;
-    expect(tab.hasAttribute("hidden")).toBe(true);
+    expect(tab.hasAttribute("hidden")).toBe(false);
     (byId(root, "hud")!.querySelector("button.hide") as HTMLElement).click();
     expect(croot.classList.contains("costume-hidden")).toBe(true);
     expect(tab.hasAttribute("hidden")).toBe(false);
     expect(tab.localName).toBe("button");
-    expect(tab.getAttribute("aria-label")).toBe("Show the haunted costume");
+    expect(tab.getAttribute("aria-label")).toBe("Jump to the graveyard: 0 trackers");
     expect(root.activeElement).toBe(tab);
     expect(doc.documentElement.querySelectorAll(HOST_TAG)).toHaveLength(1);
     expect(doc.adoptedStyleSheets).toHaveLength(1);
     tab.click();
     expect(croot.classList.contains("costume-hidden")).toBe(false);
-    expect(tab.hasAttribute("hidden")).toBe(true);
-    expect(root.activeElement).toBe(byId(root, "hud")!.querySelector("button.hide"));
+    expect(tab.hasAttribute("hidden")).toBe(false);
+    expect(root.activeElement).toBe(byId(root, "graveyard"));
     const css = costumeCss({ stars: "a", twinkle: "b" });
-    expect(css).toMatch(/\.costume-hidden > :not\(#show-tab\)\s*\{[^}]*opacity:\s*0/);
+    expect(css).toMatch(/\.costume-hidden > :not\(#show-tab\), #crypt-footer\.costume-hidden\s*\{[^}]*opacity:\s*0/);
     expect(css).toMatch(/#crypt-root > \*\s*\{[^}]*transition:\s*opacity 200ms/);
-    expect(css).toMatch(/#show-tab\s*\{[^}]*width:\s*40px[^}]*height:\s*40px/);
+    expect(css).toMatch(/#show-tab\s*\{[^}]*width:\s*40px[^}]*height:\s*48px/);
   });
 
   test("focus ring: 2px dotted #ffff66, 2px offset, 5px black halo; Win95 buttons add a dotted inner rectangle", () => {

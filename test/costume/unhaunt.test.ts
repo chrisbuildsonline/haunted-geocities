@@ -32,7 +32,7 @@ test("graveyard gone and adoptedStyleSheets equal pre-haunt after unhaunt", asyn
   const root = renderCostume(doc);
   const strip = root.getElementById("graveyard")!;
   expect(strip.hidden).toBe(false);
-  expect(pageCss(doc)).toMatch(/padding-bottom/);
+  expect(pageCss(doc)).toMatch(/padding-top/);
   await leaveCostume(doc);
   expect(strip.isConnected).toBe(false);
   expect(doc.querySelector("hg-crypt")).toBeNull();

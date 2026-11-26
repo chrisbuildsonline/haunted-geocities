@@ -41,10 +41,11 @@ describe("content overlay", () => {
     expect(root.adoptedStyleSheets).toHaveLength(1);
     const css = [...root.adoptedStyleSheets[0]!.cssRules].map((r) => r.cssText).join("\n");
     expect(css).toContain(":host");
-    for (const decl of ["position: fixed", "pointer-events: none", "z-index: 2147483647"]) {
+    // In flow: the host's own box is the costume's footer at the end of the page (#crypt-root is the fixed layer).
+    for (const decl of ["position: static", "pointer-events: none", "display: block"]) {
       expect(css).toContain(decl);
     }
-    expect(css).toMatch(/inset: 0(px)?/);
+    expect(css).not.toContain("position: fixed");
     expect(doc.adoptedStyleSheets).toHaveLength(0);
   });
 

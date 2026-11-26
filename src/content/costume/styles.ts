@@ -30,14 +30,16 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 [hidden] { display: none !important; }
 #crypt-root { position: fixed; inset: 0; pointer-events: none; font: 13px ${COMIC}; color: ${P.bone}; }
 #crypt-root > * { transition: opacity ${M.base}ms linear; }
-.costume-hidden > :not(#show-tab) { opacity: 0; pointer-events: none !important; }
+.costume-hidden > :not(#show-tab), #crypt-footer.costume-hidden { opacity: 0; pointer-events: none !important; }
 
 #starfield { position: absolute; inset: 0; z-index: 1; }
 #lanes { position: absolute; inset: 0; z-index: 2; }
 #markers { position: absolute; inset: 0; z-index: 3; }
 #top-bands { position: absolute; top: 0; left: 0; right: 0; z-index: 4; }
-#hud { position: fixed; bottom: calc(8px + var(--hg-lift, 0px)); left: 8px; right: 8px; max-width: ${L.hudMaxWidth}px; margin: 0 auto; min-height: ${L.hudMinHeight}px; z-index: 5; box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 12px; padding: 6px 10px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; isolation: isolate; pointer-events: auto; }
-#graveyard { position: fixed; bottom: calc(8px + var(--hg-lift, 0px) + var(--hg-hud-h, ${L.hudMinHeight}px) + ${L.graveyardGap}px); left: 8px; right: 8px; max-width: ${L.hudMaxWidth}px; margin: 0 auto; z-index: 5; box-sizing: border-box; display: flex; flex-direction: column; padding: 2px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; pointer-events: auto; }
+#crypt-footer { display: block; box-sizing: border-box; width: 100%; padding: 28px 24px 24px; position: relative; z-index: 2147483646; pointer-events: auto; font: 13px ${COMIC}; color: ${P.bone}; background-color: ${P.crypt}; background-image: ${stars}; border-top: 4px solid ${P.ectoplasm}; transition: opacity ${M.base}ms linear; }
+#crypt-footer > * { max-width: ${L.hudMaxWidth}px; margin-left: auto; margin-right: auto; }
+#hud { position: relative; margin-top: 12px; min-height: ${L.hudMinHeight}px; box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 12px; padding: 6px 10px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; isolation: isolate; pointer-events: auto; }
+#graveyard { position: relative; box-sizing: border-box; display: flex; flex-direction: column; padding: 2px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; pointer-events: auto; }
 #cards { position: absolute; inset: 0; z-index: 6; }
 #fx { position: absolute; inset: 0; z-index: 7; overflow: hidden; }
 
@@ -100,8 +102,13 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .ring button { flex: none; padding: 0 2px; border: 0; background: none; color: ${P.ectoplasm}; font: inherit; text-decoration: underline; cursor: pointer; }
 .ring-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-#show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 40px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 12px; line-height: 13px; pointer-events: auto; }
+#show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 48px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 12px; line-height: 13px; pointer-events: auto; }
 #show-tab svg { display: block; image-rendering: pixelated; }
+#show-tab .count { font: bold 12px/13px ${COMIC}; }
+.badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+.badge { box-sizing: border-box; width: 88px; height: 31px; display: flex; align-items: center; justify-content: center; padding: 2px 4px; text-align: center; font: 12px/13px "Times New Roman", Times, serif; color: ${P.crypt}; background: ${P.stone}; box-shadow: inset 1px 1px 0 ${P.ghostWhite}, inset -1px -1px 0 ${P.ink}, inset -2px -2px 0 ${P.stoneShadow}; }
+.badge.construction { color: ${P.ink}; background: ${P.star}; outline: 3px dashed ${P.ink}; outline-offset: -3px; font-weight: bold; }
+.signoff { margin-top: 12px; text-align: center; color: ${P.bevelLight}; font: 12px/16px "Times New Roman", Times, serif; }
 
 button:focus { outline: none; }
 button:focus-visible { ${ring} }
@@ -131,9 +138,11 @@ button:focus-visible { ${ring} }
 @keyframes hg-drift { from { transform: translateY(-2px); } to { transform: translateY(2px); } }
 .vampire:focus-visible { ${ring} }
 
-#graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 16px; padding: 0 6px 0 4px; color: ${P.bone}; font: 12px/16px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
+#graveyard:focus { outline: none; }
+#graveyard:focus-visible { ${ring} }
+#graveyard .gy-bar { display: flex; flex: none; align-items: center; gap: 4px; height: 20px; padding: 0 6px 0 4px; color: ${P.bone}; font: 13px/20px ${COMIC}; letter-spacing: .5px; box-shadow: inset 0 -1px 0 ${P.bevelDark}; }
 #graveyard .gy-icon svg { display: block; image-rendering: pixelated; }
-#graveyard .stones { display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 12px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-behavior: auto; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
+#graveyard .stones { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; padding: 6px 18px; background: ${mossUrl()} repeat-x left bottom / 8px 8px; scrollbar-width: thin; scrollbar-color: ${P.hudBevelLight} ${P.crypt}; }
 #graveyard .ghost, #graveyard .vampire { position: relative; flex: 0 0 auto; width: auto; min-width: 48px; height: auto; justify-content: flex-end; }
 #graveyard .tag { margin-top: 4px; white-space: normal; overflow-wrap: break-word; min-width: calc-size(min-content, min(size, 16ch)); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; text-align: center; }
 #graveyard .stamp { top: 14px; }
@@ -213,12 +222,12 @@ button:focus-visible { ${ring} }
 .leaving .ectoplasm { left: 80px; }
 
 @media (max-width: ${L.hudWrapBelow}px) {
-  #hud { left: 4px; right: 4px; bottom: calc(4px + var(--hg-lift, 0px)); flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 6px 8px; }
+  #crypt-footer { padding: 20px 16px 16px; }
+  #hud { flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 6px 8px; }
   .empty { flex-basis: 0; }
   .hud-break { display: block; flex-basis: 100%; height: 0; }
   .hits { margin-left: 0; }
   .hits .sub { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  #graveyard { left: 4px; right: 4px; bottom: calc(4px + var(--hg-lift, 0px) + var(--hg-hud-h, ${L.hudMinHeight}px) + ${L.graveyardGap}px); }
   .ring { flex: 1 0 0; }
   .ring-haunted { display: none; }
   #show-tab { right: 4px; bottom: calc(4px + var(--hg-lift, 0px)); }

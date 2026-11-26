@@ -46,18 +46,19 @@ test("graveyard sprites have animation none under reduced motion", () => {
   const css = costumeCss({ stars: "a", twinkle: "b" });
   // the lane float (bob, sway, drift) is reused on docked sprites, and the reduced-motion rule stops all of it
   expect(css).toMatch(/\.reduced-motion \*, \.reduced-motion \*::before, \.reduced-motion \*::after\s*\{\s*animation: none !important/);
-  expect(css).toMatch(/#graveyard \.stones\s*\{[^}]*scroll-behavior: auto/);
   const { win, doc, setReduced } = setup({ width: 375, reduced: true });
   stubMain(win, () => ({ left: 0, right: 375, top: 60, bottom: 700 }));
   withTrackers(win);
   const root = renderCostume(doc);
+  // The graveyard lives in the footer, beside #crypt-root: the footer carries the class too.
   const croot = root.getElementById("crypt-root")!;
-  expect(croot.contains(root.getElementById("graveyard"))).toBe(true);
-  expect(croot.classList.contains("reduced-motion")).toBe(true);
+  const footer = root.getElementById("crypt-footer")!;
+  expect(footer.contains(root.getElementById("graveyard"))).toBe(true);
+  for (const el of [croot, footer]) expect(el.classList.contains("reduced-motion")).toBe(true);
   setReduced(false);
-  expect(croot.classList.contains("reduced-motion")).toBe(false);
+  for (const el of [croot, footer]) expect(el.classList.contains("reduced-motion")).toBe(false);
   setReduced(true);
-  expect(croot.classList.contains("reduced-motion")).toBe(true);
+  for (const el of [croot, footer]) expect(el.classList.contains("reduced-motion")).toBe(true);
 });
 
 test("no rise for docked sprites under reduced motion", async () => {

@@ -132,7 +132,8 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
   return fx;
 }
 
-const layer = (croot: HTMLElement, id: string) => croot.querySelector(`#${id}`) as HTMLElement;
+/** A costume element by id, in #crypt-root or in the footer beside it (the same shadow root). */
+const layer = (croot: HTMLElement, id: string) => ((croot.parentNode as ParentNode | null) ?? croot).querySelector(`#${id}`) as HTMLElement;
 
 /** The marquee band's top edge: under the bands' 24px address bar. */
 const marqueeTop = (croot: HTMLElement) => (layer(croot, "top-bands")?.offsetTop ?? 0) + L.neighborhoodBar;

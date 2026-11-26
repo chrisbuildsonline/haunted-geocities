@@ -6,31 +6,31 @@ import { HARD_SHADOW, LAYOUT, PALETTE as P } from "../../src/content/costume/tok
 const css = costumeCss({ stars: "a", twinkle: "b" });
 const block = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 
-test("graveyard z-index is 5, cards 6", () => {
+test("the footer is in flow and takes pointer events; cards stay above the fixed layers", () => {
   const z = (id: string) => Number(block(`#${id}`).match(/z-index:\s*(\d+)/)?.[1]);
-  expect(z("graveyard")).toBe(5);
-  expect(z("hud")).toBe(5);
   expect(z("cards")).toBe(6);
-  expect([z("lanes"), z("markers"), z("top-bands")].every((n) => n < z("graveyard"))).toBe(true);
-  // its own box takes pointer events; the root around it does not, and Hide turns them off
-  expect(block("#graveyard")).toContain("pointer-events: auto");
+  expect([z("lanes"), z("markers"), z("top-bands")].every((n) => n < z("cards"))).toBe(true);
+  // the footer box (graveyard and HUD inside it) takes pointer events; the fixed root does not, and Hide turns them off
+  expect(block("#crypt-footer")).toContain("pointer-events: auto");
+  expect(block("#crypt-footer")).toContain("position: relative");
   expect(block("#crypt-root")).toContain("pointer-events: none");
-  expect(css).toMatch(/\.costume-hidden > :not\(#show-tab\)\s*\{[^}]*pointer-events: none !important/);
+  expect(css).toMatch(/\.costume-hidden > :not\(#show-tab\), #crypt-footer\.costume-hidden\s*\{[^}]*pointer-events: none !important/);
 });
 
 test("graveyard has HUD bevel, 1px line, hard shadow and focus ring", () => {
   const g = block("#graveyard");
   for (const d of [
-    "position: fixed", "left: 8px", "right: 8px", `max-width: ${LAYOUT.hudMaxWidth}px`, "margin: 0 auto", `background-color: ${P.crypt}`, `border: 1px solid ${P.ink}`,
+    "position: relative", `background-color: ${P.crypt}`, `border: 1px solid ${P.ink}`,
     `box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}`,
   ]) {
     expect({ d, ok: g.includes(d) }).toEqual({ d, ok: true });
   }
-  expect(g).toContain(`+ ${LAYOUT.graveyardGap}px)`);
+  expect(g).not.toMatch(/position: fixed|bottom:/);
+  expect(block("#crypt-footer > *")).toContain(`max-width: ${LAYOUT.hudMaxWidth}px`);
   expect(g).not.toMatch(/border-radius|blur/);
   const bar = block("#graveyard .gy-bar");
   expect(bar).toContain(`color: ${P.bone}`);
-  expect(bar).toMatch(/font: 12px\/16px "Comic Sans MS"/);
+  expect(bar).toMatch(/font: 13px\/20px "Comic Sans MS"/);
   expect(block("#graveyard .gy-empty")).toMatch(/font: 13px[^;]*"Comic Sans MS"/);
   // the sprites keep the costume focus ring
   expect(css).toMatch(/\.ghost:focus-visible\s*\{\s*outline: 2px dotted #ffff66; outline-offset: 2px; box-shadow: 0 0 0 5px #000000;/);
@@ -41,7 +41,7 @@ test("a docked sprite wears its name tag: as wide as the tag, never squeezed, th
   expect(block("#graveyard .tag")).not.toContain("display: none");
   const stone = block("#graveyard .ghost, #graveyard .vampire");
   for (const d of ["flex: 0 0 auto", "width: auto", "min-width: 48px", "height: auto"]) expect({ d, ok: stone.includes(d) }).toEqual({ d, ok: true });
-  expect(block("#graveyard .stones")).toContain("gap: 12px");
+  expect(block("#graveyard .stones")).toContain("gap: 16px");
   expect(block("#graveyard .stones")).toContain("align-items: flex-end");
 });
 

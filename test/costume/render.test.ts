@@ -29,63 +29,55 @@ function haunted(width: number, main: Rect, sizes = { hud: 40, graveyard: 80 }) 
   return { ...s, root, layout, resize, sizes };
 }
 
-test("375px page: strip shown above the HUD with 4px gap, lanes empty", () => {
+test("375px page: the footer graveyard lists every company, the lanes are empty", () => {
   const { root } = haunted(375, NARROW);
-  const croot = byId(root, "crypt-root")!;
+  const footer = byId(root, "crypt-footer")!;
   const strip = byId(root, "graveyard")!;
-  // a direct child of #crypt-root right after the HUD, so Hide (a child selector) reaches it
-  expect(strip.parentElement).toBe(croot);
-  expect(byId(root, "hud")!.nextElementSibling).toBe(strip);
+  // in the footer, before the HUD, beside (not inside) the fixed #crypt-root
+  expect(strip.parentElement === footer).toBe(true);
+  expect(strip.nextElementSibling === byId(root, "hud")).toBe(true);
+  expect(byId(root, "crypt-root")!.contains(strip)).toBe(false);
   expect(strip.hidden).toBe(false);
   expect(docked(root)).toEqual(LANE_ORDER);
   expect(laned(root)).toEqual([]);
-  // it sits on the HUD's measured height plus the 4px gap
-  expect(croot.style.getPropertyValue("--hg-hud-h")).toBe("40px");
-  const rule = costumeCss({ stars: "a", twinkle: "b" }).match(/#graveyard\s*\{([^}]*)\}/)![1]!;
-  expect(rule).toContain("bottom: calc(8px + var(--hg-lift, 0px) + var(--hg-hud-h, 40px) + 4px)");
+  const graveyardRule = costumeCss({ stars: "a", twinkle: "b" }).match(/#graveyard\s*\{([^}]*)\}/)![1]!;
+  expect(graveyardRule).not.toMatch(/bottom:|position: fixed/);
 });
 
-test("lane page: strip hidden, lanes filled", () => {
+test("lane page: the lanes fill and the footer graveyard still lists them all", () => {
   const { root } = haunted(1280, WIDE);
-  expect(byId(root, "graveyard")!.hidden).toBe(true);
-  expect(docked(root)).toEqual([]);
+  expect(byId(root, "graveyard")!.hidden).toBe(false);
+  expect(docked(root)).toEqual(LANE_ORDER);
   expect(laned(root)).toEqual(LANE_ORDER);
 });
 
-test("resize across the 64px gutter boundary moves companies, never both", async () => {
+test("resize across the 64px gutter boundary moves the lanes; the graveyard keeps the full roll", async () => {
   const { root, resize } = haunted(1280, WIDE);
-  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, []]);
+  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, LANE_ORDER]);
   await resize(375, NARROW);
   expect([laned(root), docked(root)]).toEqual([[], LANE_ORDER]);
-  expect(byId(root, "graveyard")!.hidden).toBe(false);
   await resize(1280, WIDE);
-  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, []]);
-  expect(byId(root, "graveyard")!.hidden).toBe(true);
+  expect([laned(root), docked(root)]).toEqual([LANE_ORDER, LANE_ORDER]);
 });
 
-test("padding-bottom includes strip height + 4px, and drops it when hidden", async () => {
+test("no bottom padding at any width: the footer is in flow after the page", async () => {
   const { doc, resize } = haunted(375, NARROW);
-  expect(paddingBottom(doc)).toBe("7px + 124px + 16px + var(--hg-lift)"); // 40 HUD + 80 strip + 4 gap
+  expect(paddingBottom(doc)).toBe("");
   await resize(1280, WIDE);
-  expect(paddingBottom(doc)).toBe("7px + 40px + 16px + var(--hg-lift)");
+  expect(paddingBottom(doc)).toBe("");
 });
 
-test("strip follows --hg-lift and the HUD's two-row wrap at 400px", async () => {
-  const { root, doc, resize, sizes } = haunted(375, NARROW);
+test("the ghost icon follows --hg-lift; the footer does not need to", () => {
   const css = costumeCss({ stars: "a", twinkle: "b" });
-  const narrow = css.slice(css.indexOf("@media (max-width: 400px)"));
-  expect(narrow).toMatch(/#graveyard\s*\{[^}]*left:\s*4px;[^}]*right:\s*4px;[^}]*bottom:\s*calc\(4px \+ var\(--hg-lift, 0px\) \+ var\(--hg-hud-h, 40px\) \+ 4px\)/);
-  // the HUD wraps to two rows: the strip's offset and the padding follow its new height
-  sizes.hud = 80;
-  await resize(375, NARROW);
-  expect(byId(root, "crypt-root")!.style.getPropertyValue("--hg-hud-h")).toBe("80px");
-  expect(paddingBottom(doc)).toBe("7px + 164px + 16px + var(--hg-lift)");
+  expect(css).toMatch(/#show-tab \{[^}]*bottom: calc\(8px \+ var\(--hg-lift, 0px\)\)/);
+  expect(css.slice(css.indexOf("@media (max-width: 400px)"))).toMatch(/#show-tab \{[^}]*bottom: calc\(4px \+ var\(--hg-lift, 0px\)\)/);
+  expect(rule(css, "#crypt-footer")).not.toContain("--hg-lift");
 });
 
-test("card opened from a docked sprite stays above the strip and 8px inside the viewport", () => {
-  const { root, layout } = haunted(375, NARROW);
+test("card opened from a footer sprite stays 8px inside the viewport", () => {
+  const { root } = haunted(375, NARROW);
   const sprites = [...root.querySelectorAll<HTMLElement>("#graveyard .stones > button")];
-  const top = layout.stripTop() + 24;
+  const top = 800 - 80; // a sprite near the bottom of the viewport, the footer scrolled into view
   for (const [i, sprite] of [[0, sprites[0]!], [sprites.length - 1, sprites.at(-1)!]] as const) {
     const left = i === 0 ? 18 : 375 - 18 - 48;
     sprite.getBoundingClientRect = () => domRect({ left, right: left + 48, top, bottom: top + 54 });
@@ -93,7 +85,8 @@ test("card opened from a docked sprite stays above the strip and 8px inside the 
     const card = root.querySelector<HTMLElement>("#cards .card")!;
     const x = parseFloat(card.style.left);
     const y = parseFloat(card.style.top);
-    expect(y + 200).toBeLessThanOrEqual(layout.stripTop() - 8);
+    expect(y).toBeGreaterThanOrEqual(8);
+    expect(y + 200).toBeLessThanOrEqual(800 - 8);
     expect(x).toBeGreaterThanOrEqual(8);
     expect(x + 248 + 4).toBeLessThanOrEqual(375 - 8);
     expect(card.querySelector("h2")!.textContent).toBe(i === 0 ? "Criteo" : "Vampire identified");

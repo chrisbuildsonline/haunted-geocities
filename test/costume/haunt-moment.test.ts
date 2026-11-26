@@ -569,10 +569,12 @@ test("graveyard slides with the HUD, no extra phase", async () => {
   expect(slide(strip)[0]!.keyframes[0]!.transform).toBe("translateY(0px)");
 });
 
-test("a hidden strip (lane mode) gets no slide", () => {
+test("in lane mode the footer graveyard (always drawn) slides with the HUD, once", () => {
   const { win, doc, recs } = setup();
   stubMain(win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   withTrackers(win);
   const root = renderCostume(doc);
-  expect(recs.filter((r) => r.el === root.getElementById("graveyard"))).toEqual([]);
+  const slides = (id: string) => recs.filter((r) => r.el === root.getElementById(id)).length;
+  expect(slides("graveyard")).toBe(slides("hud"));
+  expect(slides("hud")).toBe(1);
 });

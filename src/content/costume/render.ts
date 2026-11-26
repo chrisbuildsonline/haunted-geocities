@@ -94,26 +94,43 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   starfield.append(edgeFrame);
   const bands = buildBands(doc, resolveNeighborhood(win.location.hostname));
   const hud = buildHud(doc);
+  // The ghost icon: the one fixed thing at the bottom. It counts the trackers still haunting and
+  // jumps to the footer graveyard (and brings a hidden costume back first).
   const tab = doc.createElement("button");
-  Object.assign(tab, { id: "show-tab", type: "button", className: "win95", hidden: true });
-  tab.setAttribute("aria-label", "Show the haunted costume");
-  tab.innerHTML = `${icon("ghost")}<span aria-hidden="true">Show</span>`;
+  Object.assign(tab, { id: "show-tab", type: "button", className: "win95" });
+  tab.innerHTML = `${icon("ghost")}<span class="count" aria-hidden="true">0</span>`;
+  const setTab = (n: number) => {
+    tab.querySelector(".count")!.textContent = String(n);
+    tab.setAttribute("aria-label", `Jump to the graveyard: ${n} ${n === 1 ? "tracker" : "trackers"}`);
+  };
+  setTab(0);
   const lanes = el(doc, "lanes");
   const cards = el(doc, "cards");
   const markers = el(doc, "markers");
-  // The graveyard strip: where the ghosts and vampires dock when there is no gutter lane.
+  // The footer, in flow at the end of the page (the host is static): the graveyard with every
+  // company, the HUD, the 88x31 badges and the sign-off. Only #crypt-root is fixed.
   const graveyard = buildGraveyard(doc);
-  croot.append(starfield, lanes, markers, bands, hud, graveyard, cards, tab);
+  graveyard.hidden = false;
+  graveyard.tabIndex = -1;
+  const footer = doc.createElement("footer");
+  footer.id = "crypt-footer";
+  const buttons88 = doc.createElement("div");
+  buttons88.className = "badges";
+  for (const [text, cls] of [["Best viewed in Netscape 4.0", ""], ["Made with Notepad", ""], ["Under construction", " construction"], ["Sign my guestbook", ""]] as const) {
+    buttons88.append(Object.assign(doc.createElement("span"), { className: `badge${cls}`, textContent: text }));
+  }
+  const signoff = doc.createElement("p");
+  signoff.className = "signoff";
+  const setSignoff = (n: number) => (signoff.textContent = `You are visitor #${String(n).padStart(6, "0")} to this crypt. (c) 1998 The Webmaster`);
+  setSignoff(0);
+  footer.append(graveyard, hud, buttons88, signoff);
+  croot.append(starfield, lanes, markers, bands, cards, tab);
 
-  root.append(croot);
+  root.append(croot, footer);
   const page = addPageSheet(doc);
   let lift = 0;
-  // The strip sits on the HUD's measured height (--hg-hud-h), and the page is padded clear of both.
-  const pad = () => {
-    const h = Math.ceil(hud.offsetHeight);
-    croot.style.setProperty("--hg-hud-h", `${h}px`);
-    page.update(h + (graveyard.hidden ? 0 : Math.ceil(graveyard.offsetHeight) + LAYOUT.graveyardGap), lift);
-  };
+  // Only the ghost icon follows the page's own bottom UI (--hg-lift); nothing pads the page's end.
+  const pad = () => page.update(lift);
 
   // Measure with the page sheet on: the restyle changes the page's fonts, so it moves the text.
   // Full-overlay mode (no gutter of 64px) adds 12px inline padding, which narrows the column, so
@@ -170,26 +187,27 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     const vampires = haunting.filter((c) => c.vampire).length;
     const counts = { ghosts: haunting.length - vampires, vampires, tombstones: dead.length, curses: curses.length };
     setCounts(hud, counts, { tick, found: scan.companies.length > 0 });
+    setTab(haunting.length);
   };
   const refresh = () => {
     scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
     renderCounts();
     setOdometer(hud, scan.total);
+    setSignoff(scan.total);
     placeGhosts();
     setCardCount(cards, scan.companies);
     send({ type: "TRACKER_UPDATE", companies: scan.companies, total: scan.total });
   };
   let exorcised = new Set<string>();
   let settled = false;
-  const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: (graveyard.hidden ? hud.offsetTop : graveyard.offsetTop) || win.innerHeight });
+  const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: win.innerHeight });
   let slots: Slot[] = [];
   // Lane mode fills the lanes and hides the strip; full-overlay mode (no lane) empties the lanes and
   // docks every company in the strip. A company is never in both.
   const placeGhosts = () => {
     const opts = { exorcised, onOpen, rise: settled && !motion.matches };
-    // Empty, it stays hidden: the HUD already says "No ghosts here", and a tracker-free phone page keeps its room.
-    graveyard.hidden = !overlay || scan.companies.length === 0;
-    updateDocked(graveyard, overlay ? scan.companies : [], opts);
+    // The footer graveyard is the full roll: every company, in lane mode too.
+    updateDocked(graveyard, scan.companies, opts);
     const b = bounds();
     slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));
     updateGhosts(lanes, overlay ? [] : scan.companies, slots, opts);
@@ -263,33 +281,36 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     showLine(0);
   });
 
-  const onVisibility = () => croot.classList.toggle("tab-hidden", doc.hidden);
+  const onVisibility = () => [croot, footer].forEach((el) => el.classList.toggle("tab-hidden", doc.hidden));
   doc.addEventListener("visibilitychange", onVisibility);
   onVisibility();
 
   const motion = watchReducedMotion(win, (reduced) => {
-    croot.classList.toggle("reduced-motion", reduced);
+    for (const el of [croot, footer]) el.classList.toggle("reduced-motion", reduced);
     if (reduced) costume.moment?.finish();
   });
-  croot.classList.toggle("reduced-motion", motion.matches);
+  for (const el of [croot, footer]) el.classList.toggle("reduced-motion", motion.matches);
 
-  // Hide / Show keep the haunt; only the costume's visibility changes.
+  // Hide / Show keep the haunt; only the costume's visibility changes. The ghost icon stays.
   const hide = hud.querySelector("button.hide") as HTMLButtonElement;
   hide.addEventListener("click", () => {
     croot.classList.add("costume-hidden");
+    footer.classList.add("costume-hidden");
     page.set({ hidden: true }); // tint and frame fade; the restyle stays (haunt state is kept)
-    tab.hidden = false;
     tab.focus();
   });
   tab.addEventListener("click", () => {
-    croot.classList.remove("costume-hidden");
-    page.set({ hidden: false });
-    tab.hidden = true;
-    if (motion.matches) {
-      line++;
-      showLine(0);
+    if (croot.classList.contains("costume-hidden")) {
+      croot.classList.remove("costume-hidden");
+      footer.classList.remove("costume-hidden");
+      page.set({ hidden: false });
+      if (motion.matches) {
+        line++;
+        showLine(0);
+      }
     }
-    hide.focus();
+    graveyard.scrollIntoView?.({ behavior: motion.matches ? "auto" : "smooth", block: "start" });
+    graveyard.focus({ preventScroll: true });
   });
 
   // Page UI pinned to the edges and the content column can change: re-check on resize and mutation.

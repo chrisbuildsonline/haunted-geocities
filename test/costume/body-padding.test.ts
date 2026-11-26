@@ -8,7 +8,7 @@ test("page sheet carries restyle rules and is the only sheet added", () => {
   const own = new win.CSSStyleSheet() as unknown as CSSStyleSheet;
   doc.adoptedStyleSheets = [own];
   const page = addPageSheet(doc);
-  page.update(40, 0);
+  page.update(0);
   page.set({ theme: themeFor("#ffffff"), tint: { left: 100, top: 50, width: 500, height: 900 }, frame: { left: 94, top: 44, width: 512, height: 912 } });
   expect(doc.adoptedStyleSheets).toHaveLength(2);
   expect(doc.adoptedStyleSheets[0]).toBe(own);
@@ -35,15 +35,15 @@ test("theme change rebuilds the sheet", () => {
   expect(css).not.toContain("html::before");
 });
 
-test("scroll padding keeps focused and anchored content clear of the bands and the bottom overlay", () => {
-  const { doc } = setup({ html: `<html><head><style>html{scroll-padding-top:10px}body{padding:0}</style></head><body><p>x</p></body></html>` });
+test("scroll padding keeps focused and anchored content clear of the bands; the bottom is left alone (the footer is in flow)", () => {
+  const { doc } = setup({ html: `<html><head><style>html{scroll-padding-top:10px;scroll-padding-bottom:7px}body{padding:0 0 9px}</style></head><body><p>x</p></body></html>` });
   const page = addPageSheet(doc);
-  page.update(170, 30); // the HUD plus the docked graveyard strip, and a 30px cookie bar
+  page.update(30); // a 30px cookie bar lifts the ghost icon
   const css = pageCss(doc);
   expect(css).toMatch(/:root \{[^}]*scroll-padding-top: calc\(10px \+ 48px\) !important/);
-  expect(css).toMatch(/:root \{[^}]*scroll-padding-bottom: calc\(0px \+ 170px \+ 16px \+ var\(--hg-lift\)\) !important/);
   expect(css).toContain("--hg-lift: 30px");
-  expect(css).toContain("padding-bottom: calc(0px + 170px + 16px + var(--hg-lift)) !important");
+  expect(css).not.toContain("padding-bottom");
+  expect(css).not.toContain("scroll-padding-bottom");
 });
 
 test("full-overlay adds 12px inline padding", () => {

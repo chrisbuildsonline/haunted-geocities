@@ -1,18 +1,17 @@
-// The overlay: one <hg-crypt> host appended to <html>, with a closed shadow root that the
-// costume (R4) renders into. Nothing else in the page is touched; unhaunt() removes the host,
-// which also drops the sheet adopted inside its shadow root.
+// The overlay: one <hg-crypt> host appended to <html> after <body>, with a closed shadow root that
+// the costume (R4) renders into. The host is in normal flow: its own box is the costume's footer at
+// the end of the page, and the fixed layers live in its fixed #crypt-root. Nothing else in the page
+// is touched; unhaunt() removes the host, which also drops the sheet adopted inside its shadow root.
 
 export const HOST_TAG = "hg-crypt";
 
 // !important because page rules aimed at the host element (e.g. `* { position: relative }`)
 // would otherwise beat :host rules.
-const HOST_CSS = `:host {
+export const HOST_CSS = `:host {
   all: initial !important;
   display: block !important;
-  position: fixed !important;
-  inset: 0 !important;
+  position: static !important;
   pointer-events: none !important;
-  z-index: 2147483647 !important;
 }`;
 
 type Overlay = { host: Element; root: ShadowRoot; cleanups: (() => void)[] };

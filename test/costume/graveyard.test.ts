@@ -41,9 +41,9 @@ describe("buildGraveyard", () => {
     expect(g.getAttribute("role")).toBe("region");
     expect(g.getAttribute("aria-label")).toBe("Graveyard of trackers");
     expect(g.hidden).toBe(true);
-    expect(g.querySelector(".gy-bar")!.textContent).toBe("Graveyard");
+    expect(g.querySelector(".gy-bar")!.textContent).toBe("Graveyard of trackers");
     expect(g.querySelector(".stones")).not.toBeNull();
-    expect(g.querySelector(".gy-empty")!.textContent).toBe("No graves yet.");
+    expect(g.querySelector(".gy-empty")!.textContent).toBe("No graves yet. This page plays it straight.");
   });
 });
 
@@ -148,12 +148,12 @@ describe("updateDocked", () => {
     expect(adobe.getAttribute("aria-label")).toBe("Adobe, tracker ghost, seen 9 times");
   });
 
-  test("empty state shows the label bar and 'No graves yet.'", () => {
+  test("empty state shows the label bar and 'No graves yet. This page plays it straight.'", () => {
     const { g } = strip();
     updateDocked(g, [], opts());
     expect((g.querySelector(".gy-empty") as HTMLElement).hidden).toBe(false);
     expect((g.querySelector(".stones") as HTMLElement).hidden).toBe(true);
-    expect(g.querySelector(".gy-bar")!.textContent).toBe("Graveyard");
+    expect(g.querySelector(".gy-bar")!.textContent).toBe("Graveyard of trackers");
     updateDocked(g, MIXED, opts());
     expect((g.querySelector(".gy-empty") as HTMLElement).hidden).toBe(true);
     expect((g.querySelector(".stones") as HTMLElement).hidden).toBe(false);
@@ -162,12 +162,13 @@ describe("updateDocked", () => {
     expect((g.querySelector(".gy-empty") as HTMLElement).hidden).toBe(false);
   });
 
-  test("row scrolls horizontally and never wraps", () => {
+  test("in the footer the row wraps onto more rows and never scrolls sideways", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const stones = css.match(/#graveyard \.stones\s*\{([^}]*)\}/)?.[1] ?? "";
-    for (const d of ["display: flex", "flex-wrap: nowrap", "overflow-x: auto", "overflow-y: hidden", "overscroll-behavior-x: contain", "scroll-behavior: auto"]) {
+    for (const d of ["display: flex", "flex-wrap: wrap", "gap: 16px"]) {
       expect({ d, ok: stones.includes(d) }).toEqual({ d, ok: true });
     }
+    expect(stones).not.toContain("overflow-x");
     const sprite = css.match(/#graveyard \.ghost, #graveyard \.vampire\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(sprite).toContain("position: relative");
     expect(sprite).toContain("flex: 0 0 auto");
