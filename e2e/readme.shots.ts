@@ -117,25 +117,46 @@ test("the exorcise moment on a phone, as a GIF", async ({ context, sw, extension
   await page.bringToFront();
   await settled(page);
   const inShadow = await shadowOf(page);
-  await inShadow(function () { this.querySelector<HTMLElement>('#graveyard [data-company="Criteo"]')!.click(); });
-  await expect.poll(() => inShadow(function () { return this.querySelector("#cards .act")?.textContent ?? null; })).toBe("Exorcise");
+  // The graveyard and the HUD live in the page's footer (in flow, at the end): bring the pair to the
+  // middle of the screen, or the clip falls below the viewport and the GIF is a sliver.
+  await inShadow(function () {
+    const top = this.querySelector("#graveyard")!.getBoundingClientRect().top + window.scrollY;
+    const bottom = this.querySelector("#hud")!.getBoundingClientRect().bottom + window.scrollY;
+    window.scrollTo(0, Math.max(0, Math.round((top + bottom) / 2 - window.innerHeight / 2)));
+  });
+  await page.waitForTimeout(300);
   await page.mouse.move(0, 0);
   const clip = await inShadow(function () {
     const top = this.querySelector("#graveyard")!.getBoundingClientRect().top;
     const bottom = this.querySelector("#hud")!.getBoundingClientRect().bottom + 8;
     return { x: 0, y: Math.floor(top), width: 375, height: Math.ceil(bottom - top) };
   });
+  // The whole strip and HUD are on screen, so the frame is the full pair and not a thin bar.
+  expect(clip.y).toBeGreaterThanOrEqual(0);
+  expect(clip.y + clip.height).toBeLessThanOrEqual(740);
+  expect(clip.height).toBeGreaterThanOrEqual(200);
   let n = 0;
   const frame = () => page.screenshot({ path: `${frames}/f${String(n++).padStart(3, "0")}.png`, clip });
   await frame();
   for (let i = 1; i < FPS / 2; i++) copyFileSync(`${frames}/f000.png`, `${frames}/f${String(n++).padStart(3, "0")}.png`);
+  // Criteo's card opens over the strip at 375, so it is opened only now, after the first frame.
+  await inShadow(function () { this.querySelector<HTMLElement>('#graveyard [data-company="Criteo"]')!.click(); });
+  await expect.poll(() => inShadow(function () { return this.querySelector("#cards .act")?.textContent ?? null; })).toBe("Exorcise");
   const cdp = await context.newCDPSession(page);
   await cdp.send("Animation.enable");
   await cdp.send("Animation.setPlaybackRate", { playbackRate: SLOW });
-  // Exorcise, and start the clock when the sprite turns exorcised (the moment starts in that task).
+  // Exorcise, and start the clock when the sprite turns exorcised (the moment starts in that task). The
+  // card is closed in that same task, so no frame has it covering the strip and the HUD count.
   await inShadow(function () {
     const g = this.querySelector<HTMLElement>('#graveyard [data-company="Criteo"]')!;
-    const changed = new Promise<void>((done) => new MutationObserver((_, mo) => (mo.disconnect(), done())).observe(g, { attributeFilter: ["class"] }));
+    const changed = new Promise<void>((done) =>
+      new MutationObserver((_, mo) => {
+        mo.disconnect();
+        this.querySelector<HTMLElement>("#cards .close")?.click();
+        (this.activeElement as HTMLElement | null)?.blur();
+        done();
+      }).observe(g, { attributeFilter: ["class"] }),
+    );
     this.querySelector<HTMLElement>("#cards .act")!.click();
     return changed;
   });
