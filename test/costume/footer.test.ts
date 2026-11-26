@@ -53,6 +53,8 @@ describe("crypt footer", () => {
       expect({ sel, fixed: /position:\s*(fixed|absolute)/.test(rule(sel)) || /bottom:/.test(rule(sel)) }).toEqual({ sel, fixed: false });
     }
     expect(rule("#crypt-footer")).toMatch(/pointer-events: auto/);
+    // the host is static now, so the fixed layer carries the top z-index itself (above page layers and the tint)
+    expect(rule("#crypt-root")).toMatch(/position: fixed; inset: 0; z-index: 2147483647/);
     expect(css).not.toMatch(/--hg-hud-h/);
     expect(css).toMatch(/#graveyard \.stones \{[^}]*flex-wrap: wrap/);
     expect(css).not.toMatch(/#graveyard \.stones \{[^}]*overflow-x: auto/);

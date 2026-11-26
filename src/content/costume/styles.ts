@@ -28,7 +28,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
   const ring = `outline: 2px dotted ${P.star}; outline-offset: 2px; box-shadow: 0 0 0 5px ${P.ink};`;
   return `
 [hidden] { display: none !important; }
-#crypt-root { position: fixed; inset: 0; pointer-events: none; font: 13px ${COMIC}; color: ${P.bone}; }
+#crypt-root { position: fixed; inset: 0; z-index: 2147483647; pointer-events: none; font: 13px ${COMIC}; color: ${P.bone}; }
 #crypt-root > * { transition: opacity ${M.base}ms linear; }
 .costume-hidden > :not(#show-tab), #crypt-footer.costume-hidden { opacity: 0; pointer-events: none !important; }
 

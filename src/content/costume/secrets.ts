@@ -101,7 +101,8 @@ export function mountSecrets({ win, croot, footer, hud, reduced, say, now = () =
       later(() => both("fled", false), BOO_MS);
     }
   };
-  win.addEventListener("keydown", onKey);
+  // On the document, not the window: the window's key listeners are the haunt moment's skip.
+  win.document.addEventListener("keydown", onKey);
 
   // The hit counter, clicked 13 times (each within 3 s of the last): a dancing skeleton for 5 s.
   const hits = hud.querySelector<HTMLElement>(".hits");
@@ -126,7 +127,7 @@ export function mountSecrets({ win, croot, footer, hud, reduced, say, now = () =
 
   return {
     stop() {
-      win.removeEventListener("keydown", onKey);
+      win.document.removeEventListener("keydown", onKey);
       hits?.removeEventListener("click", onHit);
       for (const id of pending) t.clear(id);
       pending.clear();

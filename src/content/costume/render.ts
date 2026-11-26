@@ -439,6 +439,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     footer,
     hud,
     reduced: () => motion.matches,
+    // The e2e build (tests and screenshots) lives on an ordinary afternoon, whatever the real clock says.
+    now: import.meta.env.MODE === "e2e" ? () => new Date(2026, 10, 3, 15, 0) : undefined,
     say: (said) => {
       track.textContent = said;
       track.style.animation = "none";
