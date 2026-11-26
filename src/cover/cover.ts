@@ -12,6 +12,30 @@ export const COVER_TAG = "hg-cover";
 export const COVER_MAX_MS = 3000;
 export const COVER_FADE_MS = 200;
 
+/** One line per page, picked at random, never the same as the last one in the tab (design/DESIGN.md). */
+export const COVER_MESSAGES: readonly string[] = [
+  "Loading crypt…",
+  "Summoning the webmaster…",
+  "Dusting off the guestbook…",
+  "Rewinding the dial-up modem…",
+  "Counting the ghosts…",
+  "Polishing the tombstones…",
+  "Waking the hit counter…",
+  "Untangling the webring…",
+  "Feeding the bats…",
+  "Lighting the candles…",
+  "Spinning up the marquee…",
+  "Reticulating the spirits…",
+];
+
+/** A line index other than `last` (null: any line). */
+export function pickMessage(last: number | null, random: () => number = Math.random): number {
+  const n = COVER_MESSAGES.length;
+  const skip = last !== null && last >= 0 && last < n;
+  const i = Math.min(Math.floor(random() * (skip ? n - 1 : n)), (skip ? n - 1 : n) - 1);
+  return skip && i >= last ? i + 1 : i;
+}
+
 type Timers = { set(fn: () => void, ms: number): number; clear(id: number): void };
 type Runtime = {
   sendMessage(msg: unknown): Promise<unknown>;
@@ -27,6 +51,7 @@ export interface CoverDeps {
   global: Record<string, unknown>;
   timers?: Timers;
   reduced?: () => boolean;
+  random?: () => number;
 }
 
 const CSS = `
@@ -47,7 +72,7 @@ const CSS = `
 `;
 
 /** Start the cover logic for one document. Returns a handle for tests. */
-export function startCover({ doc, storage, runtime, global, timers, reduced }: CoverDeps) {
+export function startCover({ doc, storage, runtime, global, timers, reduced, random }: CoverDeps) {
   const win = doc.defaultView!;
   const t: Timers = timers ?? { set: (fn, ms) => win.setTimeout(fn, ms), clear: (id) => win.clearTimeout(id) };
   const still = reduced ?? (() => win.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true);
@@ -57,13 +82,16 @@ export function startCover({ doc, storage, runtime, global, timers, reduced }: C
   let step = 0;
   let gone = false; // taken down for good: a late "yes" does not bring it back
 
-  const marked = (() => {
+  // The marker's value is the last line shown in this tab ("1" when the background set it).
+  const mark = (() => {
     try {
-      return storage?.getItem(COVER_MARKER) === "1";
+      return storage?.getItem(COVER_MARKER) ?? null;
     } catch {
-      return false; // storage can throw (sandboxed or opaque pages)
+      return null; // storage can throw (sandboxed or opaque pages)
     }
   })();
+  const marked = mark !== null;
+  const last = mark !== null && /^\d+$/.test(mark) ? Number(mark) : null;
 
   function show() {
     if (host || gone) return;
@@ -76,7 +104,13 @@ export function startCover({ doc, storage, runtime, global, timers, reduced }: C
     const ghost = doc.createElement("div");
     ghost.className = "ghost";
     ghost.innerHTML = svgMarkup(mapToPx(GHOST, ghostLegend(P.ghostShade), PIXEL.spriteScale), 48, 48);
-    const label = Object.assign(doc.createElement("p"), { className: "label", textContent: "Loading crypt…" });
+    const line = pickMessage(last, random);
+    try {
+      storage?.setItem(COVER_MARKER, String(line));
+    } catch {
+      // no storage: the next page may repeat a line
+    }
+    const label = Object.assign(doc.createElement("p"), { className: "label", textContent: COVER_MESSAGES[line] });
     label.setAttribute("role", "status");
     const bar = doc.createElement("div");
     bar.className = "bar";

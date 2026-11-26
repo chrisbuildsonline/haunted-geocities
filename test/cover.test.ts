@@ -2,7 +2,7 @@
 // document_start on the next page of a haunted site, so the original page never shows before the costume.
 import { describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { COVER_FADE_MS, COVER_MAX_MS, COVER_TAG, startCover } from "../src/cover/cover";
+import { COVER_FADE_MS, COVER_MAX_MS, COVER_MESSAGES, COVER_TAG, pickMessage, startCover } from "../src/cover/cover";
 import { COVER_DONE, COVER_MARKER } from "../src/data/types";
 
 const flush = async () => {
@@ -29,13 +29,13 @@ function clock() {
   };
 }
 
-type Opts = { marked?: boolean; answer?: boolean | "reject"; reduced?: boolean };
+type Opts = { marked?: boolean | string; answer?: boolean | "reject"; reduced?: boolean };
 
-function setup({ marked = true, answer = true, reduced = false }: Opts = {}) {
+function setup({ marked = true, answer = true, reduced = false, random }: Opts & { random?: () => number } = {}) {
   const win = new Window({ url: "https://www.nps.gov/subjects/" });
   const doc = win.document as unknown as Document;
   doc.body.innerHTML = "<p>Park page</p><button id='b'>Go</button>";
-  if (marked) win.sessionStorage.setItem(COVER_MARKER, "1");
+  if (marked) win.sessionStorage.setItem(COVER_MARKER, typeof marked === "string" ? marked : "1");
   const listeners: ((msg: unknown) => unknown)[] = [];
   const sent: unknown[] = [];
   let reply!: (v: unknown) => void;
@@ -47,7 +47,7 @@ function setup({ marked = true, answer = true, reduced = false }: Opts = {}) {
   };
   const global: Record<string, unknown> = {};
   const timers = clock();
-  const cover = startCover({ doc, storage: win.sessionStorage as unknown as Storage, runtime, global, timers, reduced: () => reduced });
+  const cover = startCover({ doc, storage: win.sessionStorage as unknown as Storage, runtime, global, timers, reduced: () => reduced, random });
   const answer_ = async () => {
     if (answer === "reject") fail(new Error("Receiving end does not exist."));
     else reply(answer);
@@ -131,7 +131,7 @@ describe("page-change cover", () => {
     button.focus();
     await t.answer();
     const root = t.cover.root()!;
-    expect(root.querySelector('[role="status"]')?.textContent).toBe("Loading crypt…");
+    expect(COVER_MESSAGES).toContain(root.querySelector('[role="status"]')?.textContent ?? "");
     expect(root.querySelectorAll("a, button, input, select, textarea, [tabindex]")).toHaveLength(0);
     expect(t.doc.querySelectorAll("[inert]")).toHaveLength(0);
     expect(t.doc.activeElement).toBe(button);
@@ -146,5 +146,39 @@ describe("page-change cover", () => {
     expect(root.querySelector(".ghost svg")?.getAttribute("width")).toBe("48");
     expect(root.querySelectorAll(".bar .block")).toHaveLength(10);
     expect(root.querySelector(".foot")?.textContent).toBe("Under construction since 1998");
+  });
+});
+
+describe("the cover's message pool", () => {
+  test("twelve short, distinct, on-theme lines, each ending in an ellipsis", () => {
+    expect(COVER_MESSAGES.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(COVER_MESSAGES).size).toBe(COVER_MESSAGES.length);
+    for (const m of COVER_MESSAGES) expect({ m, ok: m.endsWith("…") && m.length <= 32 }).toEqual({ m, ok: true });
+    for (const m of ["Loading crypt…", "Summoning the webmaster…", "Dusting off the guestbook…", "Rewinding the dial-up modem…", "Counting the ghosts…"]) expect(COVER_MESSAGES).toContain(m);
+  });
+  test("pickMessage never repeats the last line, whatever the dice say", () => {
+    for (let last = 0; last < COVER_MESSAGES.length; last++) {
+      for (const r of [0, 0.25, 0.5, 0.9999]) {
+        const next = pickMessage(last, () => r);
+        expect(next).not.toBe(last);
+        expect(next).toBeGreaterThanOrEqual(0);
+        expect(next).toBeLessThan(COVER_MESSAGES.length);
+      }
+    }
+  });
+  test("with no last line every line can come up", () => {
+    const seen = new Set(COVER_MESSAGES.map((_, i) => pickMessage(null, () => (i + 0.5) / COVER_MESSAGES.length)));
+    expect(seen.size).toBe(COVER_MESSAGES.length);
+  });
+  test("the cover shows the picked line, and keeps its index as the tab's marker so the next page picks another", async () => {
+    const t = setup({ marked: "3", random: () => 0 });
+    const label = t.cover.root()!.querySelector('[role="status"]')!.textContent;
+    const index = COVER_MESSAGES.indexOf(label!);
+    expect(index).not.toBe(3);
+    expect(t.win.sessionStorage.getItem(COVER_MARKER)).toBe(String(index));
+  });
+  test("a marker the background set (\"1\") still counts as marked", () => {
+    const t = setup({ marked: "1" });
+    expect(t.hosts()).toHaveLength(1);
   });
 });

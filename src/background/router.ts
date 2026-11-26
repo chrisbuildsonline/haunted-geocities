@@ -163,7 +163,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         target: { tabId },
         func: (key: string) => {
           try {
-            sessionStorage.setItem(key, "1");
+            if (sessionStorage.getItem(key) === null) sessionStorage.setItem(key, "1"); // keeps the cover's last line
           } catch {
             // storage off limits: cover.js waits for the background's answer
           }
@@ -208,7 +208,7 @@ export function createBackground(api: typeof chrome, data: TrackerData = tracker
         func: (flag: string, marker: string) => {
           (globalThis as Record<string, unknown>)[flag] = true;
           try {
-            sessionStorage.setItem(marker, "1"); // the page after this one is covered at once too
+            if (sessionStorage.getItem(marker) === null) sessionStorage.setItem(marker, "1"); // the page after this one is covered at once too
           } catch {
             // storage off limits: cover.js waits for the background's answer
           }

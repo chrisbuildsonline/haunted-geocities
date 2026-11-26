@@ -111,8 +111,8 @@ The costume dresses the page itself, not only its edges. Everything here is rule
 
 ### HUD (guestbook / hit-counter strip)
 
-- **Position:** fixed bottom, `left/right: 8px`, `bottom: calc(8px + var(--hg-lift))`, max-width 800px, centred, min-height 40px. 800 (not 720) so the empty state and the hit-counter labels are whole in a real comic face, which is wider than a serif fallback.
-- **Lift:** `--hg-lift` is the height of any page UI fixed to the bottom (cookie bars, chat buttons). It is sampled with `elementsFromPoint` along the bottom 80px and re-checked on resize and on mutation.
+- **Position:** in the crypt footer (below), in normal flow at the very end of the page, under the graveyard: max-width 800px, centred, min-height 40px. Nothing of it is fixed or floating. 800 (not 720) so the empty state and the hit-counter labels are whole in a real comic face, which is wider than a serif fallback.
+- **Lift:** `--hg-lift` is the height of any page UI fixed to the bottom (cookie bars, chat buttons). It is sampled with `elementsFromPoint` along the bottom 80px and re-checked on resize and on mutation; only the bottom-right ghost icon uses it now.
 - **Frame:**
   - Ground `#000033` with the starfield tile at 30%.
   - 2px bevel: `#9999cc` top-left, `#333366` bottom-right.
@@ -122,16 +122,15 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   2. Counts: `[ghost] 7 [vampire] 1 [tomb] 3 [curse] 2`, each a 16px icon + Comic Sans 13px `#ffffcc`. Ghosts and vampires count the companies still haunting: Exorcise lowers the number by one and Let it back raises it (the popup lists every company found, exorcised ones with their `Exorcised` tag). A number that changes on Exorcise or Let it back ticks: it drops 8px into place, 0 → 1 opacity, `#66ff99` → `#ffffcc`, over 300ms (`slow`, `out`); the other numbers stay still. Under reduced motion it changes in place.
   3. Hit counter: the label `Souls counted` (12px `#ffffcc`) with the sub-label `tracker requests blocked or seen` (12px `#ccccff`, 13:1 on `#000033`) under it, then the 6-digit odometer. Cells are 10×16, `#000000` ground, `#66ff99` pixel digits from an original 5×7 font. The value is total tracker requests seen; exorcised requests are the same requests blocked, so one number covers both and Exorcise never lowers it. The counter is a `role="group"` (not an image: it is a number with a label) with `title="tracker requests blocked or seen"` and the accessible name `Souls counted: 000123, tracker requests blocked or seen`; the visible label and digits are `aria-hidden` under it. At zero (no tracker request seen, e.g. a clean page) the six zeros are not drawn: the odometer cell holds the caption `No souls yet.` (Comic Sans MS 12px `#66ff99` on `#000000`, 16.3:1, in the odometer's sunken 1px frame, 22px tall like it) and the accessible name reads `Souls counted: none yet, tracker requests blocked or seen`. The first request swaps the caption for the digits. At 400px or less the sub-label is visually hidden (it stays in the title and the accessible name) so the HUD keeps to two rows; where the HUD is short of room above that, the two label lines end in an ellipsis.
   4. Web ring: `« prev | Haunted WebRing | next »`. It moves focus to the previous/next sprite on the page. At 400px or less the name drops its first word and reads `« prev | WebRing | next »`, so it stays whole beside the odometer in a real comic face (the `Souls counted` label is wider than in a serif fallback); the ring's accessible name stays `Haunted WebRing`. The name is never cut with an ellipsis, at 375, 700 or 1280.
-- **Hide/Show:** Hide fades every costume layer out (200ms) and leaves a 40×40 `[Show]` tab bottom-right with the ghost icon. Haunt state is kept.
+- **Hide/Show:** Hide fades every costume layer and the footer out (200ms); the bottom-right ghost icon stays and brings them back. Haunt state is kept.
 - **At 375px:**
   - At viewport width 400px or less, insets drop to 4px and the strip uses `flex-wrap: wrap; row-gap: 4px`.
   - Row 1 holds Hide + counts. Row 2 holds the hit counter + web ring.
   - Never more than 2 rows (88px) and never horizontal scroll.
 - **Body padding:**
-  - The page sheet sets body `padding-top` to the original computed value + 48px, and `padding-bottom` to the original + HUD height + 16px + lift, plus the graveyard strip's height + 4px while the strip is drawn. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
-  - The same sheet sets the root's `scroll-padding-top` to the page's own + 48px and `scroll-padding-bottom` to the page's own + the bottom padding's overlay part (HUD, strip, 16px, lift), so a link that takes keyboard focus under the HUD or the graveyard strip, or an anchor jumped to, scrolls clear of them.
-  - They are computed at haunt and again when the HUD wraps, the lift changes or the mode changes.
-  - The sheet is removed on Un-haunt, so page content is never trapped under the costume.
+  - The page sheet sets body `padding-top` to the original computed value + 48px (the top bands), and the root's `scroll-padding-top` to the page's own + 48px. In full-overlay mode it also sets `padding-left` and `padding-right` to the original + 12px.
+  - There is no bottom padding and no bottom scroll padding: the footer is in flow after the page, so nothing covers the page's end. (The fixed strip and its padding are gone.)
+  - The sheet is removed on Un-haunt.
 - **Empty state:** when nothing is found, the counts are replaced by `No ghosts here. Suspiciously clean.` A page whose every company is exorcised is not clean: it keeps the counts, at zero.
 
 ### Ghosts (one per tracker company)
@@ -151,18 +150,45 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - After Exorcise, the sprite fades to 40% opacity with an `EXORCISED` stamp, and the button becomes `[Let it back]`.
   - **Exorcise moment:** the sprite spirals out once: a full turn over 400ms (`exorcise`, `inOut`), shrinking to half size at the half-turn and back to full, while its opacity falls from its look (1, or .6 for a known vampire) to 40%, only ever down. The stamp slams on over the second half: 200ms after 200ms, from `scale(1.5)` and opacity 0 to its resting tilt, `out`. The label and the button do not move; the HUD count ticks at the same time. It plays once, only on the change, in a lane or in the graveyard strip: a sprite drawn already exorcised, Let it back, and the haunt moment itself play nothing. Under reduced motion it is instant: no turn, no slam, and the sprite has no opacity transition, so the 40% look and the stamp are there at once.
 
-### Docked graveyard
+### Crypt footer (graveyard, HUD, badges)
 
-On a page with no gutter of 64px (full-overlay mode) the ghosts and vampires stand in a strip docked above the HUD, so a phone shows them too.
+The costume's bottom is a 1998 page footer at the very end of the page, in normal flow: it scrolls with the page and is never fixed or floating. The `<hg-crypt>` host itself is the footer box (`position: static`, appended after `<body>`); the fixed layers (bands, starfield, lanes, markers, cards and the ghost icon) sit inside its fixed `#crypt-root`, and `<footer id="crypt-footer">` is the host's in-flow content.
 
-- **Place:** `#graveyard`, a direct child of `#crypt-root` after `#hud`, layer 5 with the HUD (under the cards). Fixed, with the HUD's insets, max-width (800px) and centring, its bottom 4px (`LAYOUT.graveyardGap`) above the HUD's top: `bottom: calc(8px + var(--hg-lift) + var(--hg-hud-h) + 4px)`. `--hg-hud-h` is the HUD's measured height, so the strip follows the lift and the HUD's two-row wrap. Hidden in lane mode.
-- **Frame:** the HUD's: `#000033` ground (flat, no starfield, so the silhouettes read), 2px bevel `#9999cc`/`#333366`, 1px `#000000` line, hard shadow `4px 4px 0 #000000`. No radius, no blur.
-- **Label bar:** 16px tall: the 16px tombstone icon and `Graveyard` in Comic Sans MS 12px `#ffffcc`, a 1px `#333366` line under it.
-- **Stones row:** one `<button>` per company in the lane order (ghosts by requests then name, then vampires by name), 12px apart, 6px/18px padding, over a strip of `#336633` moss pixels along the base. Each docked sprite wears its name tag under it (the lane label, 4px below the sprite), and its button is as wide as the wider of the 48px sprite and the tag (at most 12ch, or its longest word up to 16ch), so neighbouring tags never touch: the 12px gap is always between them. A docked tag may take three lines, centred, breaking between words (`Google` / `Analytics`; `U.S. General` / `Services` / `Administration`), then an ellipsis (`-webkit-line-clamp: 3`), so two companies of one owner never read as the same `Google A…` and a long name reads whole. It widens to its longest word (`min-width: calc-size(min-content, min(size, 16ch))`, `overflow-wrap: break-word`), so no word breaks; only a word wider than 16ch (a domain-named company) breaks inside itself. The 12px/16px type stays at every width. Tags sit bottom-aligned on the moss and the row is one sprite and its tallest tag tall, so no tag is clipped. When they do not fit, the row scrolls sideways (`overflow-x: auto`, `overscroll-behavior-x: contain`, never smooth), never the page, and Tab scrolls the focused sprite into view. No `+N` stack.
-- **Sprites:** the lane sprites, labels, cards and exorcised look (40% opacity and the `EXORCISED` stamp). A card opened from a docked sprite stands above the strip, 8px inside the viewport, and focus returns to the sprite on close.
-- **Empty state:** with no tracker found the strip is not drawn (zero height, no padding): the HUD's `No ghosts here. Suspiciously clean.` already says it, and a tracker-free phone page keeps its room. The strip still carries `No graves yet.` (Comic Sans MS 13px `#ffffcc`) for the moment its last company leaves.
-- **Region:** `role="region"`, `aria-label="Graveyard of trackers"`; DOM order is the visual order. Only the strip's own box takes pointer events.
-- **Motion:** the lane float (bob, sway, drift), all under 3 Hz. In the haunt moment the strip slides up with the HUD (same delay, duration and easing) and slides down with it on un-haunt; it has no phase of its own and its sprites do not rise then. Under reduced motion nothing in it moves. Hide fades it with the HUD.
+```text
+~~~~~~~~~~~~~~~~~~~~~~~~ (ectoplasm dither rule, 4px) ~~~~~~~~~~~~~~~~~~~~~~~~
++--[tomb] Graveyard of trackers ---------------------------------------------+
+|  [ghost]     [ghost]      [ghost]       [vampire]   [vampire]               |
+|  Google      U.S. General Crazy Egg     Google Ads  Hotjar                  |
+|  Analytics   Services ...                                                   |
+|  ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,  |  <- moss
++----------------------------------------------------------------------------+
+[Hide] [ghost]3 [vamp]2 [tomb]0 [curse]0  Souls counted [000006]  « prev | Haunted WebRing | next »
+[Best viewed in Netscape 4.0] [Made with Notepad] [Under construction] [Sign my guestbook]
+          You are visitor #000006 to this crypt. (c) 1998 The Webmaster
+```
+
+- **Box:** full width of the page, `#000033` ground with the starfield tile at 30%, 24px padding (16px at 400px or less), a 4px `#66ff99` checker dither rule on top. Content centred, max-width 800px. `pointer-events: auto`. It sits above page layers that might overlap it (`position: relative; z-index: 2147483646`).
+- **Graveyard:** `#graveyard`, `role="region"`, `aria-label="Graveyard of trackers"`, the bevelled frame of the HUD (2px `#9999cc`/`#333366`, 1px `#000000`, hard shadow `4px 4px 0 #000000`), label bar `[tomb] Graveyard of trackers` (Comic Sans MS 13px `#ffffcc`). It lists every company found, always (lane mode too: the lanes keep their ghosts, the footer is the full roll), one `<button>` per company in the lane order, wrapping onto more rows (never sideways scroll), 16px apart, over the `#336633` moss strip. Tags: as before, up to three lines, never a broken word. Cards opened from it stand inside the viewport and return focus to the sprite; Exorcise works from them with the stamp and the count tick.
+- **Empty state:** `No graves yet. This page plays it straight.` (Comic Sans MS 13px `#ffffcc`).
+- **HUD row:** the HUD (above) under the graveyard, 12px gap.
+- **Badges row:** four 88x31 buttons-that-are-not-buttons (plain text boxes, `aria-hidden` off, no links): `Best viewed in Netscape 4.0`, `Made with Notepad`, `Under construction` (black-and-yellow 4px stripes), `Sign my guestbook`. 2px Win95 bevel, Times 11px, `#000080` on `#c0c0c0`. 8px apart, wrapping.
+- **Sign-off:** `You are visitor #NNNNNN to this crypt.` (the hit counter's number) and `(c) 1998 The Webmaster`, Times 12px `#ccccff`, centred.
+- **Haunt moment:** the HUD and graveyard rise with the costume as before; the footer is usually below the fold, so the moment is the same on screen.
+
+### Ghost icon (bottom-right, the one fixed element at the bottom)
+
+- `#show-tab`, 40x48 Win95 button fixed at `right: 8px; bottom: calc(8px + var(--hg-lift))`, always shown while haunted: the 16px ghost icon over the number of companies still haunting (ghosts + vampires, Comic Sans MS 12px).
+- Click (or Enter/Space): if the costume is hidden, show it; then scroll the footer graveyard into view (`smooth`, `auto` under reduced motion) and move focus to the graveyard region (`tabindex="-1"`).
+- Accessible name `Jump to the graveyard: N trackers`. Hard shadow `4px 4px 0 #000000`, the costume focus ring.
+
+### Secrets (easter eggs)
+
+Only on a haunted page (the listeners live and die with the costume), never touching the page's own DOM, so Un-haunt stays byte-identical. Typing into a field never triggers them.
+
+- **Konami code** (`↑ ↑ ↓ ↓ ← → ← → B A`): a 3-second frenzy: the ghosts bob and sway three times faster, the marquee reads `!!! FULL HAUNT !!!`. Reduced motion: only the marquee line.
+- **Click the hit counter 13 times:** a 48px pixel skeleton dances beside the odometer for 5 seconds (4-frame step animation, 2 frames a second). Reduced motion: it stands still.
+- **Type `boo`:** every ghost and vampire flees off the bottom of its lane or row (600ms) and floats back 2 seconds later. Reduced motion: they fade out and back with no movement.
+- **Witching hour and Halloween:** at local midnight (00:00-00:59) and all day on Oct 31 the bands turn `#ff6600` on `#330066`, and the marquee opens with `It's the witching hour.` or `Happy Halloween from 1998!`. Static; the date is read once at haunt.
 
 ### Vampires (runtime fingerprinting scripts)
 
@@ -425,7 +451,7 @@ What a whole-site haunt shows while the next page of the site loads, so the orig
 
 - Host `hg-cover` (closed shadow root, appended to `<html>` at `document_start`), `position: fixed; inset: 0; z-index: 2147483647`. Background `crypt` #000033 with the 1px `star` (#ffff66) dots of the starfield tile at 30% opacity.
 - Ghost: the 48px Webmaster's Ghost sprite (3px art pixels), centred, `ghostGlow` drop shadow; bob 4px up and down over 1200ms ease-in-out.
-- Label `Loading crypt…` in Times New Roman 20px `bone` #ffffcc, in a `role="status"` live region, 12px under the ghost.
+- Label in Times New Roman 20px `bone` #ffffcc, in a `role="status"` live region, 12px under the ghost: one line picked at random per page from a pool of 12 (`Loading crypt…`, `Summoning the webmaster…`, `Dusting off the guestbook…`, `Rewinding the dial-up modem…`, `Counting the ghosts…`, `Polishing the tombstones…`, `Waking the hit counter…`, `Untangling the webring…`, `Feeding the bats…`, `Lighting the candles…`, `Spinning up the marquee…`, `Reticulating the spirits…`), never the same line twice in a row in a tab.
 - Progress bar: 200 x 16px Win95 trough (`#c0c0c0` face, sunken 2px bevel), ten 16 x 12px blocks of `#000080`. Three lit blocks step one block to the right every 333ms (3 Hz cap) and wrap.
 - Footer line `Under construction since 1998`, 12px `#ccccff`.
 - Leaves with a 200ms opacity fade once the costume has painted, or after 3000ms at the latest; Un-haunt removes it at once.
