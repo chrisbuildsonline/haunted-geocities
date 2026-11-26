@@ -16,7 +16,55 @@ const localTargets = () =>
     .filter((t) => !/^([a-z]+:|#)/i.test(t))
     .map((t) => t.split("#")[0]!);
 
+/** Logical screen size and the frames of a GIF: each frame's rectangle and its compressed pixels. */
+function readGif(b: Buffer) {
+  const width = b.readUInt16LE(6);
+  const height = b.readUInt16LE(8);
+  let p = 13;
+  if (b[10]! & 0x80) p += 3 * (1 << ((b[10]! & 7) + 1));
+  const subBlocks = () => {
+    const start = p;
+    while (b[p] !== 0) p += b[p]! + 1;
+    p++;
+    return b.subarray(start, p);
+  };
+  const frames: { w: number; h: number; data: string }[] = [];
+  while (p < b.length && b[p] !== 0x3b) {
+    if (b[p] === 0x21) {
+      p += 2;
+      subBlocks();
+    } else {
+      const w = b.readUInt16LE(p + 5);
+      const h = b.readUInt16LE(p + 7);
+      const local = b[p + 9]!;
+      const head = b.subarray(p, p + 10).toString("hex");
+      p += 10;
+      if (local & 0x80) p += 3 * (1 << ((local & 7) + 1));
+      p++; // LZW minimum code size
+      frames.push({ w, h, data: head + subBlocks().toString("hex") });
+    }
+  }
+  return { width, height, frames };
+}
+
 describe("README.md", () => {
+  test("every GIF it shows is a real picture: tall enough, a full first frame, and frames that change", () => {
+    const gifs = [...new Set(localTargets().filter((t) => t.endsWith(".gif")))];
+    expect(gifs.length).toBeGreaterThanOrEqual(3);
+    for (const g of gifs) {
+      const { width, height, frames } = readGif(readFileSync(join(root, g)));
+      const changing = new Set(frames.slice(1).filter((f) => f.w * f.h > 1).map((f) => f.data)).size;
+      // A thin sliver (a label bar) or a still: a GIF that shows a moment is at least 200px tall, starts on
+      // a whole frame and has several different frames after it.
+      expect({ g, tall: height >= 200, firstWhole: frames[0]?.w === width && frames[0]?.h === height, changing: changing >= 3 }).toEqual({
+        g,
+        tall: true,
+        firstWhole: true,
+        changing: true,
+      });
+    }
+  });
+
   test("exists", () => {
     expect(existsSync(join(root, "README.md"))).toBe(true);
   });
