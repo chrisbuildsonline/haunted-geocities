@@ -11,6 +11,12 @@
         "U.S. General Services Administration",
         "Crazy Egg",
         "Google Ads (Google)"
+      ],
+      "stillShows": [
+        "Google Analytics (Google)",
+        "U.S. General Services Administration",
+        "Crazy Egg",
+        "Google Ads (Google)"
       ]
     },
     {
@@ -18,6 +24,11 @@
       "still": "docs/real-site-caption-cdc.png",
       "trackersFound": 3,
       "parade": [
+        "Google Analytics (Google)",
+        "U.S. General Services Administration",
+        "Google Ads (Google)"
+      ],
+      "stillShows": [
         "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Google Ads (Google)"

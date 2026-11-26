@@ -13,7 +13,7 @@ const demo = read("docs/demo-script.md");
 const devpost = read("docs/devpost.md");
 const scripts = (JSON.parse(read("package.json")) as { scripts: Record<string, string> }).scripts;
 
-type Page = { page: string; still: string; gif?: string; trackersFound: number; parade: string[] };
+type Page = { page: string; still: string; gif?: string; trackersFound: number; parade: string[]; stillShows?: string[] };
 const record = (read("docs/real-site.json") ? JSON.parse(read("docs/real-site.json")) : { pages: [] }) as { captured?: string; pages: Page[] };
 const GIF = "docs/real-site-haunt.gif";
 const host = (url: string) => new URL(url).hostname.replace(/^www\./, "");
@@ -34,6 +34,15 @@ describe("real-site proof", () => {
       expect(p.parade.length).toBeLessThanOrEqual(Math.min(6, p.trackersFound));
     }
     expect(record.pages.filter((p) => p.gif === GIF)).toHaveLength(1);
+  });
+
+  test("each caption still shows the named tracker ghosts of its parade, not only the caption", () => {
+    for (const p of record.pages) {
+      const shows = p.stillShows ?? [];
+      expect({ page: p.page, enough: shows.length >= Math.min(3, p.parade.length) }).toEqual({ page: p.page, enough: true });
+      for (const c of shows) expect(p.parade).toContain(c);
+    }
+    expect(read("scripts/real-site.pw.ts")).toContain("stillShows");
   });
 
   test("the GIF is a 560px GIF under 2 MB, and each caption still is a 1280px PNG under 1 MB", () => {

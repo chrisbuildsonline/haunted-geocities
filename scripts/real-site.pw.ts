@@ -97,24 +97,30 @@ async function capture(slug: string, url: string, gif: boolean) {
       };
     });
 
-    // The 3000ms moment and the caption's hold (to 3600), one frame every 1/6s of page time. Each frame notes where the caption is.
-    const captionAt: { k: number; mid: number }[] = [];
+    // The 3000ms moment and the caption's hold (to 3600), one frame every 1/6s of page time. Each frame notes
+    // where the caption is and which named parade ghosts are wholly on screen.
+    const captionAt: { k: number; mid: number; ghosts: string[] }[] = [];
     for (let k = 1; k <= 3.5 * FPS; k++) {
       await page.waitForTimeout(Math.max(0, start + (k * 1000) / FPS / SLOW - Date.now()));
       const at = n;
       await frame();
-      const box = await inShadow(function () {
+      const seen = await inShadow(function (view: { width: number; height: number }) {
+        const inView = (r: DOMRect) => r.left >= 0 && r.right <= view.width && r.top >= 0 && r.bottom <= view.height;
         const r = this.querySelector("#fx .found")?.getBoundingClientRect();
-        return r ? { top: r.top, bottom: r.bottom } : null;
-      });
-      if (box && box.top >= 0 && box.bottom <= VIEW.height) captionAt.push({ k: at, mid: (box.top + box.bottom) / 2 });
+        const ghosts = [...this.querySelectorAll<HTMLElement>("#fx .spirit[data-company]")].filter((s) => inView(s.getBoundingClientRect())).map((s) => s.dataset.company!);
+        return r && inView(r) ? { mid: (r.top + r.bottom) / 2, ghosts } : null;
+      }, VIEW);
+      if (seen) captionAt.push({ k: at, ...seen });
     }
     await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 });
 
-    // The still: the last frame with the caption, at rest in the marquee band (off the page's text).
+    // The still: the caption in the marquee band (off the page's text) with as many named tracker ghosts
+    // in the frame as the parade gives it (the latest such frame, where the caption has come furthest).
     expect(captionAt.length).toBeGreaterThan(0);
-    const still = captionAt.at(-1)!;
+    const most = Math.max(...captionAt.map((c) => c.ghosts.length));
+    const still = captionAt.filter((c) => c.ghosts.length === most).at(-1)!;
     expect(still.mid).toBeLessThan(VIEW.height / 3);
+    expect(still.ghosts.length).toBeGreaterThanOrEqual(Math.min(3, parade.companies.length));
     copyFileSync(name(still.k), `docs/real-site-caption-${slug}.png`);
     if (gif) {
       // Let the moment play out (no finite animation left but the marquee), then hold the settled page
@@ -169,7 +175,7 @@ async function capture(slug: string, url: string, gif: boolean) {
 
     const found = Number(/^Trackers found: (\d+)$/.exec(parade.caption)?.[1]);
     expect(found).toBeGreaterThan(0);
-    return { trackersFound: found, parade: parade.companies };
+    return { trackersFound: found, parade: parade.companies, stillShows: still.ghosts };
   } finally {
     await context.close();
   }
