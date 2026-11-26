@@ -167,7 +167,7 @@ The costume's bottom is a 1998 page footer at the very end of the page, in norma
           You are visitor #000006 to this crypt. (c) 1998 The Webmaster
 ```
 
-- **Box:** full width of the page, `#000033` ground with the starfield tile at 30%, 24px padding (16px at 400px or less), a 4px `#66ff99` checker dither rule on top. Content centred, max-width 800px. `pointer-events: auto`. It sits above page layers that might overlap it (`position: relative; z-index: 2147483646`).
+- **Box:** full width of the page, `#000033` ground with the starfield tile at 30%, 24px padding (16px at 400px or less), 64px at the bottom so the ghost icon never covers the sign-off, a 4px `#66ff99` checker dither rule on top. Content centred, max-width 800px. `pointer-events: auto`. It sits above page layers that might overlap it (`position: relative; z-index: 2147483646`).
 - **Graveyard:** `#graveyard`, `role="region"`, `aria-label="Graveyard of trackers"`, the bevelled frame of the HUD (2px `#9999cc`/`#333366`, 1px `#000000`, hard shadow `4px 4px 0 #000000`), label bar `[tomb] Graveyard of trackers` (Comic Sans MS 13px `#ffffcc`). It lists every company found, always (lane mode too: the lanes keep their ghosts, the footer is the full roll), one `<button>` per company in the lane order, wrapping onto more rows (never sideways scroll), 16px apart, over the `#336633` moss strip. Tags: as before, up to three lines, never a broken word. Cards opened from it stand inside the viewport and return focus to the sprite; Exorcise works from them with the stamp and the count tick.
 - **Empty state:** `No graves yet. This page plays it straight.` (Comic Sans MS 13px `#ffffcc`).
 - **HUD row:** the HUD (above) under the graveyard, 12px gap.

@@ -53,6 +53,9 @@ describe("crypt footer", () => {
       expect({ sel, fixed: /position:\s*(fixed|absolute)/.test(rule(sel)) || /bottom:/.test(rule(sel)) }).toEqual({ sel, fixed: false });
     }
     expect(rule("#crypt-footer")).toMatch(/pointer-events: auto/);
+    // room at the bottom for the ghost icon, so it never covers the sign-off at the page's very end
+    expect(rule("#crypt-footer")).toMatch(/padding: 28px 24px 64px/);
+    expect(css).toMatch(/#crypt-footer \{ padding: 20px 16px 64px; \}/);
     // the host is static now, so the fixed layer carries the top z-index itself (above page layers and the tint)
     expect(rule("#crypt-root")).toMatch(/position: fixed; inset: 0; z-index: 2147483647/);
     expect(css).not.toMatch(/--hg-hud-h/);

@@ -37,7 +37,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 #starfield, #lanes { clip-path: inset(0 0 var(--hg-footer-in, 0px) 0); }
 #markers { position: absolute; inset: 0; z-index: 3; }
 #top-bands { position: absolute; top: 0; left: 0; right: 0; z-index: 4; }
-#crypt-footer { display: block; box-sizing: border-box; width: 100%; padding: 28px 24px 24px; position: relative; z-index: 2147483646; pointer-events: auto; font: 13px ${COMIC}; color: ${P.bone}; background-color: ${P.crypt}; background-image: ${stars}; border-top: 4px solid ${P.ectoplasm}; transition: opacity ${M.base}ms linear; }
+#crypt-footer { display: block; box-sizing: border-box; width: 100%; padding: 28px 24px 64px; position: relative; z-index: 2147483646; pointer-events: auto; font: 13px ${COMIC}; color: ${P.bone}; background-color: ${P.crypt}; background-image: ${stars}; border-top: 4px solid ${P.ectoplasm}; transition: opacity ${M.base}ms linear; }
 #crypt-footer > * { max-width: ${L.hudMaxWidth}px; margin-left: auto; margin-right: auto; }
 #hud { position: relative; margin-top: 12px; min-height: ${L.hudMinHeight}px; box-sizing: border-box; display: flex; align-items: center; flex-wrap: nowrap; gap: 4px 12px; padding: 6px 10px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; isolation: isolate; pointer-events: auto; }
 #graveyard { position: relative; box-sizing: border-box; display: flex; flex-direction: column; padding: 2px; background-color: ${P.crypt}; border: 1px solid ${P.ink}; box-shadow: inset 2px 2px 0 ${P.hudBevelLight}, inset -2px -2px 0 ${P.bevelDark}, ${HARD_SHADOW}; pointer-events: auto; }
@@ -230,7 +230,7 @@ button:focus-visible { ${ring} }
 .leaving .ectoplasm { left: 80px; }
 
 @media (max-width: ${L.hudWrapBelow}px) {
-  #crypt-footer { padding: 20px 16px 16px; }
+  #crypt-footer { padding: 20px 16px 64px; }
   #hud { flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 6px 8px; }
   .empty { flex-basis: 0; }
   .hud-break { display: block; flex-basis: 100%; height: 0; }
