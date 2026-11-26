@@ -73,6 +73,11 @@ async function capture(slug: string, url: string, gif: boolean) {
 
     // The popup in a window of its own, so the page's tab stays the visible one while it plays.
     const tabId = await tabIdOf(sw, page);
+    // Haunt page asks Chrome for the whole site, a prompt Playwright cannot answer. The run holds one
+    // origin only, so the popup hears "no" and haunts this page alone.
+    await context.addInitScript(() => {
+      if (location.protocol === "chrome-extension:") chrome.permissions.request = (() => Promise.resolve(false)) as typeof chrome.permissions.request;
+    });
     const opened = context.waitForEvent("page", (p) => p.url().includes("popup.html"));
     await sw.evaluate((tab) => chrome.windows.create({ url: `popup.html?tab=${tab}`, type: "popup", width: 360, height: 600 }), tabId);
     const popup = await opened;
@@ -81,7 +86,7 @@ async function capture(slug: string, url: string, gif: boolean) {
     const cdp = await context.newCDPSession(page);
     await cdp.send("Animation.enable");
     await cdp.send("Animation.setPlaybackRate", { playbackRate: SLOW });
-    await popup.getByRole("button", { name: "Haunt this page" }).click();
+    await popup.getByRole("button", { name: "Haunt page" }).click();
     await page.locator("hg-crypt").waitFor({ state: "attached" });
     const start = Date.now();
     const inShadow = await shadowOf(page);

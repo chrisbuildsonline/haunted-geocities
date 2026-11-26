@@ -248,7 +248,7 @@ test("un-haunt from the popup plays out, then restores the page byte for byte", 
   await page.goto(fixture("index.html"));
   const before = await page.evaluate(() => document.documentElement.outerHTML);
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.getByText("Haunted", { exact: true })).toBeVisible();
   await expect(page.locator("hg-crypt")).toHaveCount(1);
   expect(await page.evaluate(() => document.adoptedStyleSheets.length)).toBe(1);

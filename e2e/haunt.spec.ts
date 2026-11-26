@@ -6,7 +6,7 @@ test("haunt adds a closed-shadow overlay; un-haunt restores the page byte for by
   const before = await page.evaluate(() => document.documentElement.outerHTML);
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
 
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.getByText("Haunted", { exact: true })).toBeVisible();
 
   await expect(page.locator("hg-crypt")).toHaveCount(1);
@@ -62,7 +62,7 @@ test("the page stays usable while haunted: clicks go through the overlay", async
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(page.locator("hg-crypt")).toHaveCount(1);
 
   await page.bringToFront();
@@ -83,13 +83,13 @@ test("injecting content.js twice keeps a single overlay", async ({ context, sw }
   await expect(page.locator("hg-crypt")).toHaveCount(1);
 });
 
-test("haunted state survives reopening the popup and is cleared by a reload", async ({ context, sw, extensionId }) => {
+test("haunted state survives reopening the popup and is cleared by a reload (site declined)", async ({ context, sw, extensionId }) => {
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const tabId = await tabIdOf(sw, page);
-  // "Haunt this page": one page. "Haunt this whole site" stays haunted on reload (site-haunt.spec.ts).
-  const first = await openPopup(context, extensionId, tabId);
-  await first.getByRole("button", { name: "Haunt this page" }).click();
+  // A one-page haunt: with the whole site allowed a reload stays haunted (site-haunt.spec.ts).
+  const first = await openPopup(context, extensionId, tabId, { decline: true });
+  await first.getByRole("button", { name: "Haunt page" }).click();
   await expect(first.getByRole("button", { name: "Un-haunt" })).toBeVisible();
   await first.close();
 

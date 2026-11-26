@@ -112,7 +112,7 @@ test("the exorcise moment on a phone, as a GIF", async ({ context, sw, extension
   await page.setViewportSize({ width: 375, height: 740 });
   await page.goto(fixture("trackers.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
   await settled(page);
@@ -157,7 +157,7 @@ test("haunted page with ghosts, the stone card and the popup", async ({ context,
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("trackers.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await expect(popup.locator(".ghost-row")).not.toHaveCount(0);
   await page.bringToFront();
@@ -173,7 +173,7 @@ test("haunted page with ghosts, the stone card and the popup", async ({ context,
   await links.setViewportSize({ width: 1280, height: 800 });
   await links.goto(fixture("links.html"));
   const linksPopup = await openPopup(context, extensionId, await tabIdOf(sw, links));
-  await linksPopup.getByRole("button", { name: "Haunt this page" }).click();
+  await linksPopup.getByRole("button", { name: "Haunt page" }).click();
   await links.bringToFront();
   const inShadow = await shadowOf(links);
   const marker = '.tomb-marker[data-url$="the-very-long-haunted-filename-that-must-not-break.html"]';
@@ -196,7 +196,7 @@ test("curse badges and an open curse card on the coffee shop", async ({ context,
   // The product block sits just under the bar and the marquee, so all six badges fit above the HUD.
   await page.evaluate(() => window.scrollTo(0, document.querySelector("h2")!.getBoundingClientRect().top + window.scrollY - 64));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
   const inShadow = await shadowOf(page);
@@ -219,7 +219,7 @@ test("the neighborhood bar with its address", async ({ context, sw, extensionId 
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("index.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
   await settled(page);

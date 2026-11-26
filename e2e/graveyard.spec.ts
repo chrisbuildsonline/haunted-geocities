@@ -145,7 +145,7 @@ test("exorcise from a docked card stamps the sprite and the popup agrees", async
   await page.setViewportSize({ width: 375, height: 740 });
   await page.goto(fixture("trackers.html"));
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await page.bringToFront();
   await page.waitForTimeout(3700);

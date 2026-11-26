@@ -1,13 +1,13 @@
 import { expect, fixture, openPopup, tabIdOf, test } from "./fixtures";
 import type { BrowserContext, Page, Worker } from "@playwright/test";
 
-/** "Haunt this page", a one-page haunt: the whole-site haunt stays on reload (site-haunt.spec.ts). */
+/** A one-page haunt (site declined): with the whole site allowed a reload stays haunted (site-haunt.spec.ts). */
 async function hauntedPage(context: BrowserContext, sw: Worker, extensionId: string) {
   const page = await context.newPage();
   await page.goto(fixture("index.html"));
   const tabId = await tabIdOf(sw, page);
-  const popup = await openPopup(context, extensionId, tabId);
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  const popup = await openPopup(context, extensionId, tabId, { decline: true });
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.getByRole("button", { name: "Un-haunt" })).toBeVisible();
   await popup.close();
   await expect(page.locator("hg-crypt")).toHaveCount(1);

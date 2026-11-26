@@ -203,7 +203,7 @@ test("the Haunt click plays from the popup only when sound is on", async ({ cont
     await page.goto(fixture("clean.html"));
     const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
     const audio = await watchAudio(popup);
-    await popup.getByRole("button", { name: "Haunt this page" }).click();
+    await popup.getByRole("button", { name: "Haunt page" }).click();
     await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
     if (on) await expect.poll(() => audio.created.length).toBe(1);
     else {

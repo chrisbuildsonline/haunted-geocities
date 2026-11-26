@@ -149,7 +149,7 @@ for (const width of WIDTHS) {
       await page.goto(visualUrl("trackers.html"));
       const popup = await openPreparedPopup(context, sw, extensionId, page, width);
       if (screen === "haunted") {
-        await popup.getByRole("button", { name: "Haunt this page" }).click();
+        await popup.getByRole("button", { name: "Haunt page" }).click();
         await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
         await page.bringToFront();
         await waitForHaunted(page);

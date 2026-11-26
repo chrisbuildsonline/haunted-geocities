@@ -150,7 +150,7 @@ async function hauntedPopup(context: BrowserContext, sw: Worker, extensionId: st
   await page.goto(fixture(`trackers.html?w=${size.width}`)); // a URL of its own: tabIdOf finds the tab by URL
   const popup = await openPopup(context, extensionId, await tabIdOf(sw, page));
   await popup.setViewportSize(size);
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await expect(popup.getByText("No curses. This page plays fair.")).toBeAttached();
   await expect(popup.locator(".vampire-row")).toHaveCount(2);

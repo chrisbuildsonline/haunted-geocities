@@ -63,7 +63,7 @@ test("ghosts, HUD, popup list, Exorcise from the card, Let it back, and a byte-i
 
   // Haunt from the popup, as a user would.
   const popup = await openPopup(context, extensionId, tabId);
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   await expect.poll(() => popupRows(popup)).toEqual([
     ["Criteo", expect.stringMatching(/^1 domain · /), "Exorcise", false],

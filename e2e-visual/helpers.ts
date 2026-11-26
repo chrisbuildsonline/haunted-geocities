@@ -58,7 +58,7 @@ export async function openPreparedPopup(context: BrowserContext, sw: Worker, ext
 /** Haunt `page` with the popup's own button; returns the popup, left on its haunted screen. */
 export async function hauntThroughPopup(context: BrowserContext, sw: Worker, extensionId: string, page: Page, width = 360): Promise<Page> {
   const popup = await openPreparedPopup(context, sw, extensionId, page, width);
-  await popup.getByRole("button", { name: "Haunt this page" }).click();
+  await popup.getByRole("button", { name: "Haunt page" }).click();
   await expect(popup.locator("#app")).toHaveAttribute("data-screen", "haunted");
   return popup;
 }

@@ -168,10 +168,19 @@ export async function scrollToEnd(page: Page, settle = 500): Promise<void> {
   throw new Error(`the page never stayed scrolled to its end (${await gap()}px short)`);
 }
 
-/** popup.html opened as a 360px-wide tab, targeting `tabId` through ?tab=. */
-export async function openPopup(context: BrowserContext, extensionId: string, tabId: number): Promise<Page> {
+/**
+ * popup.html opened as a 360px-wide tab, targeting `tabId` through ?tab=. `decline`: the user says
+ * no to Chrome's prompt for the whole site (chrome.permissions.request answers false), so Haunt
+ * page haunts that page only.
+ */
+export async function openPopup(context: BrowserContext, extensionId: string, tabId: number, { decline = false } = {}): Promise<Page> {
   const popup = await context.newPage();
   await popup.setViewportSize({ width: 360, height: 600 });
+  if (decline) {
+    await popup.addInitScript(() => {
+      chrome.permissions.request = (() => Promise.resolve(false)) as typeof chrome.permissions.request;
+    });
+  }
   await popup.goto(`chrome-extension://${extensionId}/popup.html?tab=${tabId}`);
   await expect(popup.locator("#app[data-screen]")).toBeAttached();
   return popup;
