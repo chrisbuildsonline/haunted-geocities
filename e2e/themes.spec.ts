@@ -20,7 +20,7 @@ async function lookOf(page: Page) {
   const page_ = await page.evaluate(() => ({
     theme: getComputedStyle(document.documentElement).getPropertyValue("--hg-theme").trim(),
     font: getComputedStyle(document.body).fontFamily,
-    tint: getComputedStyle(document.documentElement, "::before").backgroundColor,
+    tint: getComputedStyle(document.body).backgroundColor,
     padding: getComputedStyle(document.body).paddingTop,
     welcome: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hg-welcome")),
   }));
@@ -148,24 +148,27 @@ test("two sites get two different page structures: the page's width and the furn
     const columns = await inShadow(function () {
       return [...this.querySelectorAll(".fur-col")].filter((c) => !(c as HTMLElement).hidden).map((c) => c.id);
     });
-    const body = await page.evaluate(() => ({ width: document.body.getBoundingClientRect().width, maxWidth: getComputedStyle(document.body).maxWidth }));
+    const body = await page.evaluate(() => ({ width: document.body.getBoundingClientRect().width, left: document.body.getBoundingClientRect().left, maxWidth: getComputedStyle(document.body).maxWidth }));
+    const table = await inShadow(function () { return this.getElementById("welcome")!.getBoundingClientRect().width; });
     // every real link is still on the page and still clickable
     const links = await page.evaluate(() => [...document.querySelectorAll("a[href]")].every((a) => {
-      const r = a.getBoundingClientRect();
+      const r = a.getClientRects()[0] ?? a.getBoundingClientRect(); // a wrapped link: its first line
       const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return r.width > 0 && (hit === a || a.contains(hit) || r.top > innerHeight || r.bottom < 0);
     }));
     expect(links).toBe(true);
-    shape.push({ host, before, ...body, furniture, columns });
+    shape.push({ host, before, ...body, table, furniture, columns });
     await page.screenshot({ path: `${SHOTS}/structure-${host}-1280.png` });
     await page.close();
   }
   const [classic, other] = shape as [(typeof shape)[number], (typeof shape)[number]];
-  // Classic Crypt keeps the page's own width and adds no furniture; the other site is a 1998 table with furniture
-  expect({ maxWidth: classic.maxWidth, furniture: classic.furniture, columns: classic.columns }).toEqual({ maxWidth: "none", furniture: [], columns: [] });
-  expect(other.maxWidth).toMatch(/^\d+px$/);
-  expect(other.width).toBeLessThan(other.before);
+  // Classic Crypt is one plain 960px table with no furniture; the other site is a wider table with side columns and furniture
+  expect({ maxWidth: classic.maxWidth, furniture: classic.furniture, columns: classic.columns }).toEqual({ maxWidth: "960px", furniture: [], columns: [] });
+  for (const s of [classic, other]) expect(s.width).toBeLessThan(s.before);
+  expect(other.columns.length).toBeGreaterThanOrEqual(1);
   expect(other.furniture.length).toBeGreaterThanOrEqual(2);
+  expect(other.left).not.toBe(classic.left);
+  expect(other.table).toBeGreaterThan(classic.table);
 });
 
 test("on a phone the table folds to one column: no side columns, the furniture at the bottom, no sideways scroll", async ({ context, sw }) => {
