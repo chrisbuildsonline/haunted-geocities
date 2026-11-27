@@ -42,7 +42,7 @@ Layers, bottom to top:
 | 2 | Lanes: ghosts, vampires | sprites `auto`, lane `none` | Left/right gutter lanes, 64px wide |
 | 3 | Markers: tombstones, curse badges | marker `auto` | Pinned beside page elements |
 | 4 | Top bands: neighborhood bar + marquee | bar links `auto` | 24px + 24px |
-| 5 | Ghost icon (`#show-tab`), bottom-right | `auto` | The only fixed thing at the bottom; jumps to the footer graveyard |
+| 5 | Ghost icon (`#show-tab`), bottom-right, with the findings strip (`#findings`) beside it | icon `auto`, strip `none` | The only fixed cluster at the bottom; the icon jumps to the footer graveyard |
 | 6 | Cards | `auto` | One open at a time |
 | 7 | Haunt-moment FX | none | Exists only during the transition |
 
@@ -181,6 +181,15 @@ The costume's bottom is a 1998 page footer at the very end of the page, in norma
 - `#show-tab`, 40x48 Win95 button fixed at `right: 8px; bottom: calc(8px + var(--hg-lift))`, always shown while haunted: the 16px ghost icon over the number of companies still haunting (ghosts + vampires, Comic Sans MS 12px).
 - Click (or Enter/Space): if the costume is hidden, show it; then scroll the footer graveyard into view (`smooth`, `auto` under reduced motion) and move focus to the graveyard region (`tabindex="-1"`).
 - Accessible name `Jump to the graveyard: N trackers`. Hard shadow `4px 4px 0 #000000`, the costume focus ring.
+
+### Findings strip (beside the ghost icon)
+
+The footer, with the HUD's counts, sits at the page's end, so the first screen would only show the icon's number. One line beside the icon keeps the findings on the first screen, at 375 and 1280 alike. It is part of the icon's fixed cluster, not a floating HUD.
+
+- `#findings`: `Trackers N / Vampires M`. N is the icon's number (companies still haunting, ghosts and vampires); M is the vampires among them. Exorcise and Let it back change it with the icon. A clean page reads `Trackers 0 / Vampires 0`.
+- Box: a 24px plaque 4px left of the icon and centred on it (`right: 52px; bottom: calc(20px + var(--hg-lift))`; at 400px or less `right: 48px; bottom: calc(16px + var(--hg-lift))`). `#000033` ground, Comic Sans MS 12px `#ffffcc`, 1px `#6633cc` border, hard shadow `4px 4px 0 #000000`, like the haunt moment's `Trackers found: N` caption it follows. One line, never wrapped.
+- `pointer-events: none` (clicks reach the page) and `aria-hidden` (the icon's name and the HUD say it to screen readers).
+- Shown until the HUD is wholly on screen (scrolled to the footer, re-checked on scroll and resize), then gone so it never covers the HUD; it comes back above it. Hide fades it with the costume; only the icon stays.
 
 ### Secrets (easter eggs)
 
