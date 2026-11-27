@@ -235,7 +235,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     };
     let col = widen(computeContentColumn(doc));
     const inset = overlay ? LAYOUT.edgeFrame : 0;
-    const full = gutterWidths({ left: col.left - inset, right: col.right + inset }, vw()) === null;
+    // A look's table is never full-overlay mode: its columns and frame stay, whatever room is left beside it.
+    const full = !geom.main && gutterWidths({ left: col.left - inset, right: col.right + inset }, vw()) === null;
     if (full !== overlay) {
       overlay = full;
       page.set({ overlay });
