@@ -3,6 +3,7 @@
 // (design/DESIGN.md "Haunt moment", the parade, the caption and the roll).
 // Under reduced motion neither exists, and the settled costume is the same either way.
 import type { Page } from "@playwright/test";
+import { tagName } from "../src/content/costume/ghosts";
 import { expect, fixture, haunt, shadowOf, test } from "./fixtures";
 
 const OUT = "test-results/hero";
@@ -58,7 +59,7 @@ for (const width of [1280, 700] as const) {
     const shown = await companiesShown(inShadow);
     expect(shown).toHaveLength(6);
     expect(drawn.map((d) => d.company).sort()).toEqual([...shown].sort());
-    expect(drawn.map((d) => d.name)).toEqual(drawn.map((d) => d.company));
+    expect(drawn.map((d) => d.name)).toEqual(drawn.map((d) => tagName(d.company!)));
     expect(drawn.some((d) => d.filler)).toBe(false);
     // the parade ends on a caption with the page's real tracker count
     expect(await captionText(inShadow)).toBe(`Trackers found: ${shown.length}`);
@@ -133,17 +134,17 @@ for (const width of [1280, 700] as const) {
       const high = tops.some((t, n) => n > low && t < vh * 0.2 && t > -live[0]!.spirits[i]!.width);
       expect({ i, low: low >= 0, high }).toEqual({ i, low: true, high: true });
     }
-    // every name tag is worn on its own ghost's hem (rows 12-15 of 16, inside the hem's 14 columns), so a
-    // tag only ever sits on its ghost, never on the page's text, and it is drawn solid (the far ghosts'
-    // dimming is on their sprite only)
+    // every name tag is worn on its own ghost: centred on it, on the hem's last row (row 15 of 16) and, on
+    // two lines, growing up no higher than under the mouth (row 10), so a tag rides with its ghost and never
+    // waits on the page's text; and it is drawn solid (the far ghosts' dimming is on their sprite only)
     expect(live.some((s) => s.names.some((b) => b && visible(b, vw, vh)))).toBe(true);
     for (const [n, s] of live.entries()) {
       for (const [i, t] of s.names.entries()) {
         if (!t || !visible(t, vw, vh)) continue;
         const g = s.spirits[i]!;
         const px = g.width / 16;
-        const onHem = t.left >= g.left + px - 0.5 && t.left + t.width <= g.left + g.width - px + 0.5 && t.top >= g.top + 12 * px - 0.5 && t.bottom <= g.top + 15 * px + 0.5;
-        expect({ n, i, onHem, solid: t.solid }).toEqual({ n, i, onHem: true, solid: 1 });
+        const onGhost = Math.abs(t.left + t.width / 2 - (g.left + g.width / 2)) <= 1 && t.top >= g.top + 10 * px - 0.5 && t.bottom <= g.top + 15 * px + 0.5;
+        expect({ n, i, onGhost, solid: t.solid }).toEqual({ n, i, onGhost: true, solid: 1 });
       }
     }
     // they spread across the width: centres in the left and right thirds

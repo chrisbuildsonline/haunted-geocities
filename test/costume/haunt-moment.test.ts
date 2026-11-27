@@ -313,25 +313,47 @@ describe("hero haunt moment", () => {
     expect(ends).toEqual([144, 96, 144, 96, 96, 144].map((size) => -(size + PARADE_GLOW)));
   });
 
-  test("parade name tag CSS: inside the hem rows (12-14 of 16) and the hem's width, crypt ink on the tint, 14px near and 12px far", () => {
+  test("parade name tag CSS: the whole name on up to two lines, sitting on the hem's last row and growing up under the mouth, crypt ink on the tint, 14px near and 12px far", () => {
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const rule = (sel: string) => css.match(new RegExp(`(?:^|\\n)${sel.replaceAll(".", "\\.")}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
     const tag = rule(".spirit .name");
-    // from the hem's first row (12/16 = 75%) and never below its third (15/16): 22px near (144px, 9px rows
-    // 108-135) and 18px far (96px, 6px rows 72-90)
-    expect(tag).toMatch(/top:\s*75%/);
+    // its bottom on the hem's third row (15/16 = 93.75%, so 6.25% up from the ghost's foot); a second line grows it up
+    expect(tag).toMatch(/bottom:\s*6\.25%/);
+    expect(tag).not.toMatch(/(?:^|[;\s])top:/);
     expect(tag).not.toMatch(/margin-top/);
-    expect(tag).toMatch(/max-width:\s*87\.5%/); // the hem's 14 of 16 columns
+    // wraps like the graveyard tags: whole words, balanced lines, centred, and clamps only past two lines
+    expect(tag).toMatch(/white-space:\s*normal/);
+    expect(tag).toMatch(/text-wrap:\s*balance/);
+    expect(tag).toMatch(/text-align:\s*center/);
+    expect(tag).toMatch(/display:\s*-webkit-box/);
+    expect(tag).toMatch(/-webkit-box-orient:\s*vertical/);
+    expect(tag).toMatch(/-webkit-line-clamp:\s*2/);
     expect(tag).toMatch(/overflow:\s*hidden/);
-    expect(tag).toMatch(/text-overflow:\s*ellipsis/);
+    expect(tag).toMatch(/width:\s*max-content/);
+    // the hem's 14 of 16 columns, or room for "U.S. General Services" on one line on a far ghost
+    expect(tag).toMatch(/max-width:\s*max\(87\.5%,\s*13em\)/);
     expect(tag).toMatch(new RegExp(`color:\\s*${PALETTE.crypt}`));
     expect(tag).toMatch(new RegExp(`border:\\s*1px solid ${PALETTE.crypt}`));
     expect(tag).toMatch(/font:\s*14px\/18px/);
-    expect(rule(".spirit.far .name")).toMatch(/font-size:\s*12px/);
-    expect(rule(".spirit.far .name")).toMatch(/line-height:\s*14px/);
-    // 18px line + 1px padding and 1px border each way = 22px, inside the 27px of a near ghost's hem rows
-    expect(18 + 4).toBeLessThanOrEqual((144 / 16) * 3);
-    expect(14 + 4).toBeLessThanOrEqual((96 / 16) * 3);
+    const far = rule(".spirit.far .name");
+    expect(far).toMatch(/font-size:\s*12px/);
+    expect(far).toMatch(/line-height:\s*14px/);
+    expect(far).toMatch(/padding:\s*0 4px/);
+    // two lines stay under the mouth (row 9): near 2×18 + 2 + 2 = 40px up from 135 (9px rows) ends at 95 > 90;
+    // far 2×14 + 2 = 30px up from 90 (6px rows) ends at 60, the mouth's last pixel
+    expect((144 / 16) * 15 - (2 * 18 + 4)).toBeGreaterThanOrEqual((144 / 16) * 10);
+    expect((96 / 16) * 15 - (2 * 14 + 2)).toBeGreaterThanOrEqual((96 / 16) * 10);
+  });
+
+  test("a parade name tag reads the company without its owner, as the lane and graveyard tags do; the full name stays on the ghost", () => {
+    const { el } = croot(3);
+    playHaunt(el, false, [], [
+      { company: "Google Analytics (Google)", tint: "#99ccff" },
+      { company: "U.S. General Services Administration", tint: "#ccff99" },
+    ]);
+    const spirits = [...el.querySelectorAll<HTMLElement>("#fx .parade > .spirit")].slice(0, 2);
+    expect(spirits.map((s) => s.querySelector(".name")!.textContent)).toEqual(["Google Analytics", "U.S. General Services Administration"]);
+    expect(spirits.map((s) => s.dataset.company)).toEqual(["Google Analytics (Google)", "U.S. General Services Administration"]);
   });
 
   test("more than six companies: the first six in lane order, no fillers", () => {

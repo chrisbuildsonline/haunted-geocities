@@ -3,7 +3,7 @@
 // transform, opacity and clip-path only, all inside the shadow root. Timings from design/DESIGN.md.
 import type { CompanyHit } from "../../data/types";
 import { ghostLegend, mapToPx, PHONE_GHOST, svgMarkup, WEBMASTER, WEBMASTER_LEGEND } from "./art";
-import { hemTint, orderCompanies, riseIn, tintsOf, ghostSvg as trackerGhostSvg, vampireIn } from "./ghosts";
+import { hemTint, orderCompanies, riseIn, tagName, tintsOf, ghostSvg as trackerGhostSvg, vampireIn } from "./ghosts";
 import { HEM_TINTS, LAYOUT as L, MOTION as M, PIXEL, SPRITES } from "./tokens";
 
 const H = M.hero;
@@ -90,8 +90,9 @@ function buildSpirits(doc: Document, parade: readonly ParadeGhost[], phone: bool
     else {
       s.dataset.company = g.company;
       if (!phone) {
-        // Worn on the hem, in the hem's tint: the name rides on its ghost, never on the page's text.
-        const name = Object.assign(doc.createElement("span"), { className: "name", textContent: g.company });
+        // Worn on the hem, in the hem's tint: the name rides on its ghost, never on the page's text. It reads
+        // as the lane and graveyard tags do, without its owner in brackets.
+        const name = Object.assign(doc.createElement("span"), { className: "name", textContent: tagName(g.company) });
         name.style.background = tint;
         s.append(name);
       }
@@ -132,6 +133,20 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
   return fx;
 }
 
+/**
+ * A name tag on two lines keeps its balanced breaks but hugs its longer line, so the plaque is no wider
+ * than the name (its max-width only leaves room for the second line's words). Measured once it is drawn.
+ */
+function hugLines(tag: HTMLElement): void {
+  const range = tag.ownerDocument.createRange();
+  range.selectNodeContents(tag);
+  const rects = typeof range.getClientRects === "function" ? [...range.getClientRects()].filter((r) => r.width > 0) : [];
+  if (new Set(rects.map((r) => Math.round(r.top))).size < 2) return;
+  const cs = tag.ownerDocument.defaultView!.getComputedStyle(tag);
+  const sides = tag.offsetWidth - tag.clientWidth + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight); // borders and padding
+  tag.style.width = `${Math.ceil(Math.max(...rects.map((r) => r.width)) + sides) + 1}px`;
+}
+
 /** A costume element by id, in #crypt-root or in the footer beside it (the same shadow root). */
 const layer = (croot: HTMLElement, id: string) => ((croot.parentNode as ParentNode | null) ?? croot).querySelector(`#${id}`) as HTMLElement;
 
@@ -169,6 +184,7 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
     return skippable(win, { done: settle([fade]), finish: () => fade.finish() });
   }
   const fx = buildFx(croot, true, parade, found);
+  fx.querySelectorAll<HTMLElement>(".spirit .name").forEach(hugLines);
   const q = (sel: string) => fx.querySelector(sel)!;
   const hud = layer(croot, "hud");
   const anims: Animation[] = [];

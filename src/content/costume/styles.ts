@@ -224,8 +224,8 @@ button:focus-visible { ${ring} }
 .spirit svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
 .spirit.near svg { opacity: .92; }
 .spirit.far svg { opacity: .6; }
-.spirit .name { position: absolute; top: 75%; left: 50%; transform: translateX(-50%); box-sizing: border-box; max-width: 87.5%; overflow: hidden; text-overflow: ellipsis; padding: 1px 6px; white-space: nowrap; color: ${P.crypt}; border: 1px solid ${P.crypt}; font: 14px/18px ${COMIC}; }
-.spirit.far .name { font-size: 12px; line-height: 14px; }
+.spirit .name { position: absolute; bottom: 6.25%; left: 50%; transform: translateX(-50%); box-sizing: border-box; width: max-content; max-width: max(87.5%, 13em); overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: break-word; text-wrap: balance; text-align: center; padding: 1px 6px; color: ${P.crypt}; border: 1px solid ${P.crypt}; font: 14px/18px ${COMIC}; }
+.spirit.far .name { padding: 0 4px; font-size: 12px; line-height: 14px; }
 .found { position: absolute; top: 0; left: 0; z-index: 2; transform: translateY(-200%); padding: 1px 6px; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 14px/18px ${COMIC}; }
 .roll { position: absolute; left: 0; right: 0; top: 0; height: 48px; transform: translateY(-100%); background-image: ${rollUrl()}; background-size: 4px 3px; border-bottom: 2px solid ${P.ectoplasm}; opacity: .7; }
 .leaving .ectoplasm { left: 80px; }
