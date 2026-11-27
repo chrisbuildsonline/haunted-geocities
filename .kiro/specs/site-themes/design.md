@@ -300,3 +300,114 @@ Before any production change, a task captures the output of `restyleCss(themeFor
 **Visual (`e2e-visual/visual.spec.ts`).** Five presets forced with `?hgtheme=` on `article.html` at 1280: `flame-skull`, `cloud-angel`, `matrix-den`, `construction-zone`, `classic-crypt`; and two of them (`flame-skull`, `cloud-angel`) at 375. The existing haunted-page shots are regenerated because the banner moves the page down. Baselines are made in Docker with `bun run visual:baselines` and every changed PNG is looked at.
 
 **Real site (`bun run docs:realsite`).** The script already films `nps.gov` and `cdc.gov`. It additionally reads `--hg-theme` and the look's name from the page after the haunt and writes them into `docs/real-site.json`. The task fails if the two markers are equal, and the stills are looked at to confirm they differ in tile, palette and heading.
+
+## Page structure (added request)
+
+Requirement numbers 56 to 82. This part is already in the code (`themes.ts`, `furniture.ts`, `theme-css.ts`, `render.ts`). It is written down here so the tasks, the tests and the docs have one source. Names in the code differ from the first part of this document in one place: the banner is `#welcome`, its height is the custom property `--hg-welcome`, and its sizes are the `WELCOME` constant in `theme-css.ts` (72px, 96px sparse, 56px phone, 28px tab bar, phone below 480px).
+
+### Files (structure)
+
+```
+src/content/costume/themes.ts       # LAYOUTS, DENSITIES, DRESSINGS, PREFIXES, FURNITURE, FURNITURE_COUNT, the clash rules, pickLook (furniture)
+src/content/costume/furniture.ts    # layoutGeometry, layoutCss, harvest, placeFurniture, buildPiece, buildTabs, buildColumn
+src/content/costume/theme-css.ts    # WELCOME, welcomeHeight, lookPageCss, dressingCss, lookShadowCss (columns, bottom strip, tab bar)
+src/content/costume/render.ts       # geometry per measure(), fill(), the overflow hand-over, widen() for the frame and tint
+test/costume/themes.test.ts         # the structure describe block
+test/costume/theme-css.test.ts      # the dressing test
+test/costume/furniture.test.ts      # new: geometry, layoutCss, placement, harvest, pieces
+e2e/themes.spec.ts                  # two sites get two different page structures
+```
+
+### The layout axis
+
+`LAYOUTS` is data: `{ main, left, right, align }`.
+
+| Layout | Left | Main | Right | Align | Needs `vw` of |
+| --- | --- | --- | --- | --- | --- |
+| `full` | 0 | 0 (the page's own width) | 0 | n/a | n/a |
+| `table640` | 0 | 640 | 0 | centre | 768 |
+| `table800` | 0 | 800 | 0 | centre | 928 |
+| `left760` | 0 | 760 | 0 | left, x = 64 | 888 |
+| `nav2` | 180 | 620 | 0 | centre | 928 |
+| `rightlinks` | 0 | 620 | 180 | centre | 928 |
+| `links3` | 170 | 560 | 170 | centre | 1028 |
+
+`layoutGeometry(look, vw)` tries `(left, right)`, then `(left, 0)`, then `(0, 0)`. A try fits when `vw >= left + main + right + 2 * SIDE_ROOM` (`SIDE_ROOM` is 64, the starfield the table leaves each side). The first that fits gives the spans (`x0` is `floor((vw - total) / 2)` centred or 64 left-aligned; left column at `x0`, main at `x0 + left`, right at `x0 + left + main`). None fits: `{ collapsed: true }` with no spans. At 1280 `links3` fits whole; at 1000 it drops the right column (the left and main cell need 858), below 858 it drops the left too, and below 688 (main 560 + 128) it collapses; at 375 every layout collapses. The right column goes first because the nav frame is the more useful half of a 1998 table.
+
+`layoutCss(geometry)` returns one rule and nothing for a collapsed or `full` geometry:
+
+```css
+body { box-sizing: border-box !important; width: auto !important; min-width: 0 !important; max-width: <main>px !important;
+       margin-left: <x>px !important; margin-right: 0 !important; padding-left: 16px !important; padding-right: 16px !important;
+       overflow-x: clip !important; }
+```
+
+`CELL_PAD` is the 16px. `overflow-x: clip` stops a wide child from escaping the cell without making the body a scroll container, so `position: sticky` and the page's own scrolling keep working. `render.ts` appends the rule to `lookPageCss(...)` in the page sheet's `css` callback, so it is part of the one adopted sheet and Un-haunt removes it with the sheet.
+
+**The frame and the tint go round the table.** In `measure()`, `computeContentColumn(doc)` measures the page's own text column, which is now the main cell. `widen(col)` stretches it to the left edge of the left column (or the main cell) and the right edge of the right column (or the main cell), and the tint box and the frame box are drawn from the widened column. The gutters (`gutterWidths`) are computed from the widened column, so the ghost lanes and the starfield stay outside the table. If the widened column leaves under 64px of gutter the page falls into full-overlay mode, as it always has.
+
+`measure()` runs on every relayout, so `geom` is recomputed from `documentElement.clientWidth` each time. `fill()` rebuilds the three containers only when `JSON.stringify(placeFurniture(look.furniture, geom))` changes, so a resize inside one band rebuilds nothing.
+
+### Furniture
+
+`pickLook` gives `look.furniture`: `pickFurniture(rnd, density)` takes `n = lo + floor(rnd() * (hi - lo + 1))` pieces without repeats from `FURNITURE`, `[lo, hi]` from `FURNITURE_COUNT` (`sparse` 2 to 3, `normal` 4 to 6, `cluttered` 7 to 9). For a drawn preset it uses the same generator that varied the axes, so it depends on the site key alone. A forced preset uses `mulberry32(fnv1a(id))`. A locked preset gets `[]`.
+
+`harvest(doc, skip)` reads the page once at haunt time. It walks `a[href]` outside the costume's own host (`skip`), parses `a.href`, keeps only `http:` and `https:`, takes the text, and drops labels under 2 characters and repeats (case-insensitive). A same-origin link of 22 characters or fewer goes to `nav` (up to 6), another origin with up to 40 characters goes to `out` (up to 5). `headings` are the `h2` and `h3` texts of 3 to 60 characters, the first three. It returns plain strings and URLs, never nodes.
+
+`buildPiece(doc, piece, look, harvest)` makes one `div.fur.fur-<piece>` and, for a link, `link()`: an `a` with the copied `href`, `tabIndex = -1`, and the original text; with no `href` a `span`. Digits, award names and dates come from `mulberry32(fnv1a(`${site}:${piece}`))`, so a piece is the same on every page of the site. Sprites are `spriteSvg(name)` from `theme-art.ts`. The odometer is built from a 3×5 digit font drawn as pixel SVG.
+
+**Placement** is `placeFurniture(items, geometry)`, pure:
+
+| Piece | Wants |
+| --- | --- |
+| `navbuttons` | left (sorted first, so it heads the column), else right |
+| `coollinks`, `awards` | right, else left |
+| `whatsnew`, `construction`, `guestbook`, `counter` | the column with fewer pieces so far, the left on a tie |
+| `webring`, `bestviewed`, `updated` | bottom strip |
+| `tabbar` | not in a column: `buildTabs` under the banner |
+
+A wanted column that does not exist in the geometry means the other one; if neither exists the piece goes to the bottom strip. A collapsed geometry therefore puts all the furniture (the tab bar aside) in the strip.
+
+**Overflow.** After `measure()` sizes the columns from under the banner to the footer, a short page leaves a short column. A loop moves `lastElementChild` of any column whose `scrollHeight > clientHeight` to the front of the bottom strip, one whole piece at a time. Nothing is clipped or scrolled.
+
+**The shadow root.** `#welcome`, `#fur-left`, `#fur-right` and the footer's `#fur-bottom` are siblings or children of the shadow root and are `aria-hidden`. Columns are `position: absolute` in document coordinates (left `span.x + scrollX + 4`, width `span.w - 8`, top under the banner + 8, down to the footer's top - 8), `pointer-events: none`, with `a` set to `pointer-events: auto` so a copied link still works for a mouse and stays out of the tab order. Columns are `hidden` in full-overlay mode. They get the `costume-hidden` class with the banner in Hide (opacity 0, links' pointer events off) and come back with Show.
+
+The styling is in `lookShadowCss`: a band-coloured frame cell for each column with the bevel's outline, `.fur` boxes on the plaque colour with the plaque text, `.navbtn` grey raised buttons, `.award` gold ribbons, `.news` with a `.new` mark that blinks at 1 Hz in `no-preference` and stays solid under `.reduced-motion`, `.tape` strip, `.odo-fake` odometer. All colours are web-safe; the text sits on a plaque.
+
+**Tab bar.** `buildTabs` appends `div.wb-tabs` to `#welcome`: up to six tabs from the `nav` harvest (the same fallback as `navbuttons`). `welcomeHeight(look)` is `72` (or `96` when sparse) plus `28` when the look has `tabbar`. The bar is 24px with a 2px margin and `display: none` under 480px, where `--hg-welcome` is 56px with no extra. The page sheet's body padding uses `--hg-welcome`, so the banner and the tab bar never cover the page.
+
+### Dressing and prefix (`dressingCss`)
+
+`dressingCss(look, dark)` returns an array of page-sheet rules. `NOT_CHROME` is `:not(nav *, [role="navigation"] *, [role="banner"] *, [role="contentinfo"] *, header:not(main *, article *) *, footer:not(main *, article *) *)`. `TOP_SECTIONS` is the outermost `section, aside, blockquote, figure, table, form` (`:not(:is(...) *)`) with `NOT_CHROME`, so a nested section never gets a second box. Specificity stays low with `:where` for the element and `!important` on the declarations, so the page's own rules lose and nothing needs an inline style.
+
+| Dressing | Rules |
+| --- | --- |
+| `cells` | `TOP_SECTIONS { border: 3px outset <bevelLight>; padding: 8px; margin-block: 8px }` |
+| `fieldset` (light page) | `TOP_SECTIONS { border: 2px groove <bevelDark>; padding: 14px 10px 8px; margin-block: 16px }` and `TOP_SECTIONS::before { content: <legend>; display: block; width: fit-content; margin: -24px 0 6px -2px; background: #ffffff; color: <link>; font: bold 13px/18px <heading font> }`, the legend one of four original phrases chosen by the banner index |
+| `fieldset` (dark page) | the `cells` rule only: a white legend on a dark ground would break contrast |
+| `bullets` | `:where(ul)<NOT_CHROME> { list-style-image: url(<8×8 sprite at 2px>) }`, the prefix sprite or the blue `ball` |
+| `frames` | no section rule; the image rule in `lookPageCss` is `6px ridge` with `outline-offset: -6px` |
+
+For any other dressing the image rule is `3px <bevel>` with the same negative offset. The outline is drawn inside the image's own box, so no image, no section and no line of text moves because of it.
+
+The prefix is `:where(h2, h3)<NOT_CHROME>::before { content: url(<sprite>) "\a0" }`. The four 8×8 sprites are `skull`, `flame`, `star` and `ball`, drawn at 2px (16×16) from original pixel maps with web-safe colours.
+
+### Density and clash rules
+
+Two rules in `CLASH_RULES` guard the structure: `a sparse site is one plain table` (blocks `density: sparse` with a layout whose left or right column is above 0) and `three columns are only for a cluttered site` (blocks `links3` unless cluttered). `OPTIONS.layout` leaves out `full`. The seed may swap `layout`, `density`, `dressing` and `prefix`, each only to an option that does not clash, so a sparse swap away from a column layout is a legal swap and a swap into `links3` needs a cluttered preset. `lookSignature` includes the structure axes and the furniture list, so two sites with the same signature look the same.
+
+A sparse look draws a taller banner: the plaque is 66px with a 36px title and the banner is 96px, the one big banner over a plain table. A cluttered look has up to nine pieces and may have three columns.
+
+### Un-haunt and the page
+
+Nothing in this part writes to a page node. The layout rules, the dressing rules and the prefix rules are in the one adopted sheet; the columns, the bottom strip, the tab bar and the copied links are in the closed shadow root, and the whole host is removed on Un-haunt. `document.documentElement.outerHTML` is therefore byte-identical after Un-haunt for every layout.
+
+### Testing (structure)
+
+**`test/costume/themes.test.ts` → `the structure`** (exists, four tests): same host same structure with and without `www.`; 200 hosts cover every layout, density, dressing and prefix, and 150 or more furniture sets, every piece used; the furniture count follows the density with no piece twice and Classic Crypt has none; a sparse site has no column and `links3` only comes cluttered.
+
+**`test/costume/theme-css.test.ts` → `each dressing wraps the page's own sections its own way`** (exists): `cells` gives the 3px outset and padding; `fieldset` gives the 2px groove and a `::before` legend; `bullets` gives `list-style-image`; `frames` gives no section rule; a prefix gives `::before { content: url(` on `h2, h3` outside chrome; a dark page's `fieldset` has no `::before`.
+
+**`test/costume/furniture.test.ts`** (new): `layoutGeometry` for each layout at 1280, 1000, 900, 800, 700 and 375 gives the spans, the drop order (right, then left) and the collapse from the table in this part; `layoutCss` is empty for `full` and collapsed and holds `max-width`, `margin-left`, 16px paddings and `overflow-x: clip` otherwise; `placeFurniture` puts `navbuttons` first in the left column, `coollinks` and `awards` right, `webring`, `bestviewed` and `updated` at the bottom, everything at the bottom when collapsed, and loses no piece; `harvest` on a small DOM keeps only `http` and `https` links, separates same-origin from outbound, drops repeats and short or long labels, and reads the headings; `buildPiece` builds every piece, links have `tabindex="-1"` and the copied `href`, a made-up piece has none, and the same site gives the same digits.
+
+**e2e → `two sites get two different page structures`** (exists, 1280): the Classic Crypt host has `max-width: none`, no furniture and no visible column; the other host has a pixel `max-width` and a body narrower than before, at least two `.fur` pieces, and every real link under a point test is clickable. To add: the same page at 375 has no visible column, all pieces in the bottom strip and no horizontal scroll, and `outerHTML` is equal after Un-haunt.

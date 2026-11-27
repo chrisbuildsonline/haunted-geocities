@@ -110,3 +110,83 @@ Steering references: `non-destructive-dom.md` (the page is untouched, un-haunt r
 53. `design/DESIGN.md` shall gain a `### Themes` section in the Costume part and `README.md` a Themes section, both describing the axes, the seed, Classic Crypt and the e2e-only parameter, and both shall state the new spec in their counts (criteria 3, 9 to 21, 33, 34).
 54. `bun run typecheck`, `bun run test`, `bun run test:e2e`, `bun run lint:manifest`, `bun run test:visual` and `bun run docker:test` shall pass, and `dist/` shall be rebuilt with `bun run build`.
 55. Every existing unit and e2e test that measures a position below the top bands shall be updated for the banner's padding (72px, 56px under 480px), with the reason in the commit, and no assertion shall be loosened to make it pass.
+
+## Page structure: two sites, two different 1998 homepages (added request)
+
+The first 55 criteria change how a page is painted. This request changes how it is built: at first glance two sites must look like two different 1998 homepages, not one page in two colour schemes. The seed therefore also picks the page's **layout** (the width and the columns of its table), its **density** and **furniture** (the 1998 odds and ends round the page), the **dressing** of the page's own sections and a **prefix** sprite for its headings. The code is already written in `themes.ts` (`LAYOUTS`, `DENSITIES`, `DRESSINGS`, `PREFIXES`, `FURNITURE`, `FURNITURE_COUNT`, the clash rules), `furniture.ts` (`layoutGeometry`, `layoutCss`, `harvest`, `placeFurniture`, `buildPiece`, `buildTabs`, `buildColumn`), `theme-css.ts` (`WELCOME`, `welcomeHeight`, `lookPageCss`, `dressingCss`, `lookShadowCss`) and `render.ts`. Where criteria 22 to 27 and 44 name `--hg-banner` and the banner layer, the code names are `--hg-welcome`, `WELCOME` and `#welcome`.
+
+### Terms (structure)
+
+- **Layout**: one of `full`, `table640`, `table800`, `left760`, `nav2`, `rightlinks`, `links3` (`LAYOUTS`). It gives the **main cell** width, the **left** and **right** column widths and the alignment.
+- **Main cell**: the width the page's own `body` is held to.
+- **Furniture column**: a left or right column in the shadow root beside the main cell (`#fur-left`, `#fur-right`).
+- **Bottom strip**: the furniture container (`#fur-bottom`) in the crypt footer, in normal flow just after the page.
+- **Piece**: one item of furniture (`navbuttons`, `construction`, `coollinks`, `awards`, `guestbook`, `updated`, `whatsnew`, `webring`, `counter`, `bestviewed`, `tabbar`).
+- **Density**: `sparse`, `normal` or `cluttered`.
+- **Dressing**: how the page's outermost sections are drawn: `cells`, `fieldset`, `bullets` or `frames`.
+- **Outermost section**: a `section`, `aside`, `blockquote`, `figure`, `table` or `form` that has no such element above it and is not inside site chrome (`nav`, `[role=navigation]`, `[role=banner]`, `[role=contentinfo]`, a `header` or `footer` outside `main` and `article`).
+- **Prefix**: a 16×16 sprite (`skull`, `flame`, `star`) or `none`, drawn before `h2` and `h3` headings.
+
+### The layout axis
+
+56. The look shall have a `layout` axis with seven values: `full`, `table640`, `table800`, `left760`, `nav2`, `rightlinks` and `links3`. The table widths shall be: `table640` a 640px main cell, centred; `table800` an 800px main cell, centred; `left760` a 760px main cell, left-aligned (starting 64px from the left edge); `nav2` a 180px left column and a 620px main cell; `rightlinks` a 620px main cell and a 180px right column; `links3` a 170px left column, a 560px main cell and a 170px right column. The `nav2`, `rightlinks` and `links3` tables shall be centred. `full` shall leave the page's own width alone and shall be given to Classic Crypt only. The seed may swap `layout` for any value but `full`.
+57. The geometry at viewport width `vw` shall be computed by `layoutGeometry` from the look and `vw` alone. A table (left column + main cell + right column) fits when `vw` is at least the table's width plus 64px on each side. When the whole table does not fit, the right column shall be dropped first and the table tried again, then the left column too. When even the main cell does not fit (under its width plus 128px, for example a 375px phone), the geometry shall be **collapsed**: one column, the page's own width, and every piece of furniture in the bottom strip.
+58. In a layout with a main cell that fits, one set of page-sheet rules shall hold the page's own `body` to it: `max-width` the main cell width, `margin-left` the cell's x (so the page sits where the table is), `margin-right: 0`, 16px of inline padding on both sides, `box-sizing: border-box`, `width: auto`, `min-width: 0` and `overflow-x: clip`. When the geometry is collapsed, or the layout is `full`, no such rule shall be written. The rules shall be part of the one adopted page sheet and shall change no page node, attribute or inline style.
+59. The guestbook frame and the tint shall go round the whole table: the content column that `computeContentColumn` measures shall be widened to the left edge of the left column (or the main cell) and the right edge of the right column (or the main cell). The starfield and the ghost lanes shall stay outside the table, in the gutters.
+60. The layout shall be re-evaluated at every relayout (resize, orientation change, a change of the page's own size), so a viewport that narrows past a threshold drops the right column, then the left, then collapses, and one that widens brings them back. The pieces shall be rebuilt only when their placement changes, not on every relayout.
+61. Classic Crypt shall stay locked: its layout shall be `full`, its density `sparse`, its furniture empty, its page width unchanged, and no column or bottom strip shall be drawn for it. The seed shall not swap `layout`, `density`, `dressing` or `prefix` for a locked preset.
+
+### Furniture
+
+62. The number of pieces shall follow the density, drawn without repeats from `FURNITURE`: 2 or 3 for `sparse`, 4 to 6 for `normal`, 7 to 9 for `cluttered`. Which pieces, and how many within the range, shall depend on the site key alone, so two sites differ and one site never changes. A forced preset's furniture shall depend on the preset id.
+63. The pieces shall be:
+
+| Piece | Content |
+| --- | --- |
+| `navbuttons` | Up to six raised grey 1998 buttons labelled with the page's own site links (same origin, label 2 to 22 characters, no repeats); made-up labels (`Home`, `About Me`, `My Links`, `Guestbook`, `Photos`) when the page has fewer than two. |
+| `construction` | The worker sprite, `This page is under construction!` and a tape strip. |
+| `coollinks` | A `Cool Links` list of up to five of the page's own outbound links (another origin, label 2 to 40 characters); made-up names when it has none. |
+| `awards` | Three of a fixed list of original award names (for example `Site of the Day!`, `Top 5% of the Web`, `Spooky Site Award`), picked by the seed. |
+| `guestbook` | The mailbox sprite, `Sign my Guestbook!` and `E-mail me!!`. |
+| `updated` | `Last updated: m/d/yy` with a seeded date in 1997, 1998 or 1999. |
+| `whatsnew` | `What's New?` with the page's own `h2` and `h3` headings (3 to 60 characters, up to three), each after a blinking `NEW!`; made-up news when it has none. |
+| `webring` | A webring box: `This site is a proud member of the` / `Haunted Homepages WebRing` / `<< Prev | Random | Next >>`. |
+| `counter` | `You are visitor #` and a six-digit seeded odometer drawn in pixel digits. |
+| `bestviewed` | A `Best viewed at 800x600` note (or one of two other 1998 wordings). |
+| `tabbar` | A bar of up to six tabs under the banner, from the page's own site links, with the same fallback as `navbuttons`. |
+
+64. Placement shall follow these slots. `navbuttons` shall head the left column (the right when there is no left). `coollinks` and `awards` shall prefer the right column (the left when there is no right). `whatsnew`, `construction`, `guestbook` and `counter` shall go to whichever column has fewer pieces so far (the left on a tie). `webring`, `bestviewed` and `updated` shall always go to the bottom strip. `tabbar` shall go under the banner, not in a column. A piece that prefers a column that does not exist shall go to the other column, and a piece with no column shall go to the bottom strip. The bottom strip shall sit in the crypt footer in normal flow, just after the page and before the graveyard.
+65. After each layout, a column that is too short for its pieces (the page is short) shall hand over its last piece, whole, to the bottom strip, repeatedly, until what is left fits. No piece shall be cut, scrolled or hidden.
+66. All furniture shall live in the closed shadow root. Every column, the bottom strip and the banner shall be `aria-hidden="true"`. No piece shall be a form control or take focus. A link in a piece shall be a copy of one of the page's own `http` or `https` links (same `href`, same text), shall have `tabindex="-1"`, and shall never be the only way to reach that page, since the page's own link stays. A link with another protocol (`javascript:`, `mailto:`, `data:`) shall never be copied. A made-up piece shall have no `href`.
+67. The furniture shall be read-only toward the page: it shall read the page's links and headings once per haunt (skipping the costume's own host), copy text, and write only to the shadow root. A page whose links or headings change later keeps the pieces built at haunt.
+68. The tab bar shall add 28px to the banner's height: 100px for `normal` and `cluttered` looks that have it (72 + 28), 124px for a sparse look (96 + 28), and shall be hidden, with its height, under 480px viewport width. The page sheet shall pad the body's top by the banner's height (`--hg-welcome`) as it does for the banner alone.
+69. Under reduced motion no piece shall animate: the `NEW!` mark in `What's New?` shall be solid, and the sprites in `construction` and `guestbook` shall show their first frame. No piece shall blink faster than 1 Hz.
+
+### Section dressing and the heading prefix
+
+70. The `dressing` axis shall have four values, applied to the page's outermost sections outside site chrome by page-sheet rules, with `!important`, on the element's own box, and changing no page markup:
+    - `cells`: a 3px `outset` border in the palette's `bevelLight`, 8px of padding and 8px of vertical margin;
+    - `fieldset`: a 2px `groove` border in the palette's `bevelDark`, padding and margin that leave room for a legend, and a `::before` pseudo-element drawn as the legend (a short original phrase on a white ground, in the palette's link colour and the font set's heading font). On a dark page `fieldset` shall draw `cells` instead, with no legend, so no light box sits on a dark ground;
+    - `bullets`: every `ul` outside site chrome gets `list-style-image` of a 16×16 pixel sprite (the look's prefix sprite, or a blue ball when the prefix is `none`);
+    - `frames`: images in `main` and `article` get a thick 6px `ridge` outline in `bevelLight`, drawn as `outline` with a negative `outline-offset` so nothing moves, and the sections are left plain. The other three dressings shall draw a 3px outline on images.
+71. The `prefix` axis shall have four values: `none`, `skull`, `flame` and `star`. Other than `none`, an `h2` or `h3` outside site chrome shall get a `::before` of that 16×16 original pixel sprite followed by a non-breaking space. The prefix shall add no element and shall not change a heading's colour or font.
+72. Dressing and prefix shall never write to a page node. They shall be rules in the page sheet, and Un-haunt shall remove them with it. A dressed page shall keep every link and control clickable, and no dressing shall hide page text.
+
+### Density and clashes
+
+73. A **sparse** look shall be one plain table: its layout shall be `full` or one of `table640`, `table800` and `left760` (no furniture column), its banner shall be 96px tall (the title 36px, the plaque 66px) instead of 72px, and it shall have 2 or 3 pieces, all of which therefore go to the bottom strip or the tab bar. A **cluttered** look is the only one that may have three columns (`links3`). The clash rules shall block both combinations: "a sparse site is one plain table" and "three columns are only for a cluttered site". A swap that would clash shall be skipped, as in criterion 5.
+74. For every preset and every single-axis swap, the layout, density, dressing and prefix shall follow criteria 56, 61, 70, 71 and 73. Across 200 sites every layout, density, dressing and prefix shall appear and the furniture sets shall mostly differ.
+
+### What must keep working (structure)
+
+75. Un-haunt shall restore the page byte for byte for every layout, density, dressing and prefix: the columns, the bottom strip, the tab bar, the page-sheet rules and the copied links shall go with the host and the page sheet (criterion 41).
+76. Every real link of the page shall remain visible, in the page's own place and clickable, under every layout and at every width. The furniture columns shall sit beside the main cell, never over it, and the page's own text shall never be covered by a column or the bottom strip.
+77. At 375px wide, every layout shall collapse to one column with all furniture in the bottom strip, with no horizontal scroll and no text cut. Criteria 24 and 45 for full-overlay mode shall still hold.
+78. The footer, graveyard, HUD, ghost icon, findings strip, secrets, tombstones, curses, cards, Exorcise, Hide and Show shall work as they do today under every layout (criterion 42). Hide shall fade the furniture columns and the bottom strip and take their links out of the pointer's reach, and Show shall bring them back.
+
+### Tests and docs (structure)
+
+79. `test/costume/themes.test.ts` shall have a `the structure` describe block that shows: the same host gets the same layout, density, dressing, prefix and furniture with or without `www.`; 200 sites cover every layout, density, dressing and prefix and 150 or more different furniture sets, and every piece is used; the furniture count follows the density with no piece twice, and Classic Crypt has none; a sparse site is one plain table and `links3` is only cluttered (criteria 56, 61, 62, 73, 74).
+80. `test/costume/theme-css.test.ts` shall have a dressing test that shows what each dressing and prefix writes (criteria 70, 71). A furniture test file, `test/costume/furniture.test.ts`, shall cover the geometry at the widths named in criterion 57, `layoutCss`, `placeFurniture`, `harvest` and `buildPiece` (criteria 57 to 58, 63 to 67).
+81. `e2e/themes.spec.ts` shall have a test named `two sites get two different page structures` that shows that the Classic Crypt host keeps the page's width with no furniture, and that the other site's body is held to a pixel `max-width` narrower than before, has at least two pieces of furniture, and leaves every real link clickable (criteria 58, 61, 63, 76). A second check shall collapse the same page at 375px wide to one column with the furniture in the bottom strip, and Un-haunt shall leave the page's HTML byte for byte as it was (criteria 57, 75, 77).
+82. `design/DESIGN.md` and `README.md` shall describe the structure axes and their rules: the layouts, the density, the furniture, the dressings, the prefix, the drop order and the collapse (criteria 56 to 77).

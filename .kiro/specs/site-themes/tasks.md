@@ -159,3 +159,43 @@ Do the tasks in order: each group builds on the one before. Write each test firs
 - [ ] 12.3 Run `bun run docker:test` once.
   - Req: 54
   - Test: exits 0.
+
+## 13. Page structure (added request: two sites, two different 1998 homepages)
+
+Requirements 56 to 82, design part "Page structure". The code of 13.1 to 13.6 was written before this group, so those tasks are ticked; 13.7 to 13.9 are what is left.
+
+- [x] 13.1 Add the structure axes to `src/content/costume/themes.ts`: `LAYOUTS` (`full`, `table640`, `table800`, `left760`, `nav2`, `rightlinks`, `links3`), `DENSITIES`, `DRESSINGS`, `PREFIXES`, `FURNITURE`, `FURNITURE_COUNT`, the two structure clash rules, `pickFurniture` and `furniture` on the look. Classic Crypt is `full`, `sparse`, `frames`, `none`, with no furniture, and the seed varies none of the four.
+  - Req: 56, 61, 62, 73, 74
+  - Test: `test/costume/themes.test.ts` → the `the structure` describe block: `"the same host always gets the same layout, density, dressing and furniture"`, `"200 sites spread over every layout, density, dressing and prefix, and over many furniture sets"`, `"the furniture count follows the density, with no piece twice"`, `"a sparse site is one plain table, and three columns only come cluttered"`.
+
+- [x] 13.2 Add `src/content/costume/furniture.ts` geometry: `layoutGeometry(look, vw)` (the right column drops first, then the left, then it collapses; 64px of starfield each side) and `layoutCss(geometry)` (the page-sheet rule that holds the body to its cell: `max-width`, `margin-left`, 16px inline padding, `overflow-x: clip`).
+  - Req: 56, 57, 58
+  - Test: `e2e/themes.spec.ts` → `"two sites get two different page structures"` (the body's `max-width` is a pixel value and its width falls). Unit tests are task 13.7.
+
+- [x] 13.3 Add the furniture in `furniture.ts`: `harvest` (the page's own site links, outbound links and `h2`/`h3` headings, `http(s)` only, read once), `buildPiece` for the ten pieces, `buildTabs`, `buildColumn`, `placeFurniture` (nav buttons head the left column, Cool Links and awards prefer the right, webring, best viewed and updated go to the bottom strip), the original award names, and links copied with `tabIndex = -1`.
+  - Req: 62, 63, 64, 66, 67
+  - Test: `e2e/themes.spec.ts` → `"two sites get two different page structures"` (at least two `.fur` pieces, and every real link is still clickable). Unit tests are task 13.7.
+
+- [x] 13.4 Draw the structure in the shadow root and wire it in `theme-css.ts` and `render.ts`: `lookShadowCss` (furniture columns, the bottom strip, the tab bar, the `.new` blink and its reduced-motion override), `WELCOME` and `welcomeHeight` (96px sparse banner, 28px tab bar, 56px phone), `#fur-left`, `#fur-right` and `#fur-bottom`, `fill()` that rebuilds only on a changed placement, the overflow hand-over to the bottom strip, `widen()` so the frame and the tint go round the whole table, the hidden columns in full-overlay mode, and the layout rule in the page sheet.
+  - Req: 58, 59, 60, 65, 66, 68, 69, 73, 77, 78
+  - Test: `test/costume/theme-css.test.ts` → `"the page sheet names the preset and sizes the banner for desktop and phone"`. `e2e/themes.spec.ts` → `"two sites get two different page structures"`.
+
+- [x] 13.5 Add section dressing and the heading prefix: `dressingCss(look, dark)` (bevelled cells, fieldset groove boxes with a `::before` legend and cells on a dark page, sprite list bullets with `list-style-image`, 6px ridge picture frames drawn as an outline) and the `h2`/`h3` `::before` prefix sprite (skull, flame, star, none), for the outermost `section`, `aside`, `blockquote`, `figure`, `table` and `form` outside site chrome.
+  - Req: 70, 71, 72
+  - Test: `test/costume/theme-css.test.ts` → `"each dressing wraps the page's own sections its own way"`.
+
+- [x] 13.6 Document the structure in `design/DESIGN.md` (the `Structure` bullet of `### Themes`, the density row of the table, the layout row) and `README.md` (the Themes section: the table widths, the furniture built from the page's own links and headings, the dressing, the phone collapse).
+  - Req: 82
+  - Test: `test/design.test.ts` and `test/project.test.ts` still pass.
+
+- [x] 13.7 Write `test/costume/furniture.test.ts` (new), seen failing against a deliberate break of each rule, for the pieces of 13.2 and 13.3: `layoutGeometry` at 1280, 1000, 900, 800, 700 and 375 for every layout; `layoutCss`; `placeFurniture` (the slots, no piece lost, everything at the bottom when collapsed); `harvest` on a small DOM; `buildPiece` and `buildTabs`.
+  - Req: 57, 58, 63, 64, 66, 67, 80
+  - Test: `test/costume/furniture.test.ts` → `"a table that fits keeps its columns"`, `"the right column drops first, then the left"`, `"a width under the main cell plus 128px collapses"`, `"full and collapsed give no page-sheet rule"`, `"layoutCss holds the body to its cell"`, `"nav buttons head the left column"`, `"Cool Links and awards prefer the right, and use the left when there is no right"`, `"webring, best viewed and updated go to the bottom"`, `"a collapsed geometry puts every piece at the bottom"`, `"no piece is lost or doubled"`, `"harvest keeps only http and https links, splits site from outbound and drops repeats and odd lengths"`, `"harvest reads the h2 and h3 headings, three at most"`, `"a copied link has the page's href, the page's text and tabindex -1"`, `"a made-up piece has no href"`, `"the same site gives the same digits and date"`, `"the tab bar has up to six tabs"`.
+
+- [x] 13.8 Extend `e2e/themes.spec.ts` → `"two sites get two different page structures"` for the collapse and for Un-haunt: the same page at 375 wide has no visible furniture column, every piece in the bottom strip, no horizontal scroll and the same links clickable, and `document.documentElement.outerHTML` equals the string captured before Haunt, at 1280 and at 375. Add a check that `links3` (force `matrix-den` in the e2e build) shows both columns at 1280 and only the left at 900.
+  - Req: 57, 60, 75, 76, 77, 81
+  - Test: `e2e/themes.spec.ts` → `"two sites get two different page structures"`, `"the page collapses to one column at 375 and un-haunts byte for byte"`, `"links3 drops its right column first"`. `bun run test:e2e` exits 0.
+
+- [ ] 13.9 Add visual baselines for the structure to `e2e-visual/visual.spec.ts`: `nav2` (`flame-skull`), `rightlinks` (`cloud-angel`) and `links3` (`matrix-den`) on `article.html` at 1280 and `flame-skull` at 375 (collapsed, furniture at the bottom), forced with `?hgtheme=`, motion reduced and the clock fixed. Make them with `bun run visual:baselines` and look at each PNG: the columns sit beside the table, the frame goes round all of it, no text is cut, and the 375 shot has no column.
+  - Req: 57, 58, 59, 77, 81
+  - Test: `bun run test:visual` exits 0. `git status` shows only the new PNGs and the spec file.
