@@ -190,3 +190,54 @@ The first 55 criteria change how a page is painted. This request changes how it 
 80. `test/costume/theme-css.test.ts` shall have a dressing test that shows what each dressing and prefix writes (criteria 70, 71). A furniture test file, `test/costume/furniture.test.ts`, shall cover the geometry at the widths named in criterion 57, `layoutCss`, `placeFurniture`, `harvest` and `buildPiece` (criteria 57 to 58, 63 to 67).
 81. `e2e/themes.spec.ts` shall have a test named `two sites get two different page structures` that shows that the Classic Crypt host keeps the page's width with no furniture, and that the other site's body is held to a pixel `max-width` narrower than before, has at least two pieces of furniture, and leaves every real link clickable (criteria 58, 61, 63, 76). A second check shall collapse the same page at 375px wide to one column with the furniture in the bottom strip, and Un-haunt shall leave the page's HTML byte for byte as it was (criteria 57, 75, 77).
 82. `design/DESIGN.md` and `README.md` shall describe the structure axes and their rules: the layouts, the density, the furniture, the dressings, the prefix, the drop order and the collapse (criteria 56 to 77).
+
+## Nothing of ours covers the page's content (added rule)
+
+The user's rule: nothing the costume draws may cover the page's content. The code is already written (`theme-css.ts` `lookBackgrounds`, `#welcome` and `.fur-col`; `body-padding.ts`; `column-layers.ts`; `page-blocks.ts` `blocksCss`; `furniture.ts` `MIN_MAIN`; `render.ts`). Where criteria 28, 10, 21, 30, 44 and 56 to 59 describe an overlay that this rule replaces, this section wins: the multiply tint over the column, the fixed gutter starfield and the edge frame are gone, and the crypt window painted on dark blocks is gone.
+
+### Terms (nothing covers)
+
+- **Page content**: the page's own text and its pictures (`img`, `picture`, `video`, `canvas`, `iframe`, `svg`).
+- **Under the page**: drawn behind the page's own boxes, in a layer the page's content paints over (`z-index: -1`, or a background of `html` or `body`).
+- **Empty gutter**: the part of the viewport beside the table where the page has no text and no picture.
+- **Pinned body**: a page whose `body` computes `position: fixed` (a cookie wall's scroll lock).
+
+### Backgrounds and layers
+
+83. The tile shall be the background of `html`, with `background-attachment: fixed`, drawn by a page-sheet rule. On a light page the tint (the palette's tint and its pale pattern) shall be the background of `body`, clipped to its content box, so it stays off the body's padding where the bands and the banner sit. The page's own boxes shall paint over both. On a dark page no tint shall be drawn, as before.
+84. The tint shall not be an overlay. No `html::before` shall be drawn, no `mix-blend-mode` other than `normal` shall be set on any costume layer, and the page's own text and pictures shall never be multiplied, filtered or recoloured by the costume.
+85. The fixed gutter starfield fills and the phone edge frame shall not be drawn (`#starfield .gutter` and `#edge-frame` are `display: none`). The ghost lanes shall remain.
+86. The guestbook frame (`html::after`), the banner (`#welcome`) and the furniture columns (`.fur-col`) shall sit at `z-index: -1`, under the page's own boxes. The frame shall be a frame round the table, and the page shall paint over anything that reaches into the table.
+87. A costume layer that is not part of the haunt moment shall not paint over the page's text or pictures. The three-second haunt moment (the CRT wipe, the parade of big ghosts and the Webmaster's Ghost) is the one exception.
+
+### Ghosts
+
+88. A ghost or vampire shall stand only in an empty gutter: a lane position whose box does not intersect any text rect or any picture rect of the page (`img`, `picture`, `video`, `canvas`, `iframe`, `svg`, `object`, `embed`). When no such place exists in the lanes, the creature shall stand in the footer graveyard.
+89. When the page's content moves into a ghost's place (a late image, a resized column), the next relayout shall move the ghost to a clear place or to the graveyard.
+
+### Dark blocks and photo panels
+
+90. A dark block (light text on a dark ground) or a text panel on a photo shall not be painted by the costume: no crypt ground, no HUD bevel, no 1px line, no hard shadow and no window frame. Its own ground shall show as the page drew it.
+91. In a dark block, in a text panel on a photo and in a band, only the colours of text links shall change, to the dark-page link colours checked at 4.5:1 on the ground. A link dressed as a button and site chrome shall keep their colours.
+92. Light text set on a picture (a panel on a photo) shall get a dark `text-shadow` so it reads on any part of the picture. A button link shall get `text-shadow: none`.
+93. An outline button on a dark ground shall keep its own look: the costume shall not give it a raised face, a colour or a shadow. Search boxes keep the sunken 1998 field.
+
+### Pictures
+
+94. The bevel on a picture shall be an `outline` drawn outside the picture (`outline-offset: 0`). A picture shall never get a `filter`, a `mix-blend-mode`, an `opacity`, a `border`, a `background` or any other change of colour or size from the costume. This replaces the negative `outline-offset` of criteria 70 and design "Dressing".
+
+### The page's own cell
+
+95. The main cell shall be at least 960px wide: `layoutGeometry` shall use `max(layout main, MIN_MAIN)` with `MIN_MAIN` = 960. Real sites lay out for the viewport's width, so a narrower cell breaks them (Wikipedia's title wrapped a letter per line at 620px). The table's width, the viewport that it needs and the drop order of criterion 57 shall be computed with that width. This replaces the 640, 800, 760 and 620 main widths of criterion 56 and the 560 of `links3`; the column widths and alignments stay.
+96. Classic Crypt shall be one plain table with a 960px main cell, centred, and no furniture column.
+97. The body's rule that holds it to its cell shall not touch its `overflow`, so a page's sticky and scrolling parts keep working. (The rule keeps `max-width`, `margin-left`, the 16px inline padding, `width: auto` and `min-width: 0`.) Criterion 58 shall be read without `overflow-x: clip`.
+
+### A pinned body
+
+98. While `body` is a pinned body, the in-flow crypt footer shall be hidden (`display: none`), because a fixed body takes the footer's place over the page. When the body is back in flow the footer shall show again. The ghost icon and the findings line keep working.
+
+### Tests and checks (nothing covers)
+
+99. `e2e/themes.spec.ts` shall have a test, `nothing of ours covers the page's text or pictures`, run at 1280 and 375 wide on `article.html` (own look and `flame-skull`), `index.html` (`cloud-angel`) and `hero.html` (`matrix-den` and `spiderweb-attic`). It shall show that no costume box (`#top-bands`, `#welcome`, `.fur-col`, `.deco`, a ghost, a vampire, a trail glyph) intersects any text rect or picture rect of the page, that `html::before` has no content, that no blend mode is set, and that every picture has `filter: none`, `mix-blend-mode: normal` and `opacity: 1`.
+100. `test/costume/column-layers.test.ts` shall show that the tint is the light page's own `body` background in its content box and that nothing is laid over the page. `test/costume/page-blocks.test.ts` shall show that dark blocks and photo panels are not painted (no crypt colour, bevel or shadow), that text on a picture gets a text-shadow and a button link none, and that outline buttons keep their look. `test/costume/furniture.test.ts` shall show that the cell is never under 960px.
+101. A real-site check shall haunt `https://en.wikipedia.org/`, `https://github.com/`, `https://www.svt.se/` and `https://www.aftonbladet.se/` over the real network at 1280 wide and show for each that the page's own layout is unbroken (Wikipedia's title on one line), that no costume box covers the page's text or pictures, and that the page's links are clickable. Live pages change, so this is a docs and review tool, not one of the checks.

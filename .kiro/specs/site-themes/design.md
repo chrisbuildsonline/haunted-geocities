@@ -411,3 +411,85 @@ Nothing in this part writes to a page node. The layout rules, the dressing rules
 **`test/costume/furniture.test.ts`** (new): `layoutGeometry` for each layout at 1280, 1000, 900, 800, 700 and 375 gives the spans, the drop order (right, then left) and the collapse from the table in this part; `layoutCss` is empty for `full` and collapsed and holds `max-width`, `margin-left`, 16px paddings and `overflow-x: clip` otherwise; `placeFurniture` puts `navbuttons` first in the left column, `coollinks` and `awards` right, `webring`, `bestviewed` and `updated` at the bottom, everything at the bottom when collapsed, and loses no piece; `harvest` on a small DOM keeps only `http` and `https` links, separates same-origin from outbound, drops repeats and short or long labels, and reads the headings; `buildPiece` builds every piece, links have `tabindex="-1"` and the copied `href`, a made-up piece has none, and the same site gives the same digits.
 
 **e2e → `two sites get two different page structures`** (exists, 1280): the Classic Crypt host has `max-width: none`, no furniture and no visible column; the other host has a pixel `max-width` and a body narrower than before, at least two `.fur` pieces, and every real link under a point test is clickable. To add: the same page at 375 has no visible column, all pieces in the bottom strip and no horizontal scroll, and `outerHTML` is equal after Un-haunt.
+
+## Nothing of ours covers the page (added rule)
+
+Requirement numbers 83 to 101. The rule: nothing the costume draws may cover the page's content. This part is already in the code. It changes how the look is painted, so it overrides the overlay parts of the first sections: the multiply tint in `html::before`, the fixed gutter starfield, the edge frame, the crypt window on dark blocks and the 620px main cell.
+
+### What is drawn where
+
+| Piece | Before | Now |
+| --- | --- | --- |
+| Tile | Fixed gutter fills and the edge frame in the shadow root | `html { background: <ground> url(<tile>) repeat fixed !important }` in the page sheet (`lookBackgrounds`) |
+| Tint | `html::before`, `mix-blend-mode: multiply` over the column | On a light page: `body { background: <tint> url(<pattern>) repeat content-box !important }`. The tint is the body's own background, so the page's boxes paint over it |
+| Guestbook frame | `html::after` at the top z-index | `html::after` at `z-index: -1` (`columnLayersCss` passes `-1` when a look is given) |
+| Banner | Shadow-root layer | `#welcome` at `z-index: -1`, absolute, from 48px down (under the bands) |
+| Furniture columns | Shadow-root columns | `.fur-col` at `z-index: -1`, beside the cell |
+| Gutter fills, phone edge frame | Drawn | `#starfield .gutter, #edge-frame { display: none !important }` |
+
+`addPageSheet` writes the backgrounds only when it has a look and the haunt is not hidden (`site.backgrounds(!!theme.tint)`), and passes `tint: null` to `columnLayersCss`, so no `html::before` exists. The `content-box` clip keeps the tint off the body's padding. That padding holds the bands and the banner, so the banner's tile shows there, under the page. Because every layer of ours is at `z-index: -1` or a background, and the page's boxes are in normal flow above them, the stacking order alone keeps the page on top. A page that gives `html` or `body` a background of its own loses it to the look's `!important` rule; the look is the 1998 ground behind the page, and the page's own boxes still paint over it.
+
+The tile is `fixed`, so it does not scroll with the page: the page scrolls over a still starfield, as a 1998 `bgproperties=fixed` page did.
+
+### Ghosts stand in empty gutters
+
+The lane code (`starfield.ts`, `sample.ts`) samples the page's text rects and picture rects (`img, picture, video, canvas, iframe, svg, object, embed`; `starfield.ts` line 105) and gives a creature a lane position only when its box misses all of them. With no clear lane the creature goes to the footer graveyard. Each relayout repeats the check, so a late image or a resized column moves the ghost out. The ghost lanes are in `#lanes`, above the page, so the only guard is this placement rule; the e2e test checks it.
+
+The haunt moment is the one exception (requirement 87): its three seconds of CRT wipe, big ghosts and Webmaster's Ghost cross the page, and a click or key skips it. After it, `#top-bands` and the lanes are the only costume boxes above the page, and `#top-bands` sits in the body's top padding.
+
+### Dark blocks and photo panels (`blocksCss`)
+
+`blocksCss` no longer paints a crypt window. For each dark block the old `CRYPT_BEVEL` and the crypt ground are not written; the block shows as the page drew it. The panel on a photo gets no `PANEL_FRAME` either. What is left:
+
+| Rule | Where | What |
+| --- | --- | --- |
+| Link colours | Text links in a dark block, a panel on a photo and a band | The dark-page link, visited and hover colours, each moved to 4.5:1 on the ground (`P.crypt` for a picture, the band's lightest colour for a band). Button links (`keep`) and site chrome keep theirs |
+| Text shadow | A panel on a photo, and a dark block without its own ground that has a picture | `text-shadow: 1px 1px 2px <ink>, 0 0 4px <ink>`. `:is(<keep>)` gets `text-shadow: none` so a button link has no shadow |
+| Outline buttons | Outline buttons on a dark ground | Found and counted (`outline`), but no rule written: they keep their look |
+| Search boxes | The visible pill or input | A sunken white field, unchanged |
+
+A block that has its own ground (`d.ground` true and not a photo) gets no text-shadow either: it only gets link colours. `findBlocks` is unchanged, so the relayout still finds the same blocks, with its costume off nothing flips on a re-measure.
+
+### Picture bevels
+
+The image rule in `lookPageCss` is an `outline` of the look's bevel in the bevel colours with `outline-offset: 0`, so the bevel is outside the picture's box and never over a pixel of it. It uses no `filter`, `mix-blend-mode`, `opacity`, `background` or `border`, so the picture's colours are the page's. (The `frames` dressing's 6px ridge uses the same outline.) A unit test in `theme-css.test.ts` checks that the rule has `outline` and `outline-offset: 0` and none of those properties.
+
+### The page's own cell
+
+`layoutGeometry` computes `main = Math.max(LAYOUTS[layout].main, MIN_MAIN)` with `MIN_MAIN = 960` (`furniture.ts`). The reason: a real site's media queries see the viewport, not the cell, so a 620px cell made Wikipedia lay out for 1280 inside 620 and wrap its title a letter per line. The table's fit test uses `left + main + right + 2 * SIDE_ROOM`, so the table widths become:
+
+| Layout | Left | Main | Right | Fits from `vw` |
+| --- | --- | --- | --- | --- |
+| `full` | 0 | the page's own | 0 | n/a |
+| `table640`, `table800`, `left760` | 0 | 960 | 0 | 1088 (`left760`: left-aligned from x = 64) |
+| `nav2` | 180 | 960 | 0 | 1268 |
+| `rightlinks` | 0 | 960 | 180 | 1268 |
+| `links3` | 170 | 960 | 170 | 1428 |
+
+(The 16px of body padding sits inside the cell.) So at 1280 `nav2` and `rightlinks` fit, `links3` drops its right column, then its left below 1268 and the table collapses below 1088. Where the fit table in "Page structure" lists 640, 800, 760, 620 and 560, read 960. Classic Crypt (`table800` in `PRESETS`) therefore draws one plain 960px table with no furniture.
+
+`layoutCss` no longer writes `overflow-x: clip`, so the body does not clip or become a scroll container. A wide child of the page can reach out of the cell and over a column, but a column is under the page (`z-index: -1`), so the page still paints over it.
+
+### A pinned body
+
+`render.ts` (the `measure` pass, line 197) toggles `page-locked` on the footer: `footer.classList.toggle("page-locked", getComputedStyle(doc.body).position === "fixed")`. The shadow-root rule `#crypt-footer.page-locked { display: none !important }` hides the footer while the page's scroll lock holds the body fixed. The check runs on every relayout and on a mutation of `body`'s class or style, so the footer comes back when the lock goes. The ghost icon and the findings line are in the viewport's fixed layer and stay.
+
+### Risks and limits
+
+- A page whose first content is `position: fixed` or `sticky` still paints over the bands and the banner. That is the page's own box over ours and is allowed.
+- Under `z-index: -1`, the banner and the columns show only where the page has no ground of its own. A site with an opaque `html`-level wrapper hides the columns. The look's rule on `html` and `body` is `!important`, but a full-width opaque wrapper (`#page { background: #fff }`) still paints over the body's tint. The tint then shows only in the body's padding and beside the wrapper. This is the cost of never covering the page.
+- The real-site check can only be run by hand over the network.
+
+### Testing (nothing covers)
+
+**e2e → `nothing of ours covers the page's text or pictures`** (`e2e/themes.spec.ts`): for `article.html` (own look and `flame-skull`), `index.html` (`cloud-angel`) and `hero.html` (`matrix-den`, `spiderweb-attic`), at 1280 and 375, after haunt and settle, reads the rects of `#top-bands, #welcome, .fur-col:not([hidden]), .deco, #lanes .ghost, #lanes .vampire, .spark` from the shadow root and the rects of every text node and every `img, picture, video, canvas, iframe, svg` of the page that is in view, and expects no pair to overlap by more than 1px. Also: `html::before` has `content: none`, `html::after` and `html::before` have `mix-blend-mode: normal`, and every picture computes `filter: none`, `mix-blend-mode: normal` and `opacity: 1`. The `hero.html` run routes the HSTS-upgraded tracker hosts, as `photo-page.spec.ts` does.
+
+**`test/costume/column-layers.test.ts`**: `the tint is the light page's own background, behind its content; nothing is laid over the page` (the body background is the tint and its pattern in the content box, there is no `html::before` and no blend); `frame and tint follow scroll and resize` and `frame has 6px ridge colours...` stay.
+
+**`test/costume/page-blocks.test.ts`**: `css: nothing is painted over a photo or its panel; its text gets a hard shadow and its links the dark-page colours; outline buttons keep their look`, and `dark blocks keep their own ground: no crypt colour, bevel or shadow is painted on them; text on a picture gets a text-shadow` (and `:is(<keep>)` has none).
+
+**`test/costume/furniture.test.ts`**: `a centred three-column table at 1600; the page's own cell is never under 960px`, `left760 keeps 64px of starfield on the left`, and the drop-order and collapse tests with the 960px cell.
+
+**`test/costume/theme-css.test.ts`**: the picture rule has `outline` with `outline-offset: 0` and no `filter`, `mix-blend-mode`, `opacity`, `border` or `background`; `lookBackgrounds` has the fixed `html` tile and the `content-box` body tint on a light page and no tint on a dark one; `#starfield .gutter, #edge-frame` are `display: none`; `#welcome` and `.fur-col` have `z-index: -1`; `#crypt-footer.page-locked` is `display: none`.
+
+**Real sites**: `en.wikipedia.org`, `github.com`, `svt.se` and `aftonbladet.se` haunted by hand (or by a script like `scripts/real-site.pw.ts`) at 1280 wide: the page's layout is whole, no costume box is over its text or pictures, and every link is clickable. The shots are looked at; they are not baselines.

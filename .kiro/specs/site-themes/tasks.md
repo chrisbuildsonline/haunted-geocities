@@ -199,3 +199,51 @@ Requirements 56 to 82, design part "Page structure". The code of 13.1 to 13.6 wa
 - [x] 13.9 Add visual baselines for the structure to `e2e-visual/visual.spec.ts`: `nav2` (`flame-skull`), `rightlinks` (`cloud-angel`) and `links3` (`matrix-den`) on `article.html` at 1280 and `flame-skull` at 375 (collapsed, furniture at the bottom), forced with `?hgtheme=`, motion reduced and the clock fixed. Make them with `bun run visual:baselines` and look at each PNG: the columns sit beside the table, the frame goes round all of it, no text is cut, and the 375 shot has no column.
   - Req: 57, 58, 59, 77, 81
   - Test: `bun run test:visual` exits 0. `git status` shows only the new PNGs and the spec file.
+
+## 14. Nothing of ours covers the page (added rule)
+
+Requirements 83 to 101, design part "Nothing of ours covers the page". The code of 14.1 to 14.7 is written, with its tests; 14.8 to 14.10 are what is left. Where these tasks contradict an earlier unticked or ticked task (the multiply tint, the fixed gutter starfield, the edge frame, the crypt window on dark blocks, the 620px cell), this group wins, and the older ticks stay as the record of what was built first.
+
+- [x] 14.1 Make the tile the `html` background (`fixed` attachment) and the tint a light page's `body` background in its content box, in `lookBackgrounds` (`theme-css.ts`), written by `addPageSheet` (`body-padding.ts`) with `tint: null` for `columnLayersCss`, so there is no `html::before` and no multiply overlay. Hide the fixed gutter fills and the phone edge frame (`#starfield .gutter, #edge-frame`).
+  - Req: 83, 84, 85
+  - Test: `test/costume/column-layers.test.ts` → `"the tint is the light page's own background, behind its content; nothing is laid over the page"`. `test/costume/theme-css.test.ts` covers `lookBackgrounds`.
+
+- [x] 14.2 Put the guestbook frame (`html::after`), the banner (`#welcome`) and the furniture columns (`.fur-col`) at `z-index: -1`, under the page's own boxes.
+  - Req: 86, 87
+  - Test: `e2e/themes.spec.ts` → `"nothing of ours covers the page's text or pictures"`. `test/costume/column-layers.test.ts` → `"both layers have pointer-events none"`.
+
+- [x] 14.3 Place ghosts and vampires only in empty gutters, clear of the page's text and its pictures (`img, picture, video, canvas, iframe, svg`), and in the graveyard when no lane is clear; check again on every relayout.
+  - Req: 88, 89
+  - Test: `e2e/themes.spec.ts` → `"nothing of ours covers the page's text or pictures"` (the `#lanes .ghost` and `#lanes .vampire` rects).
+
+- [x] 14.4 Stop painting dark blocks and photo panels in `blocksCss` (`page-blocks.ts`): no crypt ground, bevel, line, shadow or window; outline buttons keep their look. Keep the dark-page link colours for text links (button links and site chrome keep theirs), and give text on a picture a dark `text-shadow`, none on button links.
+  - Req: 90, 91, 92, 93
+  - Test: `test/costume/page-blocks.test.ts` → `"css: nothing is painted over a photo or its panel; its text gets a hard shadow and its links the dark-page colours; outline buttons keep their look"`, `"dark blocks keep their own ground: no crypt colour, bevel or shadow is painted on them; text on a picture gets a text-shadow"`, `"dark blocks: their text links take the dark-page colours, button links and site chrome keep theirs"`, `"bands: their text links take a light colour that reads 4.5:1 or more on the band's lightest colour"`.
+
+- [x] 14.5 Draw picture bevels as an outline outside the picture (`outline-offset: 0`), never a filter, blend, opacity or colour change.
+  - Req: 94
+  - Test: `e2e/themes.spec.ts` → `"nothing of ours covers the page's text or pictures"` (every picture computes `none|normal|1`). `test/costume/theme-css.test.ts` → the image rule has `outline` and none of `filter`, `mix-blend-mode`, `border`, `background`.
+
+- [x] 14.6 Hold the page's own cell to at least 960px (`MIN_MAIN` in `furniture.ts`), drop `overflow-x: clip` from the body rule, and make Classic Crypt one plain 960px table.
+  - Req: 95, 96, 97
+  - Test: `test/costume/furniture.test.ts` → `"a centred three-column table at 1600; the page's own cell is never under 960px"`, `"left760 keeps 64px of starfield on the left"`, `"too narrow: the right column goes first, then the left, then it collapses to one column"`, `"a collapsed page keeps its own width: no rules"`, `"the body is held to its cell, with padding so text never touches a column"`.
+
+- [x] 14.7 Hide the in-flow crypt footer while the page pins its body (`body` computes `position: fixed`: a cookie wall's scroll lock) and show it again when the body is back in flow (`page-locked` in `render.ts`, `#crypt-footer.page-locked` in `theme-css.ts`).
+  - Req: 98
+  - Test: `e2e/themes.spec.ts` (no costume box is over the page while a lock holds). A unit test of the toggle is in 14.8.
+
+- [ ] 14.8 Write the e2e test `nothing of ours covers the page's text or pictures` (it is in `e2e/themes.spec.ts`) and the unit tests, seen failing against a deliberate break of each rule, then ticked here when `bun run test` and `bun run test:e2e` exit 0 with them: `test/costume/column-layers.test.ts` (the tint is the body's own background), `test/costume/page-blocks.test.ts` (no crypt window, text-shadow, outline buttons) and `test/costume/furniture.test.ts` (960px cell). Add a `render.test.ts` case that `page-locked` is on the footer while `body` is `position: fixed` and off when it is back in flow.
+  - Req: 99, 100, 98
+  - Test: `e2e/themes.spec.ts` → `"nothing of ours covers the page's text or pictures: <file> <preset> @<width>"` for `article.html` (own look and `flame-skull`), `index.html` (`cloud-angel`) and `hero.html` (`matrix-den`, `spiderweb-attic`) at 1280 and 375. `test/costume/render.test.ts` → `"the footer is hidden while the body is pinned and shown again when it is back in flow"`.
+
+- [ ] 14.9 Check real sites by hand over the network at 1280 wide: `https://en.wikipedia.org/`, `https://github.com/`, `https://www.svt.se/` and `https://www.aftonbladet.se/`. For each: the page's own layout is whole (Wikipedia's title on one line), no costume box covers its text or pictures, every link is clickable, and Un-haunt leaves it as it was. Look at the shots, fix what they show, and record the date and what was seen in `docs/real-site.json` or a note in the commit. This is a docs and review tool, not one of the checks.
+  - Req: 101
+  - Test: a look at each page haunted; the e2e check of 14.8 passes on the fixtures.
+
+- [ ] 14.10 Update the docs for the rule: `README.md` (the Themes section and the nps.gov and cdc.gov stills and alt text: the tile is the page's background, the tint is the body's background, the 960px cell, dark blocks and photos are not painted, the footer hides while a page pins its body), `design/DESIGN.md` (the same, and the layer table), re-make the README shots with `bun run docs:screenshots`, re-film the real-site GIF and stills with `bun run docs:realsite`, and regenerate the visual baselines with `bun run visual:baselines`.
+  - Req: 53, 82, 83 to 98
+  - Test: `test/design.test.ts` and `test/project.test.ts` still pass; `bun run docs:realsite` exits 0 and `docs/real-site.json` records the run; `bun run test:visual` exits 0.
+
+- [ ] 14.11 Run `bun run docker:test` once, with the unit, e2e and visual checks of this group.
+  - Req: 54
+  - Test: exits 0.
