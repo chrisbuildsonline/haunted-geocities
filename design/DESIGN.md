@@ -44,7 +44,8 @@ Layers, bottom to top:
 | 4 | Top bands: neighborhood bar + marquee | bar links `auto` | 24px + 24px |
 | 5 | Ghost icon (`#show-tab`), bottom-right, with the findings strip (`#findings`) beside it | icon `auto`, strip `none` | The only fixed cluster at the bottom; the icon jumps to the footer graveyard |
 | 6 | Cards | `auto` | One open at a time |
-| 7 | Haunt-moment FX | none | Exists only during the transition |
+| 7 | Haunt-moment FX; the cursor trail (`#trail`) | none | FX exist only during the transition; no trail under reduced motion |
+| (doc) | Welcome banner (`#welcome`) | none | Absolute under the bands, scrolls with the page; under `#crypt-root` (see "Themes") |
 
 ### Pixel-art grid
 
@@ -273,6 +274,37 @@ All overlay text meets 4.5:1:
 - `#000000`/`#cccccc` is 13.1:1.
 - `#ffffcc`/`#660000` is 13:1.
 - `#ffffcc`/`#330066` is 15.3:1.
+
+### Themes (a seeded look per site)
+
+Every site wears its own 1998 homepage, and the same one on every page and reload (`src/content/costume/themes.ts`, `theme-art.ts`, `theme-css.ts`).
+
+- **Seed:** the hostname, lower-cased, with one leading `www.` dropped (`www.nps.gov` is `nps.gov`). FNV-1a (32 bit) feeds a mulberry32 PRNG. The first draw picks one of 22 named presets; the next draws swap 2 or 3 of its axes for other options.
+- **Presets:** each is a coherent site, for example Flame Skull Shrine, Cloud Angel Page, Matrix Hacker Den, Under Construction Zone, Spiderweb Attic, Bubblegum Heart Club, UFO Crash Site and Classic Crypt. The preset order is part of the seed.
+- **Axes:**
+
+| Axis | Options |
+|------|---------|
+| Tile (gutters, bands, banner, edge frame, footer) | stars, flames, bricks, clouds, matrix, slime, checker, spiderweb, hearts, planets: 64×64 pixel art in the palette's ground and three inks |
+| Palette | crypt, inferno, toxic, sky, matrix, bubblegum, midnight, construction, teal |
+| Fonts | 1990s core web fonts: Times/Comic, Comic, Arial/Impact, Courier New, Verdana/Arial Black, Georgia/Times |
+| Heading style | comic, WordArt (hard text-shadow), banded rainbow fill, glow outline, blinking `h1` (five blinks, then still) |
+| Divider (`hr` and under the banner) | flames, skulls, construction tape, rainbow, slime drips |
+| Sprites (banner and footer) | skull and bat, worker and cone, mailbox and envelope, UFO and alien, globe and computer, heart and cat: 16×16 at 3px, spin, flap, bob, wiggle, pulse or hop, one frame per step |
+| Bevel (guestbook frame, banner, images in `main`/`article`) | ridge, outset, inset, double |
+| Banner wording | 8, e.g. `Welcome to my homepage!!!`, `Enter if you dare!!!` |
+| Counter | odometer digits green, red, amber, or white on navy |
+| Cursor trail | stars, sparkles, bats, hearts, fire |
+| Layout quirk | centred table, left nav frame, right nav frame (drawn on a gutter only; nothing on the page moves) |
+
+- **Clash rules:** flames and matrix tiles need a near-black ground; clouds need a sky-light ground; rainbow headings need every stop at 4.5:1 on the tint; no pink checkerboard; the matrix tile is only green. The seed never picks a blocked combination (`clashes` in `themes.ts`).
+- **Classic Crypt is locked:** it keeps this costume's page look exactly (starfield, parchment, Times/Comic, blue links, ridge frame); only its divider, sprites, banner, counter and trail vary. The e2e fixture host `127.0.0.1` wears it.
+- **Banner (`#welcome`):** a shadow-root sibling of `#crypt-root`, absolute in document coordinates right under the bands, so it scrolls with the page. 72px (56px under 480px wide, sprites hidden): the tile, a bevelled plaque with the WordArt title (24px heading font, `title` on `plaque`, a 2px shadow and a 1px black one), a blinking `NEW!` and `Last updated 10/31/1998`, and a 16px divider. The page sheet adds its height to the body's top padding (`--hg-welcome`). `aria-hidden`, no pointer events.
+- **Tint:** the column's tint is the palette's pale `tint` with white pixel shapes from the tile (white leaves the page as it is, so the darkest colour under text is the tint). Classic Crypt keeps plain parchment.
+- **Contrast:** every palette's bar text, marquee and banner title on the plaque, and its links on the tint reach 4.5:1; link colours still move to the nearest web-safe colour that does. Rainbow stops are `#990000 #993300 #006600 #003399 #0000cc #660099` and only fill headings whose own colour is dark and that draw no ground (measured, addressed by path). `test/costume/themes.test.ts` walks every preset times every single-axis variation.
+- **Motion:** sprites step at 1-2 Hz, `NEW!` blinks at 1 Hz, the trail spawns a glyph at most every 50ms, 12 at once, each falling 16px and fading in 700ms. Under reduced motion none of it moves and there is no trail.
+- **Cover:** the page-change cover takes the palette's plaque as its ground and `plaqueText` for its line (Classic Crypt keeps its own).
+- **Test marker:** the page sheet sets `--hg-theme: <preset id>` on `:root`. The e2e build alone reads `?hgtheme=<id>` to show a preset as designed, for the visual baselines.
 
 ## Popup
 

@@ -211,9 +211,12 @@ async function capture(slug: string, url: string, gif: boolean) {
     await scrollToEnd(page, 1500);
     await page.screenshot({ path: `${frames}/end-375.png` });
 
+    // The site's seeded look (design/DESIGN.md "Themes"): its preset id, from the page sheet's marker.
+    const look = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hg-theme").trim());
+    expect(look).not.toBe("");
     const found = Number(/^Trackers found: (\d+)$/.exec(parade.caption)?.[1]);
     expect(found).toBeGreaterThan(0);
-    return { trackersFound: found, parade: parade.companies, stillShows: still!.shows, stillClear };
+    return { look, trackersFound: found, parade: parade.companies, stillShows: still!.shows, stillClear };
   } finally {
     await context.close();
   }
@@ -228,6 +231,8 @@ test("the haunt on real public pages", async () => {
     pages.push({ page: url, still: `docs/real-site-caption-${slug}.png`, ...(i === 0 ? { gif: GIF } : {}), ...shot });
     console.log(`real-site: ${url} trackers found ${shot.trackersFound}: ${shot.parade.join(", ")}`);
   }
+  // every site wears its own look: the pages here must not share one
+  expect(new Set(pages.map((p) => p.look)).size).toBe(pages.length);
   writeFileSync("docs/real-site.json", JSON.stringify({ captured, pages }, null, 2) + "\n");
   console.log(`real-site: ${GIF} ${statSync(GIF).size} bytes`);
 });

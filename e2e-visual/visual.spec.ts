@@ -124,6 +124,25 @@ function hauntParade(width: number) {
   });
 }
 
+// A handful of seeded looks (design/DESIGN.md "Themes"), each forced as designed with ?hgtheme= (e2e build only).
+// The costume-* shots above are the fixture host's own look, Classic Crypt.
+const LOOKS = [["flame-skull", [1280, 375]], ["cloud-angel", [1280, 375]], ["matrix-den", [1280]], ["construction-zone", [1280]]] as const;
+for (const [preset, widths] of LOOKS) {
+  for (const width of widths) {
+    test(`look ${preset} @${width}`, async ({ context, sw, extensionId }) => {
+      const page = await context.newPage();
+      await prepare(page, width);
+      await page.goto(visualUrl(`article.html?hgtheme=${preset}`));
+      await hauntThroughPopup(context, sw, extensionId, page);
+      await page.bringToFront();
+      await waitForHaunted(page);
+      expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hg-theme").trim())).toBe(preset);
+      await page.mouse.move(0, 0);
+      await expect(page).toHaveScreenshot(`look-${preset}-${width}.png`);
+    });
+  }
+}
+
 for (const width of WIDTHS) {
   for (const name of FIXTURES) {
     test(`costume ${name} @${width}`, async ({ context, sw, extensionId }) => {

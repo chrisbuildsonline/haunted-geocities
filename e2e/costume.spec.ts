@@ -153,7 +153,7 @@ for (const width of [1280, 375]) {
   });
 }
 
-test("body padding grows on haunt for the bands only, the ghost icon lifts over a fixed cookie bar, all restored on un-haunt", async ({ context, sw }) => {
+test("body padding grows on haunt for the bands and the welcome banner, the ghost icon lifts over a fixed cookie bar, all restored on un-haunt", async ({ context, sw }) => {
   const page = await context.newPage();
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(fixture("column.html"));
@@ -170,7 +170,8 @@ test("body padding grows on haunt for the bands only, the ghost icon lifts over 
   const cookieTop = await page.evaluate(() => document.querySelector(".cookie")!.getBoundingClientRect().top);
   expect(icon).toBe(cookieTop - 8); // the ghost icon is lifted above the cookie bar
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--hg-lift").trim())).toBe("56px");
-  expect(await pad()).toEqual(["72px", "0px"]); // the footer is in flow: nothing pads the page's end
+  // 24 + the 48px bands + the 72px welcome banner; the footer is in flow: nothing pads the page's end
+  expect(await pad()).toEqual(["144px", "0px"]);
 
   await unhaunt(sw, tabId);
   await expect(page.locator("hg-crypt")).toHaveCount(0);

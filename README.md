@@ -6,7 +6,7 @@ A pre-period prototype exists outside the entry and was rebuilt from lessons, no
 
 [![CI](https://github.com/chrisbuildsonline/haunted-geocities/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisbuildsonline/haunted-geocities/actions/workflows/ci.yml)
 
-A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page itself turns 1998: Times New Roman text, Comic Sans headings, blue underlined links and a parchment column in a ridged guestbook frame, under a night sky, a heads-up display and a marquee. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
+A Chrome extension (Manifest V3) that turns the page you are on into a 1998 GeoCities crypt. Click **Haunt** and the page itself turns 1998, and every site gets its own look: a tiled background (flames, bricks, clouds, green code rain, slime, starfield), a welcome banner with pixel sprites, old web fonts, WordArt or rainbow headings, a tinted column in a bevelled frame, a marquee and a cursor trail. Click **Un-haunt** and the page is put back as it was. It is an entry in Kiroween 2026, Costume Contest.
 
 The GIF at the top is a real page, not a fixture: the shipping build on the live National Park Service home page (`https://www.nps.gov/index.htm`) over the real network, made on 2026-11-27 by `bun run docs:realsite`. Playwright cannot click the toolbar icon, so the run gives the extension a host permission for that one site in place of the click, then presses **Haunt page** in the popup (the run answers no to the site prompt, so it haunts that one page). The parade carries the trackers the page really loaded, and the caption reads `Trackers found: 4` while their four name tags are still on screen ([still](docs/real-site-caption-nps.png)). The same run on the CDC home page (`https://www.cdc.gov/`) shows `Trackers found: 3` ([still](docs/real-site-caption-cdc.png)). Both are US government pages, public-domain works, and the extension has no link to either agency. The record of the run is [`docs/real-site.json`](docs/real-site.json). Live pages change, so this run is a docs tool and not one of the checks. Every other shot and GIF in this README, and the opening of the demo video, uses the fixture pages in `fixtures/`, small made-up sites served locally (with real tracker domains pointed at the local server), not real sites.
 
@@ -39,6 +39,14 @@ The GIF at the top is a real page, not a fixture: the shipping build on the live
 ![CURSED! badges on the coffee shop fixture, with one curse card open](docs/screenshots/curses.png)
 
 ![The neighborhood bar at the top of a haunted page, with its address and tagline](docs/screenshots/neighborhood.png)
+
+## Themes
+
+Each site wears its own 1998 homepage. The host name, with `www.` dropped, seeds a small random number generator (FNV-1a into mulberry32), so a site looks the same on every page and every reload, and two sites almost never match.
+
+The seed picks one of 22 named presets, such as Flame Skull Shrine, Cloud Angel Page, Matrix Hacker Den or Under Construction Zone, then swaps two or three of its parts for others: the palette, the `<hr>` divider (flames, skulls, construction tape, rainbow, slime), the sprite pair in the banner and footer (spinning skull, flapping bat, construction worker, mailbox, UFO, globe and more), the frame bevel, the banner wording, the hit counter colours, the cursor trail and a nav-frame side panel. A short list of rules keeps out pairs that clash, like flames on a pink ground, and a unit test walks every preset with every swap and checks the text contrast. Classic Crypt keeps the original starfield and parchment look.
+
+Two real pages from the same run: nps.gov ([still](docs/real-site-caption-nps.png)) and cdc.gov ([still](docs/real-site-caption-cdc.png)) get different looks. The e2e build alone accepts `?hgtheme=<preset>` in the page address, so the visual tests can show a chosen preset.
 
 ## Secrets
 
