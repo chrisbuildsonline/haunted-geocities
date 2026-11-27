@@ -93,6 +93,19 @@ test("card opened from a footer sprite stays 8px inside the viewport", () => {
   }
 });
 
+test("the footer is hidden while the body is pinned and shown again when it is back in flow", async () => {
+  const { doc, root, resize } = haunted(1280, WIDE);
+  const footer = byId(root, "crypt-footer")!;
+  expect(footer.classList.contains("page-locked")).toBe(false);
+  // a cookie wall's scroll lock pins the body
+  doc.body.style.position = "fixed";
+  await resize(1280, WIDE);
+  expect(footer.classList.contains("page-locked")).toBe(true);
+  doc.body.style.position = "";
+  await resize(1280, WIDE);
+  expect(footer.classList.contains("page-locked")).toBe(false);
+});
+
 const rule = (css: string, sel: string) => css.match(new RegExp(`${sel}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 
 test("column is recomputed after restyle", () => {
