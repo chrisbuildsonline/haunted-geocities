@@ -8,8 +8,12 @@
 import { CHROME, ensureContrast, parseColour, relativeLuminance } from "./page-theme";
 import { HARD_SHADOW, LAYOUT as L, PAGE, PALETTE as P } from "./tokens";
 
-/** A dark block: its path, whether its own colour is swapped for the crypt (no picture), and its button links. */
-export type DarkBlock = { path: string; ground: boolean; keep: string[] };
+/**
+ * A dark block: its path, whether its own colour is swapped for the crypt (no picture), and its button links.
+ * `photo`: the box holding the light text set straight on a photo (cdc.gov's slide title and button), framed
+ * outside its box so the text gets a crypt margin without anything moving.
+ */
+export type DarkBlock = { path: string; ground: boolean; keep: string[]; photo?: boolean };
 /** A band: light text with links on a dark ground too small to be a block; `on` is the colour its links are checked on. */
 export type Band = { path: string; on: string; keep: string[] };
 /**
@@ -18,7 +22,8 @@ export type Band = { path: string; on: string; keep: string[] };
  * the widths that show all of it (`width`, measured).
  */
 export type SearchField = { path: string; input: boolean; width?: number; label?: { path: string; width: number } };
-export type Blocks = { dark: DarkBlock[]; bands: Band[]; search: SearchField[] };
+/** `outline`: outline buttons (no ground, a visible border, light text) on a dark ground, which become raised 1998 buttons. */
+export type Blocks = { dark: DarkBlock[]; bands: Band[]; search: SearchField[]; outline: string[] };
 
 /** A hero block is at least this big; smaller dark boxes (buttons, badges, top bars) stay as they are. */
 const MIN_W = 240;
@@ -74,24 +79,74 @@ const isChrome = (el: Element) =>
 const NOT_BLOCK = /^(a|button|input|textarea|img|code|pre)$/;
 
 const hasGround = (cs: CSSStyleDeclaration) => (parseColour(cs.backgroundColor)?.alpha ?? 0) > 0 || (!!cs.backgroundImage && cs.backgroundImage !== "none");
+const isLight = (colour: string) => {
+  const c = parseColour(colour);
+  return !!c && relativeLuminance(c.hex) >= L.darkLuminance;
+};
+/** A link or button drawn as an outline: no ground, a visible border, light text (cdc.gov's "Learn More"). */
+const isOutline = (cs: CSSStyleDeclaration) =>
+  !hasGround(cs) && (parseFloat(cs.borderTopWidth) || 0) >= 1 && !/^(none|hidden)$/.test(cs.borderTopStyle) && (parseColour(cs.borderTopColor)?.alpha ?? 0) > 0 && isLight(cs.color);
+
+/** A picture fills this much of a box (an <img> child), or more: the box is a photo, its ground dark as a background picture's is. */
+const PHOTO_FILL = 0.9;
+/** The text panel on a photo covers at most this much of it, so the photo still shows. */
+const PANEL_SHARE = 0.6;
+const area = (r: DOMRect) => r.width * r.height;
 
 /** The search boxes and, on a light page, the dark blocks and bands, in document order. */
 export function findBlocks(doc: Document, opts: { darkPage?: boolean } = {}): Blocks {
   const win = doc.defaultView!;
   const style = (el: Element) => win.getComputedStyle(el);
   const textLinks = (el: Element) => [...el.querySelectorAll("a[href]")];
-  const buttonLinks = (el: Element) => textLinks(el).filter((a) => hasGround(style(a))).map(cssPath);
+  const buttonLinks = (el: Element) =>
+    textLinks(el)
+      .filter((a) => hasGround(style(a)) || isOutline(style(a)))
+      .map(cssPath);
+  const big = (r: DOMRect) => r.width >= MIN_W && r.height >= MIN_H;
+  // A photo: a box of a block's size that an <img> (or <picture>) child fills.
+  const isPhoto = (el: Element) => {
+    const pic = [...el.children].find((c) => /^(img|picture)$/.test(c.localName));
+    const box = el.getBoundingClientRect();
+    return !!pic && big(box) && area(pic.getBoundingClientRect()) >= PHOTO_FILL * area(box);
+  };
+  // The box holding all the light text set straight on a photo: the smallest that is not a link or a control,
+  // is a block's size, and leaves most of the photo showing. Site chrome inside the photo does not count.
+  const textPanel = (photo: Element): Element | null => {
+    const inChrome = (e: Element) => {
+      for (let a: Element | null = e; a && a !== photo; a = a.parentElement) if (isChrome(a)) return true;
+      return false;
+    };
+    const lit = [...photo.querySelectorAll("*")].filter((e) => {
+      if (![...e.childNodes].some((n) => n.nodeType === 3 && n.nodeValue?.trim()) || inChrome(e)) return false;
+      const r = e.getBoundingClientRect();
+      return r.width > 1 && r.height > 1 && isLight(style(e).color);
+    });
+    let box: Element | null = lit[0] ?? null;
+    while (box && box !== photo && !lit.every((e) => box!.contains(e))) box = box.parentElement;
+    while (box && box !== photo && (NOT_BLOCK.test(box.localName) || !big(box.getBoundingClientRect()))) box = box.parentElement;
+    return box && box !== photo && area(box.getBoundingClientRect()) <= PANEL_SHARE * area(photo.getBoundingClientRect()) ? box : null;
+  };
   const dark: DarkBlock[] = [];
   const bands: Band[] = [];
+  const outline: string[] = [];
+  const panels = new Set<Element>();
   // `under` is the ground showing through behind `parent`'s children; `covered` once a block or band holds them.
   const visit = (parent: Element, under: Ground | null, covered: boolean) => {
     for (const el of parent.children) {
       if (dark.length >= MAX_BLOCKS || isChrome(el)) continue;
       const cs = style(el);
       if (cs.display === "none" || cs.position === "fixed" || cs.position === "sticky") continue;
-      const ground = groundOf(cs.backgroundColor, cs.backgroundImage) ?? under;
-      let holds = covered;
-      if (!NOT_BLOCK.test(el.localName) && isDarkBlock({ color: cs.color, background: cs.backgroundColor, image: cs.backgroundImage })) {
+      const photo = !NOT_BLOCK.test(el.localName) && isPhoto(el);
+      const ground = panels.has(el) ? { dark: true, on: P.crypt } : (groundOf(cs.backgroundColor, cs.backgroundImage) ?? (photo ? { dark: true, on: P.crypt } : under));
+      let holds = covered || panels.has(el);
+      const panel = photo && !covered ? textPanel(el) : null;
+      if (panel) {
+        panels.add(panel);
+        dark.push({ path: cssPath(panel), ground: true, keep: buttonLinks(panel), photo: true });
+      }
+      // An outline button on a dark ground: a raised 1998 button.
+      if (/^(a|button)$/.test(el.localName) && ground?.dark && outline.length < MAX_BLOCKS && isOutline(cs)) outline.push(cssPath(el));
+      if (!panels.has(el) && !NOT_BLOCK.test(el.localName) && isDarkBlock({ color: cs.color, background: cs.backgroundColor, image: cs.backgroundImage })) {
         const r = el.getBoundingClientRect();
         if (r.width >= MIN_W && r.height >= MIN_H) {
           dark.push({ path: cssPath(el), ground: !cs.backgroundImage || cs.backgroundImage === "none", keep: buttonLinks(el) });
@@ -148,7 +203,7 @@ export function findBlocks(doc: Document, opts: { darkPage?: boolean } = {}): Bl
       search.push({ path, input: false, width: width + Math.max(0, Math.round(field.getBoundingClientRect().width - r.width)), label: { path: cssPath(box), width } });
     }
   }
-  return { dark, bands, search };
+  return { dark, bands, search, outline };
 }
 
 /** The HUD's frame drawn inside the block (box-shadow only, so nothing moves): 1px line, 2px bevel, hard shadow. */
@@ -156,11 +211,25 @@ const CRYPT_BEVEL = `inset 0 0 0 1px ${P.ink}, inset 3px 3px 0 ${P.hudBevelLight
 /** A sunken 1998 field in web-safe greys: dark top-left, light bottom-right. */
 const SUNKEN = `inset 1px 1px 0 ${P.stoneShadow}, inset 2px 2px 0 ${P.ink}, inset -1px -1px 0 ${P.ghostWhite}, inset -2px -2px 0 ${P.stone}`;
 
+/**
+ * The same crypt window drawn outside a text panel on a photo (box-shadow spreads, so nothing moves): 12px of
+ * crypt round the text, a 3px bevel (light top-left, dark bottom-right), a 1px line and the hard shadow.
+ */
+const PANEL_FRAME = `0 0 0 12px ${P.crypt}, -3px -3px 0 12px ${P.hudBevelLight}, 3px 3px 0 12px ${P.bevelDark}, 0 0 0 15px ${P.bevelDark}, 0 0 0 16px ${P.ink}, 4px 4px 0 16px ${P.ink}`;
+/**
+ * A raised 1998 button in the crypt's colours: the border keeps its width, only its colours and corners change.
+ * Its violet face is an inset shadow, not a ground, so measured again with its costume on (and hovered, where
+ * the page would light its ground) it is still an outline button, still costumed.
+ */
+const RAISED = `border-radius: 0 !important; border-style: solid !important; border-color: ${P.hudBevelLight} ${P.bevelDark} ${P.bevelDark} ${P.hudBevelLight} !important; background-color: transparent !important; background-image: none !important; color: ${P.bone} !important; box-shadow: inset 0 0 0 999px ${P.cryptViolet}, 2px 2px 0 ${P.ink} !important;`;
+
 export function blocksCss(b: Blocks): string {
   const out: string[] = [];
   for (const d of b.dark) {
-    out.push(`${d.path} { border-radius: 0 !important; box-shadow: ${CRYPT_BEVEL} !important;${d.ground ? ` background-color: ${P.crypt} !important;` : ""} }`);
+    if (d.photo) out.push(`${d.path} { border-radius: 0 !important; background-color: ${P.crypt} !important; box-shadow: ${PANEL_FRAME} !important; }`);
+    else out.push(`${d.path} { border-radius: 0 !important; box-shadow: ${CRYPT_BEVEL} !important;${d.ground ? ` background-color: ${P.crypt} !important;` : ""} }`);
   }
+  for (const o of b.outline) out.push(`${o} { ${RAISED} }`);
   // The dark page's link colours, checked on the crypt in a dark block and on a band's lightest colour;
   // button links and site chrome keep theirs.
   const links = (boxes: { path: string; keep: string[] }[], on: string) => {

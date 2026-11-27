@@ -8,7 +8,7 @@
     <style>
       /* A made-up photo-heavy page, shaped like a big public site: a dark top bar with a pill search box,
          a bar with an "ask" search launcher, a full-width photo hero with a dark translucent text panel, a
-         black "find a park" band, a gradient strip of slide titles, then a tall light page. Full width, so no gutter is 64px wide at any size and the graveyard strip docks. */
+         black "find a park" band, a photo slide with its title and an outline button straight on the picture, a gradient strip of slide titles, then a tall light page. Full width, so no gutter is 64px wide at any size and the graveyard strip docks. */
       body { margin: 0; font: 16px/1.6 system-ui, sans-serif; color: #222; background: #ffffff; }
       .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; background: #000000; color: #ffffff; }
       .brand { font-weight: 700; }
@@ -28,6 +28,17 @@
       .ask { width: 160px; height: 44px; border-radius: 40px; overflow: hidden; background: rgba(255, 255, 255, 0.12); }
       .ask-launch { display: flex; align-items: center; gap: 8px; width: 100%; height: 100%; padding: 0 20px 0 12px; border: 0; background: transparent; color: #ffffff; font: 600 16px system-ui, sans-serif; }
       .ask-label { white-space: nowrap; }
+      /* A photo slide like cdc.gov's: an <img> fills the slide under a gradient overlay (::before), and the
+         title and an outline "Learn More" button sit straight on the photo in a column; no box has a ground. */
+      .photo-item { position: relative; display: flex; height: 360px; overflow: hidden; }
+      .photo-item::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(103, 35, 99, 0.4) 0px, rgba(0, 87, 183, 0.9) 55%, rgb(0, 129, 161) 100%); }
+      img.photo-img { width: 100%; height: 100%; object-fit: cover; }
+      .photo-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+      .photo-col { position: relative; box-sizing: border-box; width: 440px; max-width: calc(100% - 48px); margin: 72px 64px 0 auto; padding: 0 20px; color: #1c1d1f; }
+      .btn-outline-light:hover { background: #f8f9fa; color: #000000; }
+      @media (max-width: 480px) { .photo-col { margin: 72px 24px 0 auto; } }
+      .photo-title { display: block; margin-bottom: 16px; color: #ffffff; font: 40px/1.3 Georgia, serif; }
+      .btn-outline-light { display: inline-block; padding: 8px 16px; border: 2px solid #f8f9fa; border-radius: 13.5px 0; background: transparent; color: #ffffff; font-weight: 700; text-decoration: none; }
       /* A strip of slide titles like cdc.gov's: white links on a dark gradient band only 80px tall. */
       .slides { display: flex; height: 80px; background-image: linear-gradient(90deg, rgb(76, 43, 100) 0px, rgb(76, 43, 100) 12%, rgb(0, 94, 162) 51%, rgb(0, 129, 161) 98%); }
       .slide { flex: 1; display: flex; align-items: center; padding: 10px 18px; color: #ffffff; }
@@ -71,6 +82,16 @@
       <h2>Find a Park</h2>
       <p>Browse <a id="find-link" href="/index.html">every park by county</a> or by activity.</p>
     </section>
+
+    <div class="photo-item" id="photo-item">
+      <img class="photo-img" id="photo-img" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Crect width='16' height='8' fill='%23887766'/%3E%3Crect x='2' y='1' width='6' height='4' fill='%23ccbbaa'/%3E%3Crect x='9' y='3' width='5' height='5' fill='%23554433'/%3E%3C/svg%3E" />
+      <div class="photo-over">
+        <div class="photo-col" id="photo-col">
+          <span class="photo-title" id="photo-title">Snow Safety Summary</span>
+          <a class="btn btn-outline-light" id="learn" href="/index.html">Learn More</a>
+        </div>
+      </div>
+    </div>
 
     <div class="slides" id="slides">
       <span class="slide"><a id="slide-link" href="/index.html">Winter Road Closures</a></span>

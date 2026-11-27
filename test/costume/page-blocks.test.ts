@@ -153,8 +153,100 @@ describe("findBlocks", () => {
   });
 });
 
+// A photo hero like cdc.gov's: an <img> fills the slide (under a gradient overlay), and the title and an
+// outline "Learn More" button sit straight on the photo in a column; no box draws a ground of its own.
+const PHOTO = `<!doctype html><html><head><title>t</title></head><body style="background:#ffffff;color:#222222">
+<div id="carousel"><div id="item" style="position:relative">
+  <img id="photo" alt="" src="data:,">
+  <div id="over" style="position:absolute"><div id="row"><div id="col" style="color:#1c1d1f">
+    <span id="title" style="color:#ffffff">Ebola Situation Summary</span>
+    <a id="learn" href="/e" style="color:#ffffff;background-color:rgba(0, 0, 0, 0);border:2px solid #f8f9fa;border-radius:13.5px 0">Learn More</a>
+    <a id="more" href="/m" style="color:#ffffff">All stories</a>
+  </div></div></div>
+</div></div>
+<section id="card"><img id="thumb" alt="" src="data:,"><p>A dark caption on a picture card: no panel</p></section>
+<section id="full"><img id="full-photo" alt="" src="data:,"><div id="cover" style="position:absolute;color:#ffffff"><p>Light text over the whole picture</p></div></section>
+<main><p><a id="plain-outline" href="/x" style="color:#0000ff;border:1px solid #000000;border-radius:4px">An outlined link on the light page</a></p></main>
+</body></html>`;
+
+/** happy-dom has no layout: the cdc.gov hero's measured boxes (1280px wide), everything else 1280×40. */
+function sizedPhoto(win: { Element: { prototype: object } }) {
+  const proto = win.Element.prototype as { getBoundingClientRect(this: Element): DOMRect };
+  const at: Record<string, [number, number, number, number]> = {
+    carousel: [0, 37, 1280, 578], item: [0, 37, 1280, 578], photo: [0, 37, 1280, 578], over: [0, 37, 1280, 578],
+    row: [70, 237, 1140, 200], col: [735, 237, 475, 200], title: [749, 237, 448, 144], learn: [749, 394, 135, 43], more: [900, 394, 90, 20],
+    card: [0, 700, 600, 300], thumb: [0, 700, 600, 280], full: [0, 1000, 1280, 400], "full-photo": [0, 1000, 1280, 400], cover: [0, 1000, 1280, 400],
+  };
+  proto.getBoundingClientRect = function (this: Element) {
+    const [left, top, w, h] = at[this.id] ?? [0, 0, 1280, 40];
+    return domRect({ left, top, right: left + w, bottom: top + h });
+  };
+}
+
+describe("photo heroes (cdc.gov)", () => {
+  test("light text straight on a picture that fills its box: the smallest box holding all of it (240×96 or more, a part of the picture) becomes a crypt panel; an outline button on it is noted", () => {
+    const { win, doc } = setup({ html: PHOTO });
+    sizedPhoto(win);
+    const b = findBlocks(doc);
+    const id = (p: string) => doc.querySelector(p)!.id;
+    expect(b.dark.map((d) => [id(d.path), d.ground, !!d.photo, d.keep.map(id)])).toEqual([["col", true, true, ["learn"]]]);
+    // the outline button (no ground of its own, a visible border, light text on the dark picture) is noted;
+    // an outlined link on the light page is not
+    expect(b.outline.map(id)).toEqual(["learn"]);
+    // a picture card with dark text gets nothing, and light text over the whole picture is no panel (it would hide the photo)
+    expect(b.dark.map((d) => id(d.path))).not.toContain("card");
+    expect(b.dark.map((d) => id(d.path))).not.toContain("cover");
+  });
+
+  test("measured again with its costume on, the panel and the outline button are found the same (no flip back on a relayout)", () => {
+    const html = PHOTO.replace(
+      'style="color:#ffffff;background-color:rgba(0, 0, 0, 0);border:2px solid #f8f9fa;border-radius:13.5px 0"',
+      `style="color:${P.bone};background-color:transparent;background-image:none;border:2px solid ${P.hudBevelLight};border-radius:0;box-shadow:inset 0 0 0 999px ${P.cryptViolet}"`,
+    ).replace('id="col" style="color:#1c1d1f"', `id="col" style="color:#1c1d1f;background-color:${P.crypt}"`);
+    expect(html).not.toBe(PHOTO);
+    const { win, doc } = setup({ html });
+    sizedPhoto(win);
+    const b = findBlocks(doc);
+    const id = (p: string) => doc.querySelector(p)!.id;
+    expect(b.dark.map((d) => [id(d.path), !!d.photo])).toEqual([["col", true]]);
+    expect(b.outline.map(id)).toEqual(["learn"]);
+  });
+
+  test("on a dark page nothing on a photo is a panel or an outline button", () => {
+    const { win, doc } = setup({ html: PHOTO });
+    sizedPhoto(win);
+    expect(findBlocks(doc, { darkPage: true })).toMatchObject({ dark: [], outline: [] });
+  });
+
+  test("css: the panel is a crypt window drawn round its text, outside its box (nothing moves); the outline button a raised 1998 button", () => {
+    const css = blocksCss({ dark: [{ path: "body > :nth-child(1)", ground: true, keep: [], photo: true }], bands: [], search: [], outline: ["body > :nth-child(2)"] });
+    const panel = css.match(/(?:^|\n)body > :nth-child\(1\) \{([^}]*)\}/)![1]!;
+    expect(panel).toContain("border-radius: 0 !important");
+    expect(panel).toContain(`background-color: ${P.crypt} !important`);
+    // 12px of crypt ground round the text, a 3px bevel, a 1px line and the hard shadow, all outside the box
+    expect(panel).toContain(
+      `box-shadow: 0 0 0 12px ${P.crypt}, -3px -3px 0 12px ${P.hudBevelLight}, 3px 3px 0 12px ${P.bevelDark}, 0 0 0 15px ${P.bevelDark}, 0 0 0 16px ${P.ink}, 4px 4px 0 16px ${P.ink} !important`,
+    );
+    expect(panel).not.toMatch(/inset|padding|margin|width/);
+    // its text links take the dark page's colours, as in a dark block
+    expect(css).toContain(`:is(body > :nth-child(1)) a:link`);
+    const button = css.match(/(?:^|\n)body > :nth-child\(2\) \{([^}]*)\}/)![1]!;
+    for (const d of [
+      "border-radius: 0 !important", "border-style: solid !important", `border-color: ${P.hudBevelLight} ${P.bevelDark} ${P.bevelDark} ${P.hudBevelLight} !important`,
+      // its violet face is an inset shadow over no ground, so it still reads as an outline button when measured again
+      "background-color: transparent !important", "background-image: none !important", `color: ${P.bone} !important`, `box-shadow: inset 0 0 0 999px ${P.cryptViolet}, 2px 2px 0 ${P.ink} !important`,
+    ]) {
+      expect({ d, ok: button.includes(d) }).toEqual({ d, ok: true });
+    }
+    // its border keeps its width, so nothing moves; bone on the violet reads
+    expect(button).not.toMatch(/border-width|padding|margin/);
+    expect(contrastRatio(P.bone, P.cryptViolet)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe("blocksCss", () => {
   const blocks: Blocks = {
+    outline: [],
     dark: [
       { path: "body > :nth-child(3)", ground: false, keep: [] },
       { path: "body > :nth-child(3) > :nth-child(1)", ground: true, keep: ["body > :nth-child(3) > :nth-child(1) > :nth-child(2)"] },
@@ -229,7 +321,7 @@ describe("blocksCss", () => {
   });
 
   test("nothing found draws nothing", () => {
-    expect(blocksCss({ dark: [], bands: [], search: [] })).toBe("");
+    expect(blocksCss({ dark: [], bands: [], search: [], outline: [] })).toBe("");
   });
 
   test("the page sheet carries the block rules and drops them with the haunt", () => {
