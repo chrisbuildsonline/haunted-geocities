@@ -35,12 +35,12 @@ const MOVES = `
 @keyframes hg-blink { 50% { visibility: hidden; } }
 @keyframes hg-trail { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(16px); } }`;
 const MOVE_CSS: Record<string, string> = {
-  spin: "hg-spin 1200ms steps(4) infinite",
-  flap: "hg-flap 500ms steps(2) infinite",
-  bob: "hg-dbob 1000ms steps(2) infinite",
-  wiggle: "hg-wiggle 1000ms steps(2) infinite",
-  pulse: "hg-pulse 800ms steps(2) infinite",
-  hop: "hg-hop 1000ms steps(3) infinite",
+  spin: "hg-spin 1200ms steps(1) infinite",
+  flap: "hg-flap 500ms steps(1) infinite",
+  bob: "hg-dbob 1000ms steps(1) infinite",
+  wiggle: "hg-wiggle 1000ms steps(1) infinite",
+  pulse: "hg-pulse 800ms steps(1) infinite",
+  hop: "hg-hop 1000ms steps(1) infinite",
 };
 
 /** A decorative sprite: 48×48 pixel art that spins, flaps or bobs (nothing under reduced motion). */
@@ -108,6 +108,7 @@ export function lookShadowCss(l: Look): string {
     `.spark svg { display: block; }`,
     // The layout quirk: one gutter is a 1998 nav frame (a solid panel with a bevelled inner edge).
     frame && `#starfield .gutter.${frame} .fill { background: ${c.band}; box-shadow: inset ${frame === "left" ? "-" : ""}3px 0 0 ${c.bevelLight}, inset ${frame === "left" ? "-" : ""}6px 0 0 ${c.bevelDark}; }`,
+    frame && `#starfield .gutter.${frame} { opacity: 1; }`,
     frame && `#starfield .gutter.${frame} .fill::after { content: none; }`,
     frame && `#starfield .gutter.${frame} .edge { display: none; }`,
     MOVES,
