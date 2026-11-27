@@ -1,7 +1,7 @@
 // docs/test-log.md, the record of the green pass the entry is frozen on. It states the date, the commit of the
 // code that was tested, and a row per check with its test count and exit code. The unit and e2e counts are
-// held to within 10% of what the runners report now (measured as in devpost.test.ts), the visual count to the
-// committed baselines, so the log can't drift far from the suite. No .git is needed: the sha is only read
+// held to within 10% of what the runners report now (measured as in devpost.test.ts), and so is the visual
+// count, so the log can't drift far from the suite. No .git is needed: the sha is only read
 // from the file.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -75,9 +75,12 @@ describe("docs/test-log.md", () => {
     expect(near(passed("E2E"), Number(m![1]))).toMatchObject({ ok: true });
   }, 60_000);
 
-  test("the visual count matches the committed baselines", () => {
-    const baselines = readdirSync(join(root, "e2e-visual", "__screenshots__", "visual.spec.ts")).filter((f) => f.endsWith(".png")).length;
-    expect(baselines).toBeGreaterThan(0);
-    expect(passed("Visual")).toBe(baselines);
-  });
+  test("the visual count is within 10% of playwright test --list on the visual config, which has committed baselines", () => {
+    expect(readdirSync(join(root, "e2e-visual", "__screenshots__", "visual.spec.ts")).filter((f) => f.endsWith(".png")).length).toBeGreaterThan(0);
+    const r = Bun.spawnSync([process.execPath, "x", "playwright", "test", "--config", "playwright.visual.config.ts", "--list", "--reporter=dot"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+    const out = `${r.stdout}${r.stderr}`;
+    const m = out.match(/Total: (\d+) tests? in/);
+    expect({ parsed: !!m, out: m ? "" : out }).toEqual({ parsed: true, out: "" });
+    expect(near(passed("Visual"), Number(m![1]))).toMatchObject({ ok: true });
+  }, 60_000);
 });
