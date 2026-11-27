@@ -14,6 +14,12 @@ export type Geometry = { collapsed: boolean; main: Span | null; left: Span | nul
 
 /** Least room for the starfield (and the ghost lanes) on each side of the table. */
 export const SIDE_ROOM = 64;
+/**
+ * The least width the page's own body is held to. Real sites lay out for the viewport's width (their media
+ * queries see 1280, not the cell), so a narrower cell breaks them (Wikipedia's title wrapped a letter per
+ * line at 620px). The 1998 table is the frame and the columns round the page, never a squeeze of it.
+ */
+export const MIN_MAIN = 960;
 /** The body's own inline padding inside its cell, so text never touches a furniture column. */
 export const CELL_PAD = 16;
 
@@ -23,11 +29,12 @@ export const CELL_PAD = 16;
  */
 export function layoutGeometry(l: Look, vw: number): Geometry {
   const L = LAYOUTS[l.layout];
+  const main = Math.max(L.main, MIN_MAIN);
   for (const [left, right] of [[L.left, L.right], [L.left, 0], [0, 0]] as const) {
-    const total = left + L.main + right;
+    const total = left + main + right;
     if (vw < total + 2 * SIDE_ROOM) continue;
     const x0 = L.align === "center" ? Math.floor((vw - total) / 2) : SIDE_ROOM;
-    return { collapsed: false, left: left ? { x: x0, w: left } : null, main: { x: x0 + left, w: L.main }, right: right ? { x: x0 + left + L.main, w: right } : null };
+    return { collapsed: false, left: left ? { x: x0, w: left } : null, main: { x: x0 + left, w: main }, right: right ? { x: x0 + left + main, w: right } : null };
   }
   return { collapsed: true, main: null, left: null, right: null };
 }

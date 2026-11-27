@@ -6,17 +6,19 @@ import { FURNITURE, pickLook, type Look } from "../../src/content/costume/themes
 const look = (layout: Look["layout"], furniture: Look["furniture"] = []) => ({ ...pickLook("x.test", "flame-skull"), layout, furniture });
 
 describe("layoutGeometry", () => {
-  test("a centred three-column table at 1280", () => {
-    expect(layoutGeometry(look("links3"), 1280)).toEqual({ collapsed: false, left: { x: 190, w: 170 }, main: { x: 360, w: 560 }, right: { x: 920, w: 170 } });
+  test("a centred three-column table at 1600; the page's own cell is never under 960px", () => {
+    expect(layoutGeometry(look("links3"), 1600)).toEqual({ collapsed: false, left: { x: 150, w: 170 }, main: { x: 320, w: 960 }, right: { x: 1280, w: 170 } });
   });
 
   test("left760 keeps 64px of starfield on the left", () => {
-    expect(layoutGeometry(look("left760"), 1280)).toEqual({ collapsed: false, left: null, main: { x: 64, w: 760 }, right: null });
+    expect(layoutGeometry(look("left760"), 1280)).toEqual({ collapsed: false, left: null, main: { x: 64, w: 960 }, right: null });
   });
 
   test("too narrow: the right column goes first, then the left, then it collapses to one column", () => {
-    expect(layoutGeometry(look("links3"), 1000)).toMatchObject({ collapsed: false, left: { w: 170 }, right: null });
-    expect(layoutGeometry(look("links3"), 800)).toMatchObject({ collapsed: false, left: null, right: null, main: { w: 560 } });
+    expect(layoutGeometry(look("links3"), 1440)).toMatchObject({ collapsed: false, left: { w: 170 }, right: { w: 170 } });
+    expect(layoutGeometry(look("links3"), 1280)).toMatchObject({ collapsed: false, left: { w: 170 }, right: null });
+    expect(layoutGeometry(look("links3"), 1100)).toMatchObject({ collapsed: false, left: null, right: null, main: { w: 960 } });
+    expect(layoutGeometry(look("links3"), 1000)).toEqual({ collapsed: true, main: null, left: null, right: null });
     expect(layoutGeometry(look("links3"), 375)).toEqual({ collapsed: true, main: null, left: null, right: null });
   });
 
@@ -26,8 +28,8 @@ describe("layoutGeometry", () => {
 
   test("the body is held to its cell, with padding so text never touches a column", () => {
     const css = layoutCss(layoutGeometry(look("nav2"), 1280));
-    expect(css).toContain("max-width: 620px !important;");
-    expect(css).toContain("margin-left: 420px !important;");
+    expect(css).toContain("max-width: 960px !important;");
+    expect(css).toContain("margin-left: 250px !important;");
     expect(css).toContain("padding-left: 16px !important; padding-right: 16px !important; }");
     // nothing of the page is clipped
     expect(css).not.toContain("overflow");
@@ -37,7 +39,7 @@ describe("layoutGeometry", () => {
 describe("placeFurniture", () => {
   test("every piece goes somewhere; nav buttons head the left column; Cool Links and awards prefer the right", () => {
     const all = FURNITURE.filter((f) => f !== "tabbar");
-    const at = placeFurniture(["awards", "navbuttons", ...all.filter((f) => f !== "awards" && f !== "navbuttons")], layoutGeometry(look("links3"), 1280));
+    const at = placeFurniture(["awards", "navbuttons", ...all.filter((f) => f !== "awards" && f !== "navbuttons")], layoutGeometry(look("links3"), 1600));
     expect(at.left[0]).toBe("navbuttons");
     expect(at.right).toContain("awards");
     expect(at.right).toContain("coollinks");

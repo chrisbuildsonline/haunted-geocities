@@ -98,12 +98,12 @@ const rule = (css: string, sel: string) => css.match(new RegExp(`${sel}\\s*\\{([
 test("column is recomputed after restyle", () => {
   const { win, doc } = setup();
   // Times New Roman sets the column wider than the page's own font did.
-  // (text wider than the look's 800px table, 240-1040 at 1280, pushes the column out past it)
+  // (text wider than the look's 960px table, 160-1120 at 1280, pushes the column out past it on the left)
   stubMain(win, () => (pageCss(doc).includes("Times New Roman") ? { left: 150, right: 1100, top: 60, bottom: 700 } : { left: 500, right: 780, top: 60, bottom: 400 }));
   renderCostume(doc);
   const css = pageCss(doc);
   expect(rule(css, "html::after")).toContain("left: 140px");
-  expect(rule(css, "html::after")).toContain("width: 970px");
+  expect(rule(css, "html::after")).toContain("width: 990px");
 });
 
 test("375px page: full-overlay mode, guestbook frame hidden, tint (as the body's background) and restyle applied", () => {
@@ -128,9 +128,9 @@ test("1280px page: guestbook frame drawn, edge frame hidden", () => {
   const css = pageCss(doc);
   expect(css).toContain("html::after");
   expect(css).not.toContain("calc(0px + 12px)");
-  // the gutters (the look's 800px table at 240) stop short of the frame's outer line
+  // the gutters (the look's 960px table at 160) stop short of the frame's outer line
   const left = root.querySelector<HTMLElement>(".gutter.left")!;
-  expect(parseFloat(left.style.width)).toBe(240 - 11);
+  expect(parseFloat(left.style.width)).toBe(160 - 11);
 });
 
 test("costume host never intercepts pointer hits", () => {

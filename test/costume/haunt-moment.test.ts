@@ -558,11 +558,11 @@ test("clip-path reveal covers the frame (the tint is the body's own background, 
   expect(root.getElementById("starfield")!.contains(root.getElementById("edge-frame"))).toBe(true);
   const field = clip(root.getElementById("starfield")!);
   expect(field?.opts).toMatchObject({ delay: 700, duration: 900 });
-  // the frame gets the same wipe, shifted into its own box (round the look's 800px table: x=230)
+  // the frame gets the same wipe, shifted into its own box (round the look's 960px table: x=150)
   expect(clip(doc.documentElement, "::before")).toBeUndefined();
   const frame = clip(doc.documentElement, "::after");
   expect(frame?.opts).toMatchObject({ delay: 700, duration: 900, easing: field!.opts.easing });
-  expect(frame!.keyframes.map((k) => k.clipPath)).toEqual(["inset(-8px calc(100% - -80px + 230px) -8px -8px)", "inset(-8px calc(100% - (100vw - 16px) + 230px) -8px -8px)"]);
+  expect(frame!.keyframes.map((k) => k.clipPath)).toEqual(["inset(-8px calc(100% - -80px + 150px) -8px -8px)", "inset(-8px calc(100% - (100vw - 16px) + 150px) -8px -8px)"]);
 });
 
 test("graveyard slides with the HUD, no extra phase", async () => {
