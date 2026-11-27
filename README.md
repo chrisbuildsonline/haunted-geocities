@@ -48,7 +48,13 @@ The seed picks one of 22 named presets, such as Flame Skull Shrine, Cloud Angel 
 
 The layout changes the page itself. Its body is squeezed into a 640 or 800 pixel table, pushed to the left, or put next to a nav frame on the left, a Cool Links column on the right, or both. The furniture around it is built from the page's own links and headings: nav buttons, Cool Links, a What's New box, award ribbons, an under-construction sign, a guestbook mailbox, a visitor counter, a webring box and a tab bar. Its sections become bevelled cells or boxes with a legend, lists get pixel bullets, and headings get a little skull, flame or star. A quiet site gets one big banner over a plain table; a busy one gets three columns of stuff. On a phone it all folds into one column with the furniture at the bottom. None of the page's own nodes are changed, and Un-haunt still puts the page back byte for byte. A short list of rules keeps out pairs that clash, like flames on a pink ground, and a unit test walks every preset with every swap and checks the text contrast. Classic Crypt keeps the original starfield and parchment look.
 
-Two real pages from the same run: nps.gov ([still](docs/real-site-caption-nps.png)) and cdc.gov ([still](docs/real-site-caption-cdc.png)) get different looks. The e2e build alone accepts `?hgtheme=<preset>` in the page address, so the visual tests can show a chosen preset.
+Two real pages from the same run get two different homepages. nps.gov draws Flame Skull Shrine: flames, a nav frame on the left with buttons made from the site's own links, and boxed sections. cdc.gov draws Cloud Angel Page: clouds, a rainbow divider, tabs under the banner and a right-hand column.
+
+![nps.gov as Flame Skull Shrine: a flame tile, a nav-frame column of buttons from the site's own links, a guestbook box and What's New, the page squeezed into an 800px table](docs/real-site-caption-nps.png)
+
+![cdc.gov as Cloud Angel Page: a cloud tile, a rainbow divider, a row of tabs under the welcome banner and a right-hand column with nav buttons, a guestbook and What's New](docs/real-site-caption-cdc.png)
+
+On cdc.gov the narrower table puts the hero panel where the parade crosses, so in that still a plain filler ghost covers part of it; the named tracker ghosts stay clear. The e2e build alone accepts `?hgtheme=<preset>` in the page address, so the visual tests can show a chosen preset.
 
 ## Secrets
 
