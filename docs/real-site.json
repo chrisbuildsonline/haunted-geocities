@@ -5,6 +5,7 @@
       "page": "https://www.nps.gov/index.htm",
       "still": "docs/real-site-caption-nps.png",
       "gif": "docs/real-site-haunt.gif",
+      "look": "flame-skull",
       "trackersFound": 4,
       "parade": [
         "Google Analytics (Google)",
@@ -13,7 +14,6 @@
         "Google Ads (Google)"
       ],
       "stillShows": [
-        "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Crazy Egg",
         "Google Ads (Google)"
@@ -21,55 +21,63 @@
       "stillClear": {
         "panels": [
           {
-            "left": 80,
-            "top": 271,
-            "right": 640,
-            "bottom": 475
+            "left": 446,
+            "top": 343,
+            "right": 730,
+            "bottom": 618
+          },
+          {
+            "left": 436,
+            "top": 718,
+            "right": 1024,
+            "bottom": 887
           }
         ],
         "ghosts": [
           {
-            "left": 91,
-            "top": 526,
-            "right": 235,
-            "bottom": 670
+            "left": 107,
+            "top": -104,
+            "right": 251,
+            "bottom": 40
           },
           {
-            "left": 860,
-            "top": 649,
-            "right": 956,
-            "bottom": 745
+            "left": 847,
+            "top": 38,
+            "right": 943,
+            "bottom": 134
           },
           {
-            "left": 472,
-            "top": 723,
-            "right": 616,
-            "bottom": 867
+            "left": 488,
+            "top": 93,
+            "right": 632,
+            "bottom": 237
           },
           {
-            "left": 1125,
-            "top": 840,
-            "right": 1221,
-            "bottom": 936
+            "left": 1112,
+            "top": 229,
+            "right": 1208,
+            "bottom": 325
           },
           {
-            "left": 270,
-            "top": 935,
-            "right": 366,
-            "bottom": 1031
+            "left": 283,
+            "top": 324,
+            "right": 379,
+            "bottom": 420
           },
           {
-            "left": 785,
-            "top": 1019,
-            "right": 929,
-            "bottom": 1163
+            "left": 769,
+            "top": 388,
+            "right": 913,
+            "bottom": 532
           }
-        ]
+        ],
+        "named": 4
       }
     },
     {
       "page": "https://www.cdc.gov/",
       "still": "docs/real-site-caption-cdc.png",
+      "look": "cloud-angel",
       "trackersFound": 3,
       "parade": [
         "Google Analytics (Google)",
@@ -77,63 +85,58 @@
         "Google Ads (Google)"
       ],
       "stillShows": [
-        "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Google Ads (Google)"
       ],
       "stillClear": {
         "panels": [
           {
-            "left": 735,
-            "top": 285,
-            "right": 1210,
-            "bottom": 486
-          },
-          {
-            "left": 735,
-            "top": 285,
-            "right": 1210,
-            "bottom": 414
+            "left": 599,
+            "top": 385,
+            "right": 844,
+            "bottom": 658
           }
         ],
         "ghosts": [
           {
-            "left": 91,
-            "top": 510,
-            "right": 235,
-            "bottom": 654
+            "left": 107,
+            "top": -114,
+            "right": 251,
+            "bottom": 30
           },
           {
-            "left": 860,
-            "top": 633,
-            "right": 956,
-            "bottom": 729
+            "left": 847,
+            "top": 28,
+            "right": 943,
+            "bottom": 124
           },
           {
-            "left": 472,
-            "top": 707,
-            "right": 616,
-            "bottom": 851
+            "left": 488,
+            "top": 83,
+            "right": 632,
+            "bottom": 227
           },
           {
-            "left": 1125,
-            "top": 824,
-            "right": 1221,
-            "bottom": 920
+            "left": 1112,
+            "top": 219,
+            "right": 1208,
+            "bottom": 315
           },
           {
-            "left": 270,
-            "top": 919,
-            "right": 366,
-            "bottom": 1015
+            "left": 283,
+            "top": 315,
+            "right": 379,
+            "bottom": 411
           },
           {
-            "left": 785,
-            "top": 1002,
-            "right": 929,
-            "bottom": 1146
+            "left": 769,
+            "top": 379,
+            "right": 913,
+            "bottom": 523
           }
-        ]
+        ],
+        "named": 3,
+        "fillerCrosses": true
       }
     }
   ]
