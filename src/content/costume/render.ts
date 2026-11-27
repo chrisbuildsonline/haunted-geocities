@@ -198,6 +198,10 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     const top = topOffset(doc);
     bands.style.top = `${top}px`;
     welcome.style.top = `${top + LAYOUT.neighborhoodBar + LAYOUT.marquee}px`;
+    // Over a 1998 table the banner is the table's own header: as wide as the table, furniture columns included.
+    const first = geom.left ?? geom.main;
+    const last = geom.right ?? geom.main;
+    Object.assign(welcome.style, first && last ? { left: `${first.x + win.scrollX - FRAME_OUT}px`, right: "auto", width: `${last.x + last.w - first.x + 2 * FRAME_OUT}px` } : { left: "", right: "", width: "" });
     lift = sampleBottomLift(doc);
     pad();
     // The furniture columns are part of the 1998 table: the frame and the tint go round them too.
