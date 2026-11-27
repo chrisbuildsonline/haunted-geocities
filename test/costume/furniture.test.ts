@@ -103,13 +103,14 @@ describe("findOverflow", () => {
   test("holds the outermost page box that sticks out past the viewport (a 100vw header), once, and never a fixed one", () => {
     const win = new Window({ url: "https://site.test/", width: 1280, height: 800 });
     const doc = win.document as unknown as Document;
-    doc.write(`<!doctype html><html><body><header id="h"><button id="menu">Menu</button></header><p id="p">text</p><div id="fixed" style="position:fixed">x</div></body></html>`);
-    const right: Record<string, number> = { h: 1530, menu: 1460, p: 1200, fixed: 1400 };
+    doc.write(`<!doctype html><html><body><header id="h"><button id="menu">Menu</button></header><p id="p">text</p><div id="fixed" style="position:fixed">x</div><div id="scroller" style="overflow-x:hidden"><ul id="ticker"><li>news</li></ul></div></body></html>`);
+    const right: Record<string, number> = { h: 1530, menu: 1460, p: 1200, fixed: 1400, scroller: 1180, ticker: 2400 };
     for (const [id, r] of Object.entries(right)) {
       (doc.getElementById(id) as unknown as { getBoundingClientRect: () => object }).getBoundingClientRect = () => ({ left: 250, right: r, width: r - 250, top: 0, bottom: 10, height: 10 });
     }
     const held = new Set<string>();
     const path = (e: Element) => `#${e.id}`;
+    // the ticker sticks out of its scroller, which clips it on screen: not counted
     expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toEqual({ added: true, over: 250 });
     expect([...held]).toEqual(["#h"]);
     expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toEqual({ added: false, over: 250 });

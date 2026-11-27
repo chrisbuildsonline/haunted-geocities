@@ -66,12 +66,19 @@ export function findOverflow(doc: Document, skip: string, vw: number, held: Set<
   const sticks = (e: Element | null) => !!e && e !== doc.body && e.getBoundingClientRect().right > vw + 1;
   let added = false;
   let over = 0;
+  // A box clipped by an ancestor that ends on screen (a ticker in a scroller, a carousel's next slide) is not off screen.
+  const clipped = (e: Element) => {
+    for (let a = e.parentElement; a && a !== doc.body; a = a.parentElement) {
+      if (!/^(visible|)$/.test(win.getComputedStyle(a).overflowX) && a.getBoundingClientRect().right <= vw + 1) return true;
+    }
+    return false;
+  };
   const all = doc.body.querySelectorAll("*");
   for (let i = 0; i < all.length && i < MAX_LOOKED && held.size < MAX_HELD; i++) {
     const e = all[i]!;
     if (e.localName === skip || !sticks(e) || sticks(e.parentElement)) continue;
     const r = e.getBoundingClientRect();
-    if (r.width <= 0 || r.left >= vw || win.getComputedStyle(e).position === "fixed") continue;
+    if (r.width <= 0 || r.left >= vw || win.getComputedStyle(e).position === "fixed" || clipped(e)) continue;
     over = Math.max(over, Math.ceil(r.right - vw));
     const p = path(e);
     if (!held.has(p)) {
