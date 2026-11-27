@@ -41,18 +41,27 @@ const place = (b: Box) =>
   `margin: 0 !important; padding: 0 !important; transform: none !important; ` +
   `content: "" !important; pointer-events: none !important; z-index: ${Z} !important;`;
 
-export function columnLayersCss(o: { tint: Box | null; frame: Box | null; hidden: boolean }): string {
+/** A seeded look's tint and frame: the tint colour and its pale pattern, the bevel style and colours. */
+export type LayerLook = { tint: string; pattern: string | null; bevel: "ridge" | "outset" | "inset" | "double"; light: string; dark: string; glow: string };
+
+export function columnLayersCss(o: { tint: Box | null; frame: Box | null; hidden: boolean; look?: LayerLook }): string {
   const opacity = `opacity: ${o.hidden ? 0 : 1} !important;`;
   const out: string[] = [];
   if (o.tint) {
-    out.push(`html${TINT} { ${place(o.tint)} border: 0 !important; background: ${PAGE.parchment} !important; mix-blend-mode: multiply !important; ${opacity} }`);
+    out.push(`html${TINT} { ${place(o.tint)} border: 0 !important; background: ${o.look ? o.look.tint : PAGE.parchment}${o.look?.pattern ? ` url("${o.look.pattern}") repeat` : ""} !important; mix-blend-mode: multiply !important; ${opacity} }`);
   }
   if (o.frame) {
-    const [hi, lo] = [PAGE.frameLight, PAGE.frameDark];
+    const [hi, lo, glow] = o.look ? [o.look.light, o.look.dark, o.look.glow] : [PAGE.frameLight, PAGE.frameDark, PAGE.glow];
+    const bevel = o.look?.bevel ?? "ridge";
     // A 6px ridge: an outer 3px band (border) light top-left, an inner 3px band (inset shadows) reversed.
+    // Outset and inset are one 6px band; double is two 2px lines.
+    const [border, inner] =
+      bevel === "ridge" ? [`3px solid !important; border-color: ${hi} ${lo} ${lo} ${hi}`, `inset 3px 3px 0 ${lo}, inset -3px -3px 0 ${hi}, `]
+      : bevel === "double" ? [`6px double ${hi}`, ""]
+      : [`6px solid !important; border-color: ${bevel === "outset" ? `${hi} ${lo} ${lo} ${hi}` : `${lo} ${hi} ${hi} ${lo}`}`, ""];
     out.push(
-      `html${FRAME} { ${place(o.frame)} border: 3px solid !important; border-color: ${hi} ${lo} ${lo} ${hi} !important; ` +
-        `box-shadow: inset 3px 3px 0 ${lo}, inset -3px -3px 0 ${hi}, 0 0 0 1px ${PAGE.frameLine}, 0 0 6px 1px ${PAGE.glow} !important; ` +
+      `html${FRAME} { ${place(o.frame)} border: ${border} !important; ` +
+        `box-shadow: ${inner}0 0 0 1px ${PAGE.frameLine}, 0 0 6px 1px ${glow} !important; ` +
         `background: none !important; mix-blend-mode: normal !important; ${opacity} }`,
     );
   }

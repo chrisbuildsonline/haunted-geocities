@@ -1,3 +1,5 @@
+import { SPRITE_LEGEND } from "../src/content/costume/theme-art";
+import { PALETTES } from "../src/content/costume/themes";
 import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -119,7 +121,8 @@ describe("costume tokens", () => {
     const { win, doc } = setup();
     windows.push(win);
     const root = renderCostume(doc);
-    const allowed = new Set<string>([...Object.values(T.PALETTE), ...T.HEM_TINTS]);
+    // the seeded looks' sprites and tiles draw from their own web-safe sets (test/costume/themes.test.ts)
+    const allowed = new Set<string>([...Object.values(T.PALETTE), ...T.HEM_TINTS, ...Object.values(SPRITE_LEGEND), ...Object.values(PALETTES).flatMap((p) => Object.values(p))]);
     const found = hexes(root.innerHTML);
     expect(found.length).toBeGreaterThan(0);
     expect(found.filter((h) => !allowed.has(h))).toEqual([]);
@@ -413,11 +416,11 @@ describe("renderCostume", () => {
     windows.push(win);
     const root = renderCostume(doc);
     expect(root.mode).toBe("closed");
-    expect([...root.children].map((c) => c.id)).toEqual(["crypt-root", "crypt-footer"]);
+    expect([...root.children].map((c) => c.id)).toEqual(["welcome", "crypt-root", "crypt-footer"]);
     const ids = [...byId(root, "crypt-root")!.children].map((c) => c.id);
     expect(ids.slice(0, 5)).toEqual(["starfield", "lanes", "markers", "top-bands", "cards"]);
     expect(ids).toContain("show-tab");
-    expect([...byId(root, "crypt-footer")!.children].map((c) => c.id || c.className)).toEqual(["graveyard", "hud", "badges", "signoff"]);
+    expect([...byId(root, "crypt-footer")!.children].map((c) => c.id || c.className)).toEqual(["graveyard", "hud", "badges", "signoff", "footer-divider", "footer-sprites"]);
     const css = costumeCss({ stars: "a", twinkle: "b" });
     const z = (id: string) => Number(css.match(new RegExp(`#${id}\\s*\\{[^}]*z-index:\\s*(\\d+)`))![1]);
     expect(["starfield", "lanes", "markers", "top-bands", "show-tab", "cards", "fx"].map(z)).toEqual([1, 2, 3, 4, 5, 6, 7]);
@@ -453,7 +456,9 @@ describe("renderCostume", () => {
     expect(doc.adoptedStyleSheets).toHaveLength(1);
     const css = [...doc.adoptedStyleSheets[0]!.cssRules].map((r) => r.cssText).join("\n");
     expect(css).toMatch(/--hg-lift:\s*0px/);
-    expect(css).toMatch(/padding-top:\s*calc\(5px \+ 48px\)\s*!important/);
+    // the bands and the seeded look's welcome banner (72px, 56px on a phone)
+    expect(css).toMatch(/padding-top:\s*calc\(5px \+ 48px \+ var\(--hg-welcome, 0px\)\)\s*!important/);
+    expect(css).toMatch(/--hg-welcome:\s*72px/);
     expect(css).not.toMatch(/padding-bottom/); // the footer is in flow after the page
   });
 

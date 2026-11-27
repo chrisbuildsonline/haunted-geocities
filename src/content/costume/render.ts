@@ -14,6 +14,9 @@ import { watchReducedMotion } from "./reduced-motion";
 import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
 import { LAYOUT } from "./tokens";
+import { pickLook } from "./themes";
+import { buildWelcome, fontsOf, lookPageCss, lookShadowCss, lookSprites, lookTiles, paletteOf, rainbowHeadings, spriteMarkup, tintPattern } from "./theme-css";
+import { trailSvg } from "./theme-art";
 import trackerJson from "../../data/trackers.json";
 import { resolveNeighborhood } from "../../data/neighborhood";
 import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
@@ -85,8 +88,13 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const player = storage ? createPlayer({ storage, createContext: () => new AudioContext() }) : undefined;
   const play = (kind: SoundKind) => player?.play(kind);
 
+  // The site's seeded 1998 look (design/DESIGN.md "Themes"). The e2e build may force a preset with ?hgtheme=.
+  const force = import.meta.env.MODE === "e2e" ? new URLSearchParams(win.location.search).get("hgtheme") : null;
+  const look = pickLook(win.location.hostname, force);
+  const palette = paletteOf(look);
+  const classic = look.preset === "classic-crypt";
   const sheet = new win.CSSStyleSheet();
-  sheet.replaceSync(costumeCss({ stars: paintTile(doc, "stars"), twinkle: paintTile(doc, "twinkle") }));
+  sheet.replaceSync(costumeCss(classic ? { stars: paintTile(doc, "stars"), twinkle: paintTile(doc, "twinkle") } : lookTiles(look)) + "\n" + lookShadowCss(look));
   root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
 
   const croot = el(doc, "crypt-root");
@@ -129,11 +137,25 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   signoff.className = "signoff";
   const setSignoff = (n: number) => (signoff.textContent = `You are visitor #${String(n).padStart(6, "0")} to this crypt. (c) 1998 The Webmaster`);
   setSignoff(0);
-  footer.append(graveyard, hud, buttons88, signoff);
-  croot.append(starfield, lanes, markers, bands, cards, findings, tab);
-
-  root.append(croot, footer);
-  const page = addPageSheet(doc);
+  const footerDivider = Object.assign(doc.createElement("div"), { className: "footer-divider" });
+  footerDivider.setAttribute("aria-hidden", "true");
+  const footerSprites = Object.assign(doc.createElement("div"), { className: "footer-sprites" });
+  footerSprites.setAttribute("aria-hidden", "true");
+  footerSprites.innerHTML = lookSprites(look).footer.map(spriteMarkup).join("");
+  footer.append(graveyard, hud, buttons88, signoff, footerDivider, footerSprites);
+  const trail = el(doc, "trail");
+  trail.setAttribute("aria-hidden", "true");
+  croot.append(starfield, lanes, markers, bands, cards, findings, tab, trail);
+  // The banner scrolls with the page, under the fixed bands (before #crypt-root, so the fixed layers stay above it).
+  const welcome = buildWelcome(doc, look);
+  root.append(welcome, croot, footer);
+  let rainbow: string[] = [];
+  let dark = false;
+  const page = addPageSheet(doc, {
+    fonts: fontsOf(look),
+    css: () => lookPageCss(look, { rainbow, dark }),
+    layers: { tint: palette.tint, pattern: tintPattern(look), bevel: look.bevel, light: palette.bevelLight, dark: palette.bevelDark, glow: palette.glow },
+  });
   let lift = 0;
   // Only the ghost icon follows the page's own bottom UI (--hg-lift); nothing pads the page's end.
   const pad = () => page.update(lift);
@@ -146,9 +168,13 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   let drawn: { tint: Box | null; frame: Box | null } = { tint: null, frame: null };
   const vw = () => doc.documentElement.clientWidth || win.innerWidth;
   const measure = () => {
-    const theme = pageTheme(doc);
+    const theme = pageTheme(doc, palette);
+    dark = theme.dark;
+    rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
     page.set({ theme, blocks: findBlocks(doc, { darkPage: theme.dark }) });
-    bands.style.top = `${topOffset(doc)}px`;
+    const top = topOffset(doc);
+    bands.style.top = `${top}px`;
+    welcome.style.top = `${top + LAYOUT.neighborhoodBar + LAYOUT.marquee}px`;
     lift = sampleBottomLift(doc);
     pad();
     let col = computeContentColumn(doc);
@@ -291,21 +317,38 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     showLine(0);
   });
 
-  const onVisibility = () => [croot, footer].forEach((el) => el.classList.toggle("tab-hidden", doc.hidden));
+  const onVisibility = () => [croot, footer, welcome].forEach((el) => el.classList.toggle("tab-hidden", doc.hidden));
   doc.addEventListener("visibilitychange", onVisibility);
   onVisibility();
 
   const motion = watchReducedMotion(win, (reduced) => {
-    for (const el of [croot, footer]) el.classList.toggle("reduced-motion", reduced);
+    for (const el of [croot, footer, welcome]) el.classList.toggle("reduced-motion", reduced);
     if (reduced) costume.moment?.finish();
   });
-  for (const el of [croot, footer]) el.classList.toggle("reduced-motion", motion.matches);
+  for (const el of [croot, footer, welcome]) el.classList.toggle("reduced-motion", motion.matches);
+
+  // The cursor trail: a small glyph every 50ms at most, 12 at once, each falling and fading. None under reduced motion.
+  let lastSpark = -Infinity;
+  const onPointer = (e: PointerEvent) => {
+    if (motion.matches || doc.hidden || croot.classList.contains("costume-hidden") || e.timeStamp - lastSpark < 50) return;
+    lastSpark = e.timeStamp;
+    if (trail.childElementCount >= 12) trail.firstElementChild!.remove();
+    const spark = doc.createElement("span");
+    spark.className = "spark";
+    spark.innerHTML = trailSvg(look.trail);
+    spark.style.left = `${Math.round(e.clientX)}px`;
+    spark.style.top = `${Math.round(e.clientY)}px`;
+    spark.addEventListener("animationend", () => spark.remove());
+    trail.append(spark);
+  };
+  win.addEventListener("pointermove", onPointer, { passive: true });
 
   // Hide / Show keep the haunt; only the costume's visibility changes. The ghost icon stays.
   const hide = hud.querySelector("button.hide") as HTMLButtonElement;
   hide.addEventListener("click", () => {
     croot.classList.add("costume-hidden");
     footer.classList.add("costume-hidden");
+    welcome.classList.add("costume-hidden");
     page.set({ hidden: true }); // tint and frame fade; the restyle stays (haunt state is kept)
     tab.focus();
   });
@@ -313,6 +356,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     if (croot.classList.contains("costume-hidden")) {
       croot.classList.remove("costume-hidden");
       footer.classList.remove("costume-hidden");
+      welcome.classList.remove("costume-hidden");
       page.set({ hidden: false });
       if (motion.matches) {
         line++;
@@ -452,6 +496,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     ro?.disconnect();
     win.removeEventListener("resize", relayout);
     win.removeEventListener("scroll", clipToFooter);
+    win.removeEventListener("pointermove", onPointer);
     win.removeEventListener("resize", clipToFooter);
     doc.removeEventListener("visibilitychange", onVisibility);
     if (costumes.get(doc) === costume) costumes.delete(doc);

@@ -6,6 +6,15 @@
 import { GHOST, ghostLegend, mapToPx, svgMarkup } from "../content/costume/art";
 import { PALETTE as P, PIXEL } from "../content/costume/tokens";
 import { COVER_DONE, COVER_MARKER } from "../data/types";
+import { PALETTES, pickLook } from "../content/costume/themes";
+
+/** The site's seeded look tints the cover: its plaque as the ground and its marquee colour for the line. */
+export function coverLookCss(hostname: string): string {
+  const look = pickLook(hostname);
+  if (look.preset === "classic-crypt") return "";
+  const c = PALETTES[look.palette];
+  return `\n.screen { background-color: ${c.plaque}; background-image: radial-gradient(${c.a2} 1px, transparent 1px); }\n.screen::before { background: ${c.plaque}; }\n.label { color: ${c.plaqueText}; }\n`;
+}
 
 export const COVER_TAG = "hg-cover";
 /** The longest a page stays covered, whatever happens to the re-haunt. */
@@ -98,7 +107,7 @@ export function startCover({ doc, storage, runtime, global, timers, reduced, ran
     host = doc.createElement(COVER_TAG);
     root = host.attachShadow({ mode: "closed" });
     const style = doc.createElement("style");
-    style.textContent = CSS;
+    style.textContent = CSS + coverLookCss(win.location.hostname);
     const screen = doc.createElement("div");
     screen.className = "screen";
     const ghost = doc.createElement("div");

@@ -81,21 +81,25 @@ export type Theme = {
   hover: string;
 };
 
-export function themeFor(pageBg: string): Theme {
+/** A look's light-page colours: the tint (its darkest colour) and the link colours drawn on it. */
+export type LinkColours = { tint: string; link: string; visited: string; hover: string };
+const CLASSIC: LinkColours = { tint: PAGE.parchment, link: PAGE.link, visited: PAGE.visited, hover: PAGE.hover };
+
+export function themeFor(pageBg: string, c: LinkColours = CLASSIC): Theme {
   const dark = relativeLuminance(pageBg) < L.darkLuminance;
-  const background = dark ? pageBg : multiply(pageBg, PAGE.parchment);
+  const background = dark ? pageBg : multiply(pageBg, c.tint);
   return {
     dark,
     tint: !dark,
     background,
-    link: ensureContrast(dark ? PAGE.darkLink : PAGE.link, background),
-    visited: ensureContrast(dark ? PAGE.darkVisited : PAGE.visited, background),
-    hover: ensureContrast(PAGE.hover, background),
+    link: ensureContrast(dark ? PAGE.darkLink : c.link, background),
+    visited: ensureContrast(dark ? PAGE.darkVisited : c.visited, background),
+    hover: ensureContrast(c.hover, background),
   };
 }
 
 export const isDarkPage = (doc: Document) => themeFor(pageBackground(doc)).dark;
-export const pageTheme = (doc: Document) => themeFor(pageBackground(doc));
+export const pageTheme = (doc: Document, c?: LinkColours) => themeFor(pageBackground(doc), c);
 
 const TIMES = `"Times New Roman", Times, serif`;
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;
@@ -119,12 +123,12 @@ export const CHROME = [
  * The restyle rules. `:where()` keeps the selectors at zero specificity so the later heading rule
  * wins over the body rule; `!important` wins over the page's own rules, as the padding does.
  */
-export function restyleCss(t: Theme): string {
+export function restyleCss(t: Theme, fonts: { body: string; heading: string } = { body: TIMES, heading: COMIC }): string {
   const text = `:not(${KEEP}, :is(${KEEP}) *)`;
   const link = `:where(:not(${CHROME}))`;
   return [
-    `:where(body, body *${text}) { font-family: ${TIMES} !important; }`,
-    `:where(h1, h2, h3, :is(h1, h2, h3) *${text}) { font-family: ${COMIC} !important; }`,
+    `:where(body, body *${text}) { font-family: ${fonts.body} !important; }`,
+    `:where(h1, h2, h3, :is(h1, h2, h3) *${text}) { font-family: ${fonts.heading} !important; }`,
     `a[href]${link} { text-decoration: underline !important; }`,
     `a:link${link} { color: ${t.link} !important; }`,
     `a:visited${link} { color: ${t.visited} !important; }`,

@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 export function setup(opts: { reduced?: boolean; html?: string; width?: number; height?: number } = {}) {
-  const win = new Window({ url: "https://haunt.example/", width: opts.width ?? 1280, height: opts.height ?? 800 });
+  const win = new Window({ url: "https://grave.test/", width: opts.width ?? 1280, height: opts.height ?? 800 });
   windows.push(win);
   win.document.write(opts.html ?? LIGHT);
   const recs: Rec[] = [];

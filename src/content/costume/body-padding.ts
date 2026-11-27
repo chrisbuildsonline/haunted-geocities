@@ -6,9 +6,12 @@
 import { columnLayersCss, type Box } from "./column-layers";
 import { blocksCss, type Blocks } from "./page-blocks";
 import { restyleCss, type Theme } from "./page-theme";
+import type { LayerLook } from "./column-layers";
 import { LAYOUT } from "./tokens";
 
 export type PageLook = { theme: Theme | null; overlay: boolean; tint: Box | null; frame: Box | null; hidden: boolean; blocks: Blocks | null };
+/** The seeded look's part of the page sheet: fonts, its own rules (marker, headings, dividers) and the tint/frame look. */
+export type SiteLook = { fonts: { body: string; heading: string }; css: () => string; layers: LayerLook };
 export type PageSheet = { update(lift: number): void; set(look: Partial<PageLook>): void; remove(): void };
 
 /** A computed length usable inside calc() ("0" is not). */
@@ -17,7 +20,8 @@ const len = (v: string) => (v && v !== "0" ? v : "0px");
 /** A computed scroll-padding ("auto" is none). */
 const scrollLen = (v: string) => (v && v !== "auto" ? len(v) : "0px");
 
-export function addPageSheet(doc: Document): PageSheet {
+/** `site`: the seeded look; its banner adds `--hg-welcome` to the top padding. */
+export function addPageSheet(doc: Document, site?: SiteLook): PageSheet {
   const win = doc.defaultView!;
   const cs = win.getComputedStyle(doc.body);
   const [top, left, right] = [cs.paddingTop, cs.paddingLeft, cs.paddingRight].map(len) as [string, string, string];
@@ -32,12 +36,13 @@ export function addPageSheet(doc: Document): PageSheet {
     const inline = look.overlay ? ` padding-left: calc(${left} + ${edge}px) !important; padding-right: calc(${right} + ${edge}px) !important;` : "";
     const next = [
       `:root { --hg-lift: ${lift}px; }`,
-      `body { padding-top: calc(${top} + ${bands}px) !important;${inline} }`,
+      site ? site.css() : "",
+      `body { padding-top: calc(${top} + ${bands}px${site ? " + var(--hg-welcome, 0px)" : ""}) !important;${inline} }`,
       // Scroll padding: a link that takes focus, or an anchor jumped to, scrolls clear of the bands.
       `:root { scroll-padding-top: calc(${scrollTop} + ${bands}px) !important; }`,
-      look.theme ? restyleCss(look.theme) : "",
+      look.theme ? restyleCss(look.theme, site?.fonts) : "",
       look.blocks ? blocksCss(look.blocks) : "",
-      columnLayersCss({ tint: look.theme?.tint ? look.tint : null, frame: look.overlay ? null : look.frame, hidden: look.hidden }),
+      columnLayersCss({ tint: look.theme?.tint ? look.tint : null, frame: look.overlay ? null : look.frame, hidden: look.hidden, look: site?.layers }),
     ]
       .filter(Boolean)
       .join("\n");
