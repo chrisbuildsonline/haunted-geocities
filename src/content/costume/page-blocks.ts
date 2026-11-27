@@ -106,8 +106,9 @@ export function findBlocks(doc: Document, opts: { darkPage?: boolean } = {}): Bl
   // A photo: a box of a block's size that an <img> (or <picture>) child fills.
   const isPhoto = (el: Element) => {
     const pic = [...el.children].find((c) => /^(img|picture)$/.test(c.localName));
+    if (!pic) return false;
     const box = el.getBoundingClientRect();
-    return !!pic && big(box) && area(pic.getBoundingClientRect()) >= PHOTO_FILL * area(box);
+    return big(box) && area(pic.getBoundingClientRect()) >= PHOTO_FILL * area(box);
   };
   // The box holding all the light text set straight on a photo: the smallest that is not a link or a control,
   // is a block's size, and leaves most of the photo showing. Site chrome inside the photo does not count.
