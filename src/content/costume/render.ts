@@ -159,6 +159,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const welcome = buildWelcome(doc, look);
   if (look.furniture.includes("tabbar")) welcome.append(buildTabs(doc, harvested));
   root.append(welcome, furLeft, furRight, croot, footer);
+  // px the table has moved left so no page box ends off screen (sticky for the haunt, as `held` is)
+  let shift = 0;
   let geom: Geometry = layoutGeometry(look, doc.documentElement.clientWidth || win.innerWidth);
   let placedKey = "";
   const placeKeyOf = (g: Geometry) => JSON.stringify(placeFurniture(look.furniture, g));
@@ -195,7 +197,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   let drawn: { tint: Box | null; frame: Box | null } = { tint: null, frame: null };
   const vw = () => doc.documentElement.clientWidth || win.innerWidth;
   const measure = () => {
-    geom = layoutGeometry(look, vw());
+    geom = layoutGeometry(look, vw(), shift);
     fill();
     // A page that pins its body while a dialog is open (a cookie wall's scroll lock) leaves our in-flow footer
     // as the document's only content, at its top: keep the footer out of sight until the body is back in flow.
@@ -205,7 +207,16 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
     page.set({ theme, blocks: findBlocks(doc, { darkPage: theme.dark }) });
     // Nothing of the page may end up off screen: a box wider than the cell (a 100vw header) is held to it.
-    if (geom.main && findOverflow(doc, HOST_TAG, vw(), held, cssPath)) page.set({});
+    if (geom.main) {
+      const { added, over } = findOverflow(doc, HOST_TAG, vw(), held, cssPath);
+      // still sticking out after the box is held to the cell (a box placed past the cell's edge): move the table left
+      if (over > 0 && shift < vw()) {
+        shift += over + 8;
+        geom = layoutGeometry(look, vw(), shift);
+        fill();
+      }
+      if (added || over > 0) page.set({});
+    }
     const top = topOffset(doc);
     bands.style.top = `${top}px`;
     welcome.style.top = `${top + LAYOUT.neighborhoodBar + LAYOUT.marquee}px`;

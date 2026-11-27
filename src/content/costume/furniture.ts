@@ -27,13 +27,17 @@ export const CELL_PAD = 16;
  * The layout at viewport width `vw`. When the whole table does not fit, the right column goes first,
  * then the left one; when the main cell alone does not fit, the page collapses to one column.
  */
-export function layoutGeometry(l: Look, vw: number): Geometry {
+/**
+ * `shift`: px the whole table moves left (never closer than 8px to the edge), when a page box positioned past
+ * the cell's right edge (nps.gov's Menu button) would otherwise end off screen.
+ */
+export function layoutGeometry(l: Look, vw: number, shift = 0): Geometry {
   const L = LAYOUTS[l.layout];
   const main = Math.max(L.main, MIN_MAIN);
   for (const [left, right] of [[L.left, L.right], [L.left, 0], [0, 0]] as const) {
     const total = left + main + right;
     if (vw < total + 2 * SIDE_ROOM) continue;
-    const x0 = L.align === "center" ? Math.floor((vw - total) / 2) : SIDE_ROOM;
+    const x0 = Math.max(Math.min(8, L.align === "center" ? Math.floor((vw - total) / 2) : SIDE_ROOM), (L.align === "center" ? Math.floor((vw - total) / 2) : SIDE_ROOM) - shift);
     return { collapsed: false, left: left ? { x: x0, w: left } : null, main: { x: x0 + left, w: main }, right: right ? { x: x0 + left + main, w: right } : null };
   }
   return { collapsed: true, main: null, left: null, right: null };
@@ -57,23 +61,25 @@ const MAX_LOOKED = 3000;
  * (a header 100vw wide, as on nps.gov, carries its Menu button off screen). Added to `held` (kept for the haunt,
  * so a box fixed once stays fixed); true when one was added.
  */
-export function findOverflow(doc: Document, skip: string, vw: number, held: Set<string>, path: (e: Element) => string): boolean {
+export function findOverflow(doc: Document, skip: string, vw: number, held: Set<string>, path: (e: Element) => string): { added: boolean; over: number } {
   const win = doc.defaultView!;
   const sticks = (e: Element | null) => !!e && e !== doc.body && e.getBoundingClientRect().right > vw + 1;
   let added = false;
+  let over = 0;
   const all = doc.body.querySelectorAll("*");
   for (let i = 0; i < all.length && i < MAX_LOOKED && held.size < MAX_HELD; i++) {
     const e = all[i]!;
     if (e.localName === skip || !sticks(e) || sticks(e.parentElement)) continue;
     const r = e.getBoundingClientRect();
     if (r.width <= 0 || r.left >= vw || win.getComputedStyle(e).position === "fixed") continue;
+    over = Math.max(over, Math.ceil(r.right - vw));
     const p = path(e);
     if (!held.has(p)) {
       held.add(p);
       added = true;
     }
   }
-  return added;
+  return { added, over };
 }
 
 /** The rule that holds those boxes to the body's cell: no wider than it, no margin pulling them out. */

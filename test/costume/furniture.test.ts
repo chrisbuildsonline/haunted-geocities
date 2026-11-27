@@ -22,6 +22,11 @@ describe("layoutGeometry", () => {
     expect(layoutGeometry(look("links3"), 375)).toEqual({ collapsed: true, main: null, left: null, right: null });
   });
 
+  test("a shift moves the whole table left, never closer than 8px to the edge", () => {
+    expect(layoutGeometry(look("nav2"), 1280, 28)).toMatchObject({ left: { x: 42 }, main: { x: 222 } });
+    expect(layoutGeometry(look("nav2"), 1280, 500)).toMatchObject({ left: { x: 8 }, main: { x: 188 } });
+  });
+
   test("a collapsed page keeps its own width: no rules", () => {
     expect(layoutCss(layoutGeometry(look("table800"), 375))).toBe("");
   });
@@ -105,9 +110,9 @@ describe("findOverflow", () => {
     }
     const held = new Set<string>();
     const path = (e: Element) => `#${e.id}`;
-    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toBe(true);
+    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toEqual({ added: true, over: 250 });
     expect([...held]).toEqual(["#h"]);
-    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toBe(false);
+    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toEqual({ added: false, over: 250 });
     expect(heldCss(held)).toBe(":is(#h) { max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }");
     expect(heldCss(new Set())).toBe("");
     win.happyDOM.abort();
