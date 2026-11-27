@@ -238,6 +238,10 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       if (!span) continue;
       Object.assign(box.style, { left: `${span.x + win.scrollX + 4}px`, width: `${span.w - 8}px`, top: `${colTop + 8}px`, height: `${Math.max(0, pageEnd - colTop - 16)}px` });
     }
+    // A short page has a short column: what does not fit moves down to the bottom furniture, whole.
+    for (const box of [furLeft, furRight]) {
+      while (!box.hidden && box.clientHeight > 0 && box.scrollHeight > box.clientHeight && box.lastElementChild) furBottom.prepend(box.lastElementChild);
+    }
   };
   measure();
   const reveals = (): Reveal[] =>
