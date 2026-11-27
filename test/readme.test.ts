@@ -139,6 +139,16 @@ describe("README.md", () => {
     expect(readme).toContain("bun run docs:screenshots");
   });
 
+  test("the shots script keeps a first-screen still at 1280 and 375, with the findings strip beside the ghost icon", () => {
+    const shots = readFileSync(join(root, "e2e", "readme.shots.ts"), "utf8");
+    for (const w of [1280, 375]) {
+      const still = join(root, "docs", "screenshots", `findings-${w}.png`);
+      expect(existsSync(still)).toBe(true);
+      expect(readFileSync(still).readUInt32BE(16)).toBe(w);
+    }
+    expect(shots).toContain("findings-${width}.png");
+  });
+
   test("README popup screenshot exists and is referenced", () => {
     const shot = join(root, "docs", "screenshots", "popup.png");
     expect(existsSync(shot)).toBe(true);

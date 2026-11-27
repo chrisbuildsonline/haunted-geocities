@@ -209,6 +209,23 @@ test("haunted page with ghosts, the stone card and the popup", async ({ context,
   await links.screenshot({ path: `${OUT}/tombstone.png`, caret: "initial" });
 });
 
+// The first screen on news.html at both widths: the findings strip (design/DESIGN.md "Findings strip")
+// says `Trackers 6 / Vampires 2` beside the ghost icon while the footer's HUD is still below the fold.
+for (const [width, height] of [[1280, 800], [375, 740]] as const) {
+  test(`the first screen at ${width}, with the findings strip`, async ({ context, sw }) => {
+    test.setTimeout(60_000);
+    const page = await context.newPage();
+    await page.setViewportSize({ width, height });
+    await page.goto(fixture("news.html"));
+    await haunt(sw, page);
+    await settled(page);
+    const inShadow = await shadowOf(page);
+    expect(await inShadow(function () { return this.getElementById("findings")!.hidden ? "" : this.getElementById("findings")!.textContent; })).toBe("Trackers 6 / Vampires 2");
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: `${OUT}/findings-${width}.png`, caret: "initial" });
+  });
+}
+
 test("curse badges and an open curse card on the coffee shop", async ({ context, sw, extensionId }) => {
   test.setTimeout(60_000);
   const page = await context.newPage();
