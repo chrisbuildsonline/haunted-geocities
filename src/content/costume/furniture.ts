@@ -63,6 +63,8 @@ export function harvest(doc: Document, skip: string): Harvest {
     if (!/^https?:$/.test(url.protocol)) continue;
     const text = clean(a.textContent);
     if (text.length < 2 || seen.has(text.toLowerCase())) continue;
+    // skip links and jumps within this page are not places to go
+    if (/^skip\b/i.test(text) || (url.hash && url.origin === origin && url.pathname === doc.defaultView!.location.pathname)) continue;
     if (url.origin === origin && text.length <= 22 && nav.length < 6) {
       seen.add(text.toLowerCase());
       nav.push({ text, href: url.href });

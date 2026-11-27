@@ -62,7 +62,7 @@ describe("harvest and the pieces", () => {
   };
 
   test("harvest reads the page's site links, outbound links and headings, skipping script links", () => {
-    const doc = page(`<nav><a href="/">Home</a><a href="/about">About</a><a href="javascript:alert(1)">Bad</a></nav>
+    const doc = page(`<a href="#main">Skip to main content</a><a href="/#top">Top</a><nav><a href="/">Home</a><a href="/about">About</a><a href="javascript:alert(1)">Bad</a></nav>
       <h2>First news</h2><h3>Second news</h3><a href="https://other.test/x">A friend's page</a>`);
     const h = harvest(doc, "hg-crypt");
     expect(h.nav.map((n) => n.text)).toEqual(["Home", "About"]);
