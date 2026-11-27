@@ -32,7 +32,7 @@ describe("crypt footer", () => {
     expect(footer.localName).toBe("footer");
     expect(footer.parentNode).toBe(root);
     expect(root.getElementById("crypt-root")!.contains(root.getElementById("hud"))).toBe(false);
-    expect([...footer.children].map((c) => c.id || c.className)).toEqual(["graveyard", "hud", "badges", "signoff", "footer-divider", "footer-sprites"]);
+    expect([...footer.children].map((c) => c.id || c.className)).toEqual(["fur-bottom", "graveyard", "hud", "badges", "signoff", "footer-divider", "footer-sprites"]);
     expect([...footer.querySelectorAll(".badges > .badge")].map((b) => b.textContent)).toEqual([
       "Best viewed in Netscape 4.0",
       "Made with Notepad",

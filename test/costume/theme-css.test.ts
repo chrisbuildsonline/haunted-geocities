@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { contrastRatio } from "../../src/content/costume/page-theme";
 import { dividerPx, SPRITES, tilePx, tintPatternPx, TRAIL_GLYPHS } from "../../src/content/costume/theme-art";
-import { lookPageCss, lookShadowCss, lookSprites, tintPattern, WELCOME } from "../../src/content/costume/theme-css";
-import { DIVIDERS, PALETTES, pickLook, PRESETS, SPRITE_SETS, TILES, type PaletteId } from "../../src/content/costume/themes";
+import { dressingCss, lookPageCss, lookShadowCss, lookSprites, tintPattern, WELCOME } from "../../src/content/costume/theme-css";
+import { DIVIDERS, PALETTES, pickLook, PRESETS, SPRITE_SETS, TILES, type Look, type PaletteId } from "../../src/content/costume/themes";
 import { coverLookCss } from "../../src/cover/cover";
 
 describe("theme art", () => {
@@ -15,7 +15,7 @@ describe("theme art", () => {
   test("every tile is drawn only in its palette's ground and three inks, inside 64×64", () => {
     for (const tile of TILES) for (const [id, c] of Object.entries(PALETTES)) {
       const px = tilePx(tile, c);
-      const inks = new Set([c.ground, c.a1, c.a2, c.a3]);
+      const inks = new Set<string>([c.ground, c.a1, c.a2, c.a3]);
       expect({ tile, id, stray: px.filter((p) => !inks.has(p.color)).length }).toEqual({ tile, id, stray: 0 });
       expect(px.every((p) => p.x >= 0 && p.y >= 0 && p.x < 64 && p.y < 64)).toBe(true);
     }
@@ -36,8 +36,9 @@ describe("theme CSS", () => {
   const look = (id: string) => pickLook("x.test", id);
 
   test("the page sheet names the preset and sizes the banner for desktop and phone", () => {
-    const css = lookPageCss(look("flame-skull"));
-    expect(css).toContain(":root { --hg-theme: flame-skull; --hg-welcome: 72px; }");
+    const l = look("flame-skull");
+    const css = lookPageCss(l);
+    expect(css).toContain(`:root { --hg-theme: flame-skull; --hg-welcome: ${l.furniture.includes("tabbar") ? 100 : 72}px; }`);
     expect(css).toContain(`@media (max-width: ${WELCOME.phoneBelow - 1}px) { :root { --hg-welcome: 56px; } }`);
     expect(css).toMatch(/:where\(hr\) \{ height: 16px !important; border: 0 !important; background: url\("data:image\/svg\+xml,/);
     // images get a bevel drawn as an outline, so nothing moves
@@ -61,15 +62,20 @@ describe("theme CSS", () => {
   test("under reduced motion nothing in the banner, the sprites or the trail moves", () => {
     for (const p of PRESETS) {
       const css = lookShadowCss(look(p.id));
-      expect(css).toContain(".reduced-motion .wb-new, .reduced-motion .deco, .reduced-motion .spark { animation: none !important; }");
+      expect(css).toContain(".reduced-motion .wb-new, .reduced-motion .deco, .reduced-motion .spark, .reduced-motion .new { animation: none !important; }");
       expect(css).toContain(".reduced-motion #trail { display: none; }");
     }
   });
 
-  test("the nav-frame quirk dresses one gutter, the table quirk none", () => {
-    expect(lookShadowCss(look("spiderweb-attic"))).toContain("#starfield .gutter.left .fill { background: #330066;");
-    expect(lookShadowCss(look("ufo-crash"))).toContain("#starfield .gutter.right .fill {");
-    expect(lookShadowCss(look("flame-skull"))).not.toContain("#starfield .gutter.");
+  test("each dressing wraps the page's own sections its own way", () => {
+    const at = (dressing: string, prefix = "none") => dressingCss({ ...look("flame-skull"), dressing, prefix } as Look, false).join("\n");
+    expect(at("cells")).toContain("border: 3px outset #ff9900 !important; padding: 8px !important;");
+    expect(at("fieldset")).toMatch(/border: 2px groove #660000 !important;[\s\S]*::before \{ content: "/);
+    expect(at("bullets")).toContain("list-style-image: url(");
+    expect(at("frames")).toBe("");
+    expect(at("cells", "skull")).toMatch(/:where\(h2, h3\):not\(nav \*[^{]*::before \{ content: url\(/);
+    // on a dark page the fieldset legend (white ground) gives way to plain cells
+    expect(dressingCss({ ...look("flame-skull"), dressing: "fieldset", prefix: "none" } as Look, true).join("\n")).not.toContain("::before");
   });
 
   test("the banner and the footer show the sprite set's pair", () => {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { contrastRatio, ensureContrast, WEB_SAFE } from "../../src/content/costume/page-theme";
 import { fnv1a, mulberry32, seedKey } from "../../src/content/costume/seed";
 import {
-  BANNERS, BEVELS, clashes, COUNTERS, DIVIDERS, HEADINGS, lookSignature, PALETTES, pickLook, PRESETS, QUIRKS, RAINBOW, SPRITE_SETS, TILES, TRAILS,
+  BANNERS, BEVELS, clashes, COUNTERS, DENSITIES, DIVIDERS, DRESSINGS, FURNITURE, FURNITURE_COUNT, HEADINGS, LAYOUTS, lookSignature, PALETTES, pickLook, PREFIXES, PRESETS, RAINBOW, SPRITE_SETS, TILES, TRAILS,
   type Axes, type PaletteId,
 } from "../../src/content/costume/themes";
 
@@ -47,7 +47,11 @@ describe("pickLook", () => {
     expect(DIVIDERS.length).toBeGreaterThanOrEqual(5);
     expect(Object.keys(SPRITE_SETS).length).toBeGreaterThanOrEqual(5);
     expect(BEVELS.length).toBeGreaterThanOrEqual(4);
-    expect(QUIRKS).toEqual(["table", "leftframe", "rightframe"]);
+    expect(Object.keys(LAYOUTS).length).toBeGreaterThanOrEqual(6);
+    expect(DENSITIES).toEqual(["sparse", "normal", "cluttered"]);
+    expect(DRESSINGS.length).toBeGreaterThanOrEqual(4);
+    expect(PREFIXES.length).toBeGreaterThanOrEqual(4);
+    expect(FURNITURE.length).toBeGreaterThanOrEqual(10);
     expect(BANNERS.length).toBeGreaterThanOrEqual(6);
     expect(Object.keys(COUNTERS).length).toBeGreaterThanOrEqual(3);
     expect(TRAILS.length).toBeGreaterThanOrEqual(4);
@@ -78,8 +82,8 @@ describe("pickLook", () => {
   test("the classic crypt keeps its page look: only its trimmings vary", () => {
     for (const h of hosts(400)) {
       const l = pickLook(h, "classic-crypt");
-      expect({ tile: l.tile, palette: l.palette, fonts: l.fonts, heading: l.heading, bevel: l.bevel, quirk: l.quirk }).toEqual({
-        tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", bevel: "ridge", quirk: "table",
+      expect({ tile: l.tile, palette: l.palette, fonts: l.fonts, heading: l.heading, bevel: l.bevel, layout: l.layout, dressing: l.dressing, prefix: l.prefix, furniture: l.furniture }).toEqual({
+        tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", bevel: "ridge", layout: "full", dressing: "frames", prefix: "none", furniture: [],
       });
     }
   });
@@ -94,8 +98,48 @@ describe("pickLook", () => {
   test("a forced preset wins, an unknown one is ignored", () => {
     const forced = pickLook("127.0.0.1", "flame-skull");
     const { id, name, ...axes } = PRESETS.find((p) => p.id === "flame-skull")!;
-    expect(forced).toEqual({ ...axes, site: "127.0.0.1", preset: id, name, varied: [] });
+    expect(forced).toMatchObject({ ...axes, site: "127.0.0.1", preset: id, name, varied: [] });
+    expect(forced.furniture).toEqual(pickLook("example.org", "flame-skull").furniture);
     expect(pickLook("127.0.0.1", "nope").preset).toBe(pickLook("127.0.0.1").preset);
+  });
+});
+
+describe("the structure", () => {
+  const looks = hosts(200).map((h) => pickLook(h));
+
+  test("the same host always gets the same layout, density, dressing and furniture", () => {
+    for (const h of hosts(50)) {
+      const [a, b] = [pickLook(h), pickLook(`www.${h}`)];
+      expect({ layout: b.layout, density: b.density, dressing: b.dressing, prefix: b.prefix, furniture: b.furniture }).toEqual({ layout: a.layout, density: a.density, dressing: a.dressing, prefix: a.prefix, furniture: a.furniture });
+    }
+  });
+
+  test("200 sites spread over every layout, density, dressing and prefix, and over many furniture sets", () => {
+    for (const [axis, all] of [["layout", Object.keys(LAYOUTS)], ["density", DENSITIES], ["dressing", DRESSINGS], ["prefix", PREFIXES]] as const) {
+      expect({ axis, seen: [...new Set<string>(looks.map((l) => l[axis]))].sort() }).toEqual({ axis, seen: [...(all as readonly string[])].sort() });
+    }
+    expect(new Set(looks.map((l) => l.furniture.join(","))).size).toBeGreaterThanOrEqual(150);
+    for (const f of FURNITURE) expect({ f, used: looks.some((l) => l.furniture.includes(f)) }).toEqual({ f, used: true });
+  });
+
+  test("the furniture count follows the density, with no piece twice", () => {
+    for (const l of looks) {
+      if (l.preset === "classic-crypt") {
+        expect(l.furniture).toEqual([]);
+        continue;
+      }
+      const [lo, hi] = FURNITURE_COUNT[l.density];
+      expect(l.furniture.length).toBeGreaterThanOrEqual(lo);
+      expect(l.furniture.length).toBeLessThanOrEqual(hi);
+      expect(new Set(l.furniture).size).toBe(l.furniture.length);
+    }
+  });
+
+  test("a sparse site is one plain table, and three columns only come cluttered", () => {
+    for (const l of looks) {
+      if (l.density === "sparse") expect(LAYOUTS[l.layout].left + LAYOUTS[l.layout].right).toBe(0);
+      if (l.layout === "links3") expect(l.density).toBe("cluttered");
+    }
   });
 });
 
@@ -126,7 +170,7 @@ describe("contrast and the era palette, for every preset and variation", () => {
   });
 
   test("walking every preset × every single-axis variation: no clash passes the rules with a contrast miss", () => {
-    const axes = { palette: Object.keys(PALETTES), heading: HEADINGS, divider: DIVIDERS, sprites: Object.keys(SPRITE_SETS), bevel: BEVELS, banner: BANNERS.map((_, i) => i), counter: Object.keys(COUNTERS), trail: TRAILS, quirk: QUIRKS };
+    const axes = { palette: Object.keys(PALETTES), heading: HEADINGS, divider: DIVIDERS, sprites: Object.keys(SPRITE_SETS), bevel: BEVELS, banner: BANNERS.map((_, i) => i), counter: Object.keys(COUNTERS), trail: TRAILS, layout: Object.keys(LAYOUTS).filter((l) => l !== "full"), density: DENSITIES, dressing: DRESSINGS, prefix: PREFIXES };
     let walked = 0;
     for (const preset of PRESETS) {
       expect({ preset: preset.id, clashes: clashes(preset) }).toEqual({ preset: preset.id, clashes: [] });

@@ -81,8 +81,30 @@ export const COUNTERS = {
   blue: { digit: "#ffffff", cell: "#000099" },
 } as const;
 export const TRAILS = ["stars", "sparkles", "bats", "hearts", "fire"] as const;
-/** The 1998 layout the gutters suggest: a centred table, or a nav frame down one side. */
-export const QUIRKS = ["table", "leftframe", "rightframe"] as const;
+/**
+ * The page's 1998 structure. `main` is the width the page's own body is held to; `left` and `right` are
+ * the furniture columns beside it (a nav frame, Cool Links); `align` centres the table or keeps it left.
+ * "full" (Classic Crypt only) leaves the page's width alone.
+ */
+export const LAYOUTS = {
+  full: { main: 0, left: 0, right: 0, align: "center" },
+  table640: { main: 640, left: 0, right: 0, align: "center" },
+  table800: { main: 800, left: 0, right: 0, align: "center" },
+  left760: { main: 760, left: 0, right: 0, align: "left" },
+  nav2: { main: 620, left: 180, right: 0, align: "center" },
+  rightlinks: { main: 620, left: 0, right: 180, align: "center" },
+  links3: { main: 560, left: 170, right: 170, align: "center" },
+} as const;
+export const DENSITIES = ["sparse", "normal", "cluttered"] as const;
+/** How the page's own sections are wrapped: bevelled cells, fieldset boxes with a legend, sprite bullets, or thick 3D picture frames. */
+export const DRESSINGS = ["cells", "fieldset", "bullets", "frames"] as const;
+/** A sprite before every h2 and h3. */
+export const PREFIXES = ["none", "skull", "flame", "star"] as const;
+/** The 1998 furniture the look puts round the page (the welcome banner is always there). */
+export const FURNITURE = ["navbuttons", "construction", "coollinks", "awards", "guestbook", "updated", "whatsnew", "webring", "counter", "bestviewed", "tabbar"] as const;
+export type Furniture = (typeof FURNITURE)[number];
+/** How many pieces of furniture each density gets: [least, most]. */
+export const FURNITURE_COUNT = { sparse: [2, 3], normal: [4, 6], cluttered: [7, 9] } as const;
 /** The banded rainbow for headings: every stop dark enough to read on every palette's tint. */
 export const RAINBOW = ["#990000", "#993300", "#006600", "#003399", "#0000cc", "#660099"] as const;
 
@@ -98,7 +120,10 @@ export type Axes = {
   banner: number;
   counter: keyof typeof COUNTERS;
   trail: (typeof TRAILS)[number];
-  quirk: (typeof QUIRKS)[number];
+  layout: keyof typeof LAYOUTS;
+  density: (typeof DENSITIES)[number];
+  dressing: (typeof DRESSINGS)[number];
+  prefix: (typeof PREFIXES)[number];
 };
 export type Preset = Axes & { id: string; name: string; locked?: boolean };
 
@@ -106,32 +131,32 @@ const p = (id: string, name: string, a: Omit<Axes, "banner"> & { banner?: number
 
 /** The named sites. The order is part of the seed: a preset's place decides which sites wear it. */
 export const PRESETS: readonly Preset[] = [
-  p("construction-zone", "Under Construction Zone", { tile: "bricks", palette: "construction", fonts: "arial", heading: "wordart", divider: "tape", sprites: "construction", bevel: "outset", counter: "amber", trail: "sparkles", quirk: "table", banner: 1 }),
-  p("spiderweb-attic", "Spiderweb Attic", { tile: "web", palette: "midnight", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "bats", quirk: "leftframe", banner: 4 }),
-  p("toxic-dump", "Toxic Waste Dump", { tile: "slime", palette: "toxic", fonts: "comic", heading: "blink", divider: "drips", sprites: "spooky", bevel: "inset", counter: "green", trail: "sparkles", quirk: "table", banner: 7 }),
-  p("bubblegum-club", "Bubblegum Heart Club", { tile: "hearts", palette: "bubblegum", fonts: "comic", heading: "rainbow", divider: "rainbow", sprites: "love", bevel: "outset", counter: "red", trail: "hearts", quirk: "table", banner: 3 }),
-  p("classic-crypt", "Classic Crypt", { tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "stars", quirk: "table", banner: 0 }, true),
-  p("ufo-crash", "UFO Crash Site", { tile: "planets", palette: "midnight", fonts: "verdana", heading: "outline", divider: "rainbow", sprites: "space", bevel: "double", counter: "blue", trail: "stars", quirk: "rightframe", banner: 4 }),
-  p("cyber-cafe", "Cyber Cafe 2000", { tile: "checker", palette: "teal", fonts: "verdana", heading: "wordart", divider: "rainbow", sprites: "web", bevel: "outset", counter: "blue", trail: "sparkles", quirk: "table", banner: 5 }),
-  p("haunted-dungeon", "Haunted Dungeon", { tile: "bricks", palette: "crypt", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "inset", counter: "red", trail: "bats", quirk: "table", banner: 7 }),
-  p("hellfire-bbs", "Hellfire BBS", { tile: "flames", palette: "inferno", fonts: "courier", heading: "blink", divider: "flames", sprites: "web", bevel: "double", counter: "red", trail: "fire", quirk: "leftframe", banner: 4 }),
-  p("slime-lab", "Slime Time Lab", { tile: "slime", palette: "teal", fonts: "arial", heading: "wordart", divider: "drips", sprites: "space", bevel: "ridge", counter: "green", trail: "sparkles", quirk: "rightframe", banner: 6 }),
-  p("sky-hangout", "Sky High Hangout", { tile: "clouds", palette: "sky", fonts: "verdana", heading: "wordart", divider: "rainbow", sprites: "mail", bevel: "outset", counter: "blue", trail: "sparkles", quirk: "table", banner: 5 }),
-  p("love-shack", "Pixel Love Shack", { tile: "hearts", palette: "bubblegum", fonts: "georgia", heading: "outline", divider: "rainbow", sprites: "love", bevel: "double", counter: "red", trail: "hearts", quirk: "leftframe", banner: 2 }),
-  p("checker-arcade", "Checkerboard Arcade", { tile: "checker", palette: "construction", fonts: "arial", heading: "wordart", divider: "tape", sprites: "web", bevel: "outset", counter: "amber", trail: "stars", quirk: "table", banner: 6 }),
-  p("space-outpost", "Deep Space Outpost", { tile: "planets", palette: "midnight", fonts: "courier", heading: "blink", divider: "rainbow", sprites: "space", bevel: "inset", counter: "green", trail: "stars", quirk: "table", banner: 2 }),
-  p("cloud-angel", "Cloud Angel Page", { tile: "clouds", palette: "sky", fonts: "comic", heading: "rainbow", divider: "rainbow", sprites: "love", bevel: "ridge", counter: "blue", trail: "sparkles", quirk: "table", banner: 0 }),
-  p("neon-webmaster", "Neon Webmaster Den", { tile: "web", palette: "toxic", fonts: "verdana", heading: "outline", divider: "drips", sprites: "web", bevel: "double", counter: "green", trail: "sparkles", quirk: "rightframe", banner: 1 }),
-  p("matrix-den", "Matrix Hacker Den", { tile: "matrix", palette: "matrix", fonts: "courier", heading: "outline", divider: "skulls", sprites: "web", bevel: "inset", counter: "green", trail: "stars", quirk: "leftframe", banner: 4 }),
-  p("bat-cave", "Midnight Bat Cave", { tile: "stars", palette: "midnight", fonts: "comic", heading: "wordart", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "red", trail: "bats", quirk: "table", banner: 7 }),
-  p("email-corner", "E-Mail Me Corner", { tile: "checker", palette: "sky", fonts: "comic", heading: "blink", divider: "rainbow", sprites: "mail", bevel: "outset", counter: "blue", trail: "hearts", quirk: "table", banner: 2 }),
-  p("lava-lounge", "Lava Lamp Lounge", { tile: "slime", palette: "inferno", fonts: "georgia", heading: "wordart", divider: "drips", sprites: "love", bevel: "double", counter: "amber", trail: "fire", quirk: "table", banner: 6 }),
-  p("flame-skull", "Flame Skull Shrine", { tile: "flames", palette: "inferno", fonts: "arial", heading: "wordart", divider: "flames", sprites: "spooky", bevel: "outset", counter: "red", trail: "fire", quirk: "table", banner: 4 }),
-  p("robot-lab", "Retro Robot Lab", { tile: "checker", palette: "midnight", fonts: "courier", heading: "outline", divider: "tape", sprites: "web", bevel: "inset", counter: "amber", trail: "sparkles", quirk: "rightframe", banner: 1 }),
+  p("construction-zone", "Under Construction Zone", { tile: "bricks", palette: "construction", fonts: "arial", heading: "wordart", divider: "tape", sprites: "construction", bevel: "outset", counter: "amber", trail: "sparkles", layout: "left760", density: "cluttered", dressing: "cells", prefix: "star", banner: 1 }),
+  p("spiderweb-attic", "Spiderweb Attic", { tile: "web", palette: "midnight", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "bats", layout: "nav2", density: "normal", dressing: "fieldset", prefix: "skull", banner: 4 }),
+  p("toxic-dump", "Toxic Waste Dump", { tile: "slime", palette: "toxic", fonts: "comic", heading: "blink", divider: "drips", sprites: "spooky", bevel: "inset", counter: "green", trail: "sparkles", layout: "table640", density: "normal", dressing: "bullets", prefix: "skull", banner: 7 }),
+  p("bubblegum-club", "Bubblegum Heart Club", { tile: "hearts", palette: "bubblegum", fonts: "comic", heading: "rainbow", divider: "rainbow", sprites: "love", bevel: "outset", counter: "red", trail: "hearts", layout: "links3", density: "cluttered", dressing: "bullets", prefix: "star", banner: 3 }),
+  p("classic-crypt", "Classic Crypt", { tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "stars", layout: "full", density: "sparse", dressing: "frames", prefix: "none", banner: 0 }, true),
+  p("ufo-crash", "UFO Crash Site", { tile: "planets", palette: "midnight", fonts: "verdana", heading: "outline", divider: "rainbow", sprites: "space", bevel: "double", counter: "blue", trail: "stars", layout: "rightlinks", density: "normal", dressing: "fieldset", prefix: "star", banner: 4 }),
+  p("cyber-cafe", "Cyber Cafe 2000", { tile: "checker", palette: "teal", fonts: "verdana", heading: "wordart", divider: "rainbow", sprites: "web", bevel: "outset", counter: "blue", trail: "sparkles", layout: "links3", density: "cluttered", dressing: "cells", prefix: "none", banner: 5 }),
+  p("haunted-dungeon", "Haunted Dungeon", { tile: "bricks", palette: "crypt", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "inset", counter: "red", trail: "bats", layout: "table800", density: "sparse", dressing: "frames", prefix: "skull", banner: 7 }),
+  p("hellfire-bbs", "Hellfire BBS", { tile: "flames", palette: "inferno", fonts: "courier", heading: "blink", divider: "flames", sprites: "web", bevel: "double", counter: "red", trail: "fire", layout: "nav2", density: "cluttered", dressing: "cells", prefix: "flame", banner: 4 }),
+  p("slime-lab", "Slime Time Lab", { tile: "slime", palette: "teal", fonts: "arial", heading: "wordart", divider: "drips", sprites: "space", bevel: "ridge", counter: "green", trail: "sparkles", layout: "rightlinks", density: "normal", dressing: "bullets", prefix: "none", banner: 6 }),
+  p("sky-hangout", "Sky High Hangout", { tile: "clouds", palette: "sky", fonts: "verdana", heading: "wordart", divider: "rainbow", sprites: "mail", bevel: "outset", counter: "blue", trail: "sparkles", layout: "table640", density: "sparse", dressing: "frames", prefix: "star", banner: 5 }),
+  p("love-shack", "Pixel Love Shack", { tile: "hearts", palette: "bubblegum", fonts: "georgia", heading: "outline", divider: "rainbow", sprites: "love", bevel: "double", counter: "red", trail: "hearts", layout: "nav2", density: "normal", dressing: "bullets", prefix: "star", banner: 2 }),
+  p("checker-arcade", "Checkerboard Arcade", { tile: "checker", palette: "construction", fonts: "arial", heading: "wordart", divider: "tape", sprites: "web", bevel: "outset", counter: "amber", trail: "stars", layout: "links3", density: "cluttered", dressing: "cells", prefix: "star", banner: 6 }),
+  p("space-outpost", "Deep Space Outpost", { tile: "planets", palette: "midnight", fonts: "courier", heading: "blink", divider: "rainbow", sprites: "space", bevel: "inset", counter: "green", trail: "stars", layout: "table800", density: "normal", dressing: "fieldset", prefix: "star", banner: 2 }),
+  p("cloud-angel", "Cloud Angel Page", { tile: "clouds", palette: "sky", fonts: "comic", heading: "rainbow", divider: "rainbow", sprites: "love", bevel: "ridge", counter: "blue", trail: "sparkles", layout: "rightlinks", density: "normal", dressing: "fieldset", prefix: "star", banner: 0 }),
+  p("neon-webmaster", "Neon Webmaster Den", { tile: "web", palette: "toxic", fonts: "verdana", heading: "outline", divider: "drips", sprites: "web", bevel: "double", counter: "green", trail: "sparkles", layout: "left760", density: "normal", dressing: "cells", prefix: "none", banner: 1 }),
+  p("matrix-den", "Matrix Hacker Den", { tile: "matrix", palette: "matrix", fonts: "courier", heading: "outline", divider: "skulls", sprites: "web", bevel: "inset", counter: "green", trail: "stars", layout: "links3", density: "cluttered", dressing: "cells", prefix: "skull", banner: 4 }),
+  p("bat-cave", "Midnight Bat Cave", { tile: "stars", palette: "midnight", fonts: "comic", heading: "wordart", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "red", trail: "bats", layout: "nav2", density: "normal", dressing: "frames", prefix: "skull", banner: 7 }),
+  p("email-corner", "E-Mail Me Corner", { tile: "checker", palette: "sky", fonts: "comic", heading: "blink", divider: "rainbow", sprites: "mail", bevel: "outset", counter: "blue", trail: "hearts", layout: "table640", density: "normal", dressing: "bullets", prefix: "none", banner: 2 }),
+  p("lava-lounge", "Lava Lamp Lounge", { tile: "slime", palette: "inferno", fonts: "georgia", heading: "wordart", divider: "drips", sprites: "love", bevel: "double", counter: "amber", trail: "fire", layout: "rightlinks", density: "normal", dressing: "fieldset", prefix: "flame", banner: 6 }),
+  p("flame-skull", "Flame Skull Shrine", { tile: "flames", palette: "inferno", fonts: "arial", heading: "wordart", divider: "flames", sprites: "spooky", bevel: "outset", counter: "red", trail: "fire", layout: "nav2", density: "cluttered", dressing: "cells", prefix: "flame", banner: 4 }),
+  p("robot-lab", "Retro Robot Lab", { tile: "checker", palette: "midnight", fonts: "courier", heading: "outline", divider: "tape", sprites: "web", bevel: "inset", counter: "amber", trail: "sparkles", layout: "table800", density: "normal", dressing: "cells", prefix: "none", banner: 1 }),
 ];
 
 /** What the seed may swap; a locked preset keeps its page look and only changes its trimmings. */
-const VARY = ["palette", "divider", "sprites", "bevel", "heading", "banner", "counter", "trail", "quirk"] as const;
+const VARY = ["palette", "divider", "sprites", "bevel", "heading", "banner", "counter", "trail", "layout", "density", "dressing", "prefix"] as const;
 const VARY_LOCKED = ["divider", "sprites", "banner", "counter", "trail"] as const;
 type VaryAxis = (typeof VARY)[number];
 
@@ -144,7 +169,10 @@ const OPTIONS: { [K in VaryAxis]: readonly Axes[K][] } = {
   banner: BANNERS.map((_, i) => i),
   counter: Object.keys(COUNTERS) as (keyof typeof COUNTERS)[],
   trail: TRAILS,
-  quirk: QUIRKS,
+  layout: (Object.keys(LAYOUTS) as (keyof typeof LAYOUTS)[]).filter((l) => l !== "full"),
+  density: DENSITIES,
+  dressing: DRESSINGS,
+  prefix: PREFIXES,
 };
 
 const lum = (hex: string) => relativeLuminance(hex);
@@ -156,11 +184,21 @@ export const CLASH_RULES: readonly { name: string; blocks: (a: Axes) => boolean 
   { name: "rainbow headings need every stop at 4.5:1 on the tint", blocks: (a) => a.heading === "rainbow" && RAINBOW.some((c) => contrastRatio(c, PALETTES[a.palette].tint) < 4.5) },
   { name: "no pink checkerboard", blocks: (a) => a.tile === "checker" && a.palette === "bubblegum" },
   { name: "the matrix tile is only green", blocks: (a) => a.tile === "matrix" && a.palette !== "matrix" },
+  { name: "a sparse site is one plain table", blocks: (a) => a.density === "sparse" && (LAYOUTS[a.layout].left > 0 || LAYOUTS[a.layout].right > 0) },
+  { name: "three columns are only for a cluttered site", blocks: (a) => a.layout === "links3" && a.density !== "cluttered" },
 ];
 
 export const clashes = (a: Axes) => CLASH_RULES.filter((r) => r.blocks(a)).map((r) => r.name);
 
-export type Look = Axes & { site: string; preset: string; name: string; varied: VaryAxis[] };
+export type Look = Axes & { site: string; preset: string; name: string; varied: VaryAxis[]; furniture: Furniture[] };
+
+/** `n` distinct pieces of furniture in a seeded order. */
+function pickFurniture(rnd: () => number, density: Axes["density"]): Furniture[] {
+  const [lo, hi] = FURNITURE_COUNT[density];
+  const n = lo + Math.floor(rnd() * (hi - lo + 1));
+  const pool = [...FURNITURE];
+  return Array.from({ length: n }, () => pool.splice(Math.floor(rnd() * pool.length), 1)[0]!);
+}
 
 /**
  * The look for `hostname`: the same for every page of the site, www or not. `force` (a preset id, the
@@ -174,7 +212,7 @@ export function pickLook(hostname: string, force?: string | null): Look {
   const { id, name, locked, ...axes } = forced ?? drawn;
   const look: Axes = { ...axes };
   // A forced preset (visual baselines) is shown as designed, with nothing varied.
-  if (forced) return { ...look, site, preset: id, name, varied: [] };
+  if (forced) return { ...look, site, preset: id, name, varied: [], furniture: locked ? [] : pickFurniture(mulberry32(fnv1a(id)), look.density) };
   const pool: VaryAxis[] = [...(locked ? VARY_LOCKED : VARY)];
   const n = 2 + Math.floor(rnd() * 2);
   const varied: VaryAxis[] = [];
@@ -185,9 +223,10 @@ export function pickLook(hostname: string, force?: string | null): Look {
     (look as Record<string, unknown>)[axis] = pick(rnd, fits);
     varied.push(axis);
   }
-  return { ...look, site, preset: id, name, varied };
+  // Classic Crypt keeps the page's own structure: no furniture beyond the banner.
+  return { ...look, site, preset: id, name, varied, furniture: locked ? [] : pickFurniture(rnd, look.density) };
 }
 
 /** Every axis of a look in one string: two sites with the same signature look the same. */
-export const lookSignature = (l: Axes & { preset: string }) =>
-  [l.preset, l.tile, l.palette, l.fonts, l.heading, l.divider, l.sprites, l.bevel, l.banner, l.counter, l.trail, l.quirk].join("|");
+export const lookSignature = (l: Axes & { preset: string; furniture?: readonly string[] }) =>
+  [l.preset, l.tile, l.palette, l.fonts, l.heading, l.divider, l.sprites, l.bevel, l.banner, l.counter, l.trail, l.layout, l.density, l.dressing, l.prefix, (l.furniture ?? []).join(",")].join("|");

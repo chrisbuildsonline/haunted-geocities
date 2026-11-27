@@ -17,6 +17,7 @@ import { LAYOUT } from "./tokens";
 import { pickLook } from "./themes";
 import { buildWelcome, fontsOf, lookPageCss, lookShadowCss, lookSprites, lookTiles, paletteOf, rainbowHeadings, spriteMarkup, tintPattern } from "./theme-css";
 import { trailSvg } from "./theme-art";
+import { buildColumn, buildPiece, buildTabs, harvest, layoutCss, layoutGeometry, placeFurniture, type Geometry } from "./furniture";
 import trackerJson from "../../data/trackers.json";
 import { resolveNeighborhood } from "../../data/neighborhood";
 import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
@@ -142,18 +143,38 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const footerSprites = Object.assign(doc.createElement("div"), { className: "footer-sprites" });
   footerSprites.setAttribute("aria-hidden", "true");
   footerSprites.innerHTML = lookSprites(look).footer.map(spriteMarkup).join("");
-  footer.append(graveyard, hud, buttons88, signoff, footerDivider, footerSprites);
+  // The look's furniture (design/DESIGN.md "Themes"): side columns beside the page's table, the rest at the
+  // bottom, just after the page; built from the page's own links and headings, read once.
+  const harvested = harvest(doc, HOST_TAG);
+  const furBottom = el(doc, "fur-bottom");
+  furBottom.setAttribute("aria-hidden", "true");
+  const furLeft = buildColumn(doc, "fur-left");
+  const furRight = buildColumn(doc, "fur-right");
+  footer.append(furBottom, graveyard, hud, buttons88, signoff, footerDivider, footerSprites);
   const trail = el(doc, "trail");
   trail.setAttribute("aria-hidden", "true");
   croot.append(starfield, lanes, markers, bands, cards, findings, tab, trail);
   // The banner scrolls with the page, under the fixed bands (before #crypt-root, so the fixed layers stay above it).
   const welcome = buildWelcome(doc, look);
-  root.append(welcome, croot, footer);
+  if (look.furniture.includes("tabbar")) welcome.append(buildTabs(doc, harvested));
+  root.append(welcome, furLeft, furRight, croot, footer);
+  let geom: Geometry = layoutGeometry(look, doc.documentElement.clientWidth || win.innerWidth);
+  let placedKey = "";
+  const placeKeyOf = (g: Geometry) => JSON.stringify(placeFurniture(look.furniture, g));
+  const fill = () => {
+    const key = placeKeyOf(geom);
+    if (key === placedKey) return;
+    placedKey = key;
+    const at = placeFurniture(look.furniture, geom);
+    for (const [box, items] of [[furLeft, at.left], [furRight, at.right], [furBottom, at.bottom]] as const) {
+      box.replaceChildren(...items.map((f) => buildPiece(doc, f, look, harvested)));
+    }
+  };
   let rainbow: string[] = [];
   let dark = false;
   const page = addPageSheet(doc, {
     fonts: fontsOf(look),
-    css: () => lookPageCss(look, { rainbow, dark }),
+    css: () => lookPageCss(look, { rainbow, dark }) + "\n" + layoutCss(geom),
     layers: { tint: palette.tint, pattern: tintPattern(look), bevel: look.bevel, light: palette.bevelLight, dark: palette.bevelDark, glow: palette.glow },
   });
   let lift = 0;
@@ -168,6 +189,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   let drawn: { tint: Box | null; frame: Box | null } = { tint: null, frame: null };
   const vw = () => doc.documentElement.clientWidth || win.innerWidth;
   const measure = () => {
+    geom = layoutGeometry(look, vw());
+    fill();
     const theme = pageTheme(doc, palette);
     dark = theme.dark;
     rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
@@ -177,13 +200,20 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     welcome.style.top = `${top + LAYOUT.neighborhoodBar + LAYOUT.marquee}px`;
     lift = sampleBottomLift(doc);
     pad();
-    let col = computeContentColumn(doc);
+    // The furniture columns are part of the 1998 table: the frame and the tint go round them too.
+    const widen = (c: Column): Column => {
+      if (!geom.main) return c;
+      const first = geom.left ?? geom.main;
+      const last = geom.right ?? geom.main;
+      return { left: Math.min(c.left, first.x), right: Math.max(c.right, last.x + last.w) };
+    };
+    let col = widen(computeContentColumn(doc));
     const inset = overlay ? LAYOUT.edgeFrame : 0;
     const full = gutterWidths({ left: col.left - inset, right: col.right + inset }, vw()) === null;
     if (full !== overlay) {
       overlay = full;
       page.set({ overlay });
-      col = computeContentColumn(doc);
+      col = widen(computeContentColumn(doc));
     }
     gutters = overlay ? null : gutterWidths(col, vw());
     layoutStarfield(starfield, gutters, FRAME_OUT);
@@ -201,6 +231,13 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       frame: !empty && !overlay ? frameBox(span, width) : null,
     };
     page.set(drawn);
+    // The side columns run from under the banner to the footer, in document coordinates.
+    const colTop = welcome.offsetTop + welcome.offsetHeight;
+    for (const [box, span] of [[furLeft, geom.left], [furRight, geom.right]] as const) {
+      box.hidden = !span || overlay;
+      if (!span) continue;
+      Object.assign(box.style, { left: `${span.x + win.scrollX + 4}px`, width: `${span.w - 8}px`, top: `${colTop + 8}px`, height: `${Math.max(0, pageEnd - colTop - 16)}px` });
+    }
   };
   measure();
   const reveals = (): Reveal[] =>
@@ -317,15 +354,15 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     showLine(0);
   });
 
-  const onVisibility = () => [croot, footer, welcome].forEach((el) => el.classList.toggle("tab-hidden", doc.hidden));
+  const onVisibility = () => [croot, footer, welcome, furLeft, furRight].forEach((el) => el.classList.toggle("tab-hidden", doc.hidden));
   doc.addEventListener("visibilitychange", onVisibility);
   onVisibility();
 
   const motion = watchReducedMotion(win, (reduced) => {
-    for (const el of [croot, footer, welcome]) el.classList.toggle("reduced-motion", reduced);
+    for (const el of [croot, footer, welcome, furLeft, furRight]) el.classList.toggle("reduced-motion", reduced);
     if (reduced) costume.moment?.finish();
   });
-  for (const el of [croot, footer, welcome]) el.classList.toggle("reduced-motion", motion.matches);
+  for (const el of [croot, footer, welcome, furLeft, furRight]) el.classList.toggle("reduced-motion", motion.matches);
 
   // The cursor trail: a small glyph every 50ms at most, 12 at once, each falling and fading. None under reduced motion.
   let lastSpark = -Infinity;
@@ -348,7 +385,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   hide.addEventListener("click", () => {
     croot.classList.add("costume-hidden");
     footer.classList.add("costume-hidden");
-    welcome.classList.add("costume-hidden");
+    for (const e of [welcome, furLeft, furRight]) e.classList.add("costume-hidden");
     page.set({ hidden: true }); // tint and frame fade; the restyle stays (haunt state is kept)
     tab.focus();
   });
@@ -356,7 +393,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     if (croot.classList.contains("costume-hidden")) {
       croot.classList.remove("costume-hidden");
       footer.classList.remove("costume-hidden");
-      welcome.classList.remove("costume-hidden");
+      for (const e of [welcome, furLeft, furRight]) e.classList.remove("costume-hidden");
       page.set({ hidden: false });
       if (motion.matches) {
         line++;
