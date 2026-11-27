@@ -14,61 +14,49 @@
         "Google Ads (Google)"
       ],
       "stillShows": [
+        "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Crazy Egg",
         "Google Ads (Google)"
       ],
       "stillClear": {
-        "panels": [
-          {
-            "left": 446,
-            "top": 343,
-            "right": 730,
-            "bottom": 618
-          },
-          {
-            "left": 436,
-            "top": 718,
-            "right": 1024,
-            "bottom": 887
-          }
-        ],
+        "panels": [],
         "ghosts": [
           {
-            "left": 107,
-            "top": -104,
-            "right": 251,
-            "bottom": 40
+            "left": 103,
+            "top": 17,
+            "right": 247,
+            "bottom": 161
           },
           {
-            "left": 847,
-            "top": 38,
-            "right": 943,
-            "bottom": 134
+            "left": 850,
+            "top": 155,
+            "right": 946,
+            "bottom": 251
           },
           {
-            "left": 488,
-            "top": 93,
-            "right": 632,
-            "bottom": 237
+            "left": 484,
+            "top": 214,
+            "right": 628,
+            "bottom": 358
           },
           {
-            "left": 1112,
-            "top": 229,
-            "right": 1208,
-            "bottom": 325
+            "left": 1115,
+            "top": 346,
+            "right": 1211,
+            "bottom": 442
           },
           {
-            "left": 283,
-            "top": 324,
-            "right": 379,
-            "bottom": 420
+            "left": 280,
+            "top": 442,
+            "right": 376,
+            "bottom": 538
           },
           {
-            "left": 769,
-            "top": 388,
-            "right": 913,
-            "bottom": 532
+            "left": 772,
+            "top": 510,
+            "right": 916,
+            "bottom": 654
           }
         ],
         "named": 4
@@ -85,58 +73,51 @@
         "Google Ads (Google)"
       ],
       "stillShows": [
+        "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Google Ads (Google)"
       ],
       "stillClear": {
-        "panels": [
-          {
-            "left": 599,
-            "top": 385,
-            "right": 844,
-            "bottom": 658
-          }
-        ],
+        "panels": [],
         "ghosts": [
           {
-            "left": 107,
-            "top": -114,
-            "right": 251,
-            "bottom": 30
+            "left": 101,
+            "top": 103,
+            "right": 245,
+            "bottom": 247
           },
           {
-            "left": 847,
-            "top": 28,
-            "right": 943,
-            "bottom": 124
+            "left": 851,
+            "top": 238,
+            "right": 947,
+            "bottom": 334
           },
           {
-            "left": 488,
-            "top": 83,
-            "right": 632,
-            "bottom": 227
+            "left": 482,
+            "top": 300,
+            "right": 626,
+            "bottom": 444
           },
           {
-            "left": 1112,
-            "top": 219,
-            "right": 1208,
-            "bottom": 315
+            "left": 1116,
+            "top": 429,
+            "right": 1212,
+            "bottom": 525
           },
           {
-            "left": 283,
-            "top": 315,
-            "right": 379,
-            "bottom": 411
+            "left": 279,
+            "top": 525,
+            "right": 375,
+            "bottom": 621
           },
           {
-            "left": 769,
-            "top": 379,
-            "right": 913,
-            "bottom": 523
+            "left": 774,
+            "top": 595,
+            "right": 918,
+            "bottom": 739
           }
         ],
-        "named": 3,
-        "fillerCrosses": true
+        "named": 3
       }
     }
   ]

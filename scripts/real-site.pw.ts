@@ -78,12 +78,12 @@ async function capture(slug: string, url: string, gif: boolean) {
     let n = 0;
     const name = (k: number) => `${frames}/f${String(k).padStart(3, "0")}.png`;
     const frame = () => page.screenshot({ path: name(n++), caret: "initial", clip: { x: 0, y: 0, ...SHOT } });
-    // The restyled panels in the shot: the crypt windows (page-sheet rules on a `body > …` path that frame a
-    // box and set no colour, unlike the search fields and the raised buttons) that hold a button.
+    // The panels in the shot: the page's own dark blocks and photo panels (page-sheet rules on a `body > …`
+    // path that give their text a shadow; nothing else is drawn on them) that hold a button.
     const panels = () =>
       page.evaluate((shot) => {
         const rules = document.adoptedStyleSheets.flatMap((s) => [...s.cssRules]) as CSSStyleRule[];
-        const paths = new Set(rules.filter((r) => /^body > /.test(r.selectorText ?? "") && r.style.boxShadow && !r.style.color).map((r) => r.selectorText));
+        const paths = new Set(rules.filter((r) => /^body > /.test(r.selectorText ?? "") && r.style.textShadow && r.style.textShadow !== "none").map((r) => r.selectorText));
         const isButton = (a: Element) => {
           const cs = getComputedStyle(a);
           return cs.boxShadow !== "none" || !/^(transparent|rgba\(.*,\s*0\))$/.test(cs.backgroundColor);
@@ -168,7 +168,7 @@ async function capture(slug: string, url: string, gif: boolean) {
     }
     expect(still, "a frame with no parade ghost over a restyled panel").not.toBeNull();
     console.log(`real-site: ${slug} still is frame ${still!.k}, showing ${still!.shows.join(", ")}`);
-    expect(still!.panels.length).toBeGreaterThan(0);
+    // (a page may have no such panel at all: nothing is drawn on its blocks any more, so there may be none to keep clear)
     expect(still!.mid).toBeLessThan(SHOT.height / 3);
     // with filler crossing the window, one named ghost fewer may be wholly in the shot
     expect(still!.shows.length).toBeGreaterThanOrEqual(want - (crossed ? 1 : 0));
@@ -225,6 +225,8 @@ async function capture(slug: string, url: string, gif: boolean) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
     await page.screenshot({ path: `${frames}/settled-1280.png` });
+    // The settled look, the parade gone: the README's picture of the site's seeded homepage.
+    await page.screenshot({ path: `docs/real-site-look-${slug}.png`, clip: { x: 0, y: 0, ...SHOT } });
     await page.setViewportSize({ width: 375, height: 740 });
     await page.waitForTimeout(1500);
     await page.evaluate(() => window.scrollTo(0, 0));

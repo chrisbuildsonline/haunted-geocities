@@ -70,11 +70,11 @@ describe("the committed stills", () => {
   type Page = { page: string; stillShows: string[]; stillClear?: { panels: Box[]; ghosts: Box[]; named?: number; fillerCrosses?: boolean } };
   const record = JSON.parse(read("docs/real-site.json") || '{"pages":[]}') as { pages: Page[] };
 
-  test("each still records the restyled panels in its frame and every parade ghost, none closer to a panel than the gap", () => {
+  test("each still records the page's panels in its frame (if any) and every parade ghost, none closer to a panel than the gap", () => {
     expect(record.pages.length).toBeGreaterThan(0);
     for (const p of record.pages) {
       const clear = p.stillClear ?? { panels: [], ghosts: [] };
-      expect({ page: p.page, panels: clear.panels.length > 0, ghosts: clear.ghosts.length }).toEqual({ page: p.page, panels: true, ghosts: 6 });
+      expect({ page: p.page, ghosts: clear.ghosts.length }).toEqual({ page: p.page, ghosts: 6 });
       // Named ghosts come first. On a narrow seeded table where no frame keeps every ghost off the window
       // (recorded as fillerCrosses), only the named ones must stay clear of it.
       const kept = clear.fillerCrosses ? clear.ghosts.slice(0, clear.named ?? 6) : clear.ghosts;

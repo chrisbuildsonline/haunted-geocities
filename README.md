@@ -50,11 +50,11 @@ The layout changes the page itself. Its body is squeezed into a 640 or 800 pixel
 
 Two real pages from the same run get two different homepages. nps.gov draws Flame Skull Shrine: flames, a nav frame on the left with buttons made from the site's own links, and boxed sections. cdc.gov draws Cloud Angel Page: clouds, a rainbow divider, tabs under the banner and a right-hand column.
 
-![nps.gov as Flame Skull Shrine: a flame tile, a nav-frame column of buttons from the site's own links, a guestbook box and What's New, the page squeezed into an 800px table](docs/real-site-caption-nps.png)
+![nps.gov as Flame Skull Shrine once the haunt has settled: a flame tile round the page, a nav-frame column of buttons made from the site's own links, a guestbook box and What's New, the page itself in a 960px table with its photos untouched](docs/real-site-look-nps.png)
 
-![cdc.gov as Cloud Angel Page: a cloud tile, a rainbow divider, a row of tabs under the welcome banner and a right-hand column with nav buttons, a guestbook and What's New](docs/real-site-caption-cdc.png)
+![cdc.gov as Cloud Angel Page once the haunt has settled: a cloud tile, a rainbow divider, tabs under the welcome banner and a right-hand column with nav buttons, a guestbook and What's New beside the untouched page](docs/real-site-look-cdc.png)
 
-On cdc.gov the narrower table puts the hero panel where the parade crosses, so in that still a plain filler ghost covers part of it; the named tracker ghosts stay clear. The e2e build alone accepts `?hgtheme=<preset>` in the page address, so the visual tests can show a chosen preset.
+Nothing is drawn over the page itself: the tile and the tint are backgrounds behind it, the frame, banner and columns sit beside it, and ghosts only stand in empty space. The three-second parade of the haunt is the one moment they cross the page (the stills linked above are from it). The e2e build alone accepts `?hgtheme=<preset>` in the page address, so the visual tests can show a chosen preset.
 
 ## Secrets
 
