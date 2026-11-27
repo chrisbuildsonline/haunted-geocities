@@ -3,9 +3,9 @@
 // thing at the bottom and jumps to the graveyard.
 import { describe, expect, test } from "bun:test";
 import { HOST_CSS, HOST_TAG } from "../../src/content/overlay";
-import { renderCostume } from "../../src/content/costume/render";
+import { applyExorcised, renderCostume } from "../../src/content/costume/render";
 import { costumeCss } from "../../src/content/costume/styles";
-import { pageCss, setup, stubMain } from "./helpers";
+import { domRect, pageCss, setup, stubMain, withTrackers } from "./helpers";
 
 const css = costumeCss({ stars: "s", twinkle: "t" });
 /** The declarations of the first rule whose selector is exactly `sel`. */
@@ -103,6 +103,60 @@ describe("the page's tint and guestbook frame end where the footer starts", () =
     t.win.dispatchEvent(new t.win.Event("resize"));
     await new Promise((r) => setTimeout(r, 10));
     expect(pageCss(t.doc)).toMatch(/html::before \{[^}]*height: 500px !important/);
+  });
+});
+
+// design/DESIGN.md "Findings strip": the footer is below the fold, so one fixed line beside the ghost
+// icon keeps the findings on the first screen until the HUD's own counts are in view.
+describe("findings strip beside the ghost icon", () => {
+  const strip = (root: ShadowRoot) => root.getElementById("findings") as HTMLElement;
+  test("one line in the fixed layer, beside the ghost icon: trackers still haunting and the vampires among them", () => {
+    const t = setup();
+    withTrackers(t.win);
+    const root = renderCostume(t.doc);
+    const s = strip(root);
+    expect(s.parentElement).toBe(root.getElementById("crypt-root"));
+    expect(s.nextElementSibling).toBe(root.getElementById("show-tab"));
+    expect(s.hidden).toBe(false);
+    expect(s.getAttribute("aria-hidden")).toBe("true"); // the icon's name and the HUD say it to screen readers
+    expect(s.textContent).toBe("Trackers 4 / Vampires 2");
+    applyExorcised(["Hotjar"], t.doc);
+    expect(s.textContent).toBe("Trackers 3 / Vampires 1");
+  });
+  test("a clean page says so in numbers", () => {
+    const { root } = haunted();
+    expect(strip(root).textContent).toBe("Trackers 0 / Vampires 0");
+  });
+  test("goes once the HUD is wholly on screen (scrolled to the footer) and comes back above it", async () => {
+    const t = setup();
+    (t.win as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (cb: () => void) => setTimeout(cb, 0);
+    const root = renderCostume(t.doc);
+    const hud = root.getElementById("hud")!;
+    let top = 2000; // below the fold
+    hud.getBoundingClientRect = () => domRect({ left: 240, right: 1040, top, bottom: top + 40 });
+    const scroll = async () => {
+      t.win.dispatchEvent(new t.win.Event("scroll"));
+      await new Promise((r) => setTimeout(r, 5));
+    };
+    await scroll();
+    expect(strip(root).hidden).toBe(false);
+    top = 700; // the HUD's 40px end at 740 of the 800px viewport
+    await scroll();
+    expect(strip(root).hidden).toBe(true);
+    top = 780; // half of it under the fold: the strip is back
+    await scroll();
+    expect(strip(root).hidden).toBe(false);
+  });
+  test("a 24px plaque to the left of the 40px icon, centred on it, one line, never taking a click", () => {
+    const r = rule("#findings");
+    expect(r).toMatch(/position: absolute; right: 52px; bottom: calc\(20px \+ var\(--hg-lift, 0px\)\)/);
+    expect(r).toMatch(/height: 24px/);
+    expect(r).toMatch(/white-space: nowrap/);
+    expect(r).toMatch(/font: 12px\/22px/);
+    expect(r).toMatch(/pointer-events: none/);
+    expect(css.slice(css.indexOf("@media (max-width: 400px)"))).toMatch(/#findings \{ right: 48px; bottom: calc\(16px \+ var\(--hg-lift, 0px\)\); \}/);
+    // Hide fades it with the costume; only the icon stays
+    expect(css).toMatch(/\.costume-hidden > :not\(#show-tab\)/);
   });
 });
 

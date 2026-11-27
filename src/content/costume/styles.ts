@@ -104,6 +104,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .ring-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 #show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 48px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 12px; line-height: 13px; pointer-events: auto; }
+#findings { position: absolute; right: 52px; bottom: calc(20px + var(--hg-lift, 0px)); z-index: 5; box-sizing: border-box; height: 24px; padding: 0 6px; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; box-shadow: ${HARD_SHADOW}; font: 12px/22px ${COMIC}; white-space: nowrap; pointer-events: none; }
 #show-tab svg { display: block; image-rendering: pixelated; }
 #show-tab .count { font: bold 12px/13px ${COMIC}; }
 .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
@@ -239,6 +240,7 @@ button:focus-visible { ${ring} }
   .ring { flex: 1 0 0; }
   .ring-haunted { display: none; }
   #show-tab { right: 4px; bottom: calc(4px + var(--hg-lift, 0px)); }
+  #findings { right: 48px; bottom: calc(16px + var(--hg-lift, 0px)); }
 }
 
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }

@@ -100,11 +100,16 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const tab = doc.createElement("button");
   Object.assign(tab, { id: "show-tab", type: "button", className: "win95" });
   tab.innerHTML = `${icon("ghost")}<span class="count" aria-hidden="true">0</span>`;
-  const setTab = (n: number) => {
+  // The findings strip beside it: the footer's HUD is below the fold, so this one line keeps the
+  // findings on the first screen until the HUD is wholly in view (the icon and the HUD say it to screen readers).
+  const findings = el(doc, "findings");
+  findings.setAttribute("aria-hidden", "true");
+  const setTab = (n: number, vampires: number) => {
     tab.querySelector(".count")!.textContent = String(n);
     tab.setAttribute("aria-label", `Jump to the graveyard: ${n} ${n === 1 ? "tracker" : "trackers"}`);
+    findings.textContent = `Trackers ${n} / Vampires ${vampires}`;
   };
-  setTab(0);
+  setTab(0, 0);
   const lanes = el(doc, "lanes");
   const cards = el(doc, "cards");
   const markers = el(doc, "markers");
@@ -125,7 +130,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const setSignoff = (n: number) => (signoff.textContent = `You are visitor #${String(n).padStart(6, "0")} to this crypt. (c) 1998 The Webmaster`);
   setSignoff(0);
   footer.append(graveyard, hud, buttons88, signoff);
-  croot.append(starfield, lanes, markers, bands, cards, tab);
+  croot.append(starfield, lanes, markers, bands, cards, findings, tab);
 
   root.append(croot, footer);
   const page = addPageSheet(doc);
@@ -192,7 +197,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     const vampires = haunting.filter((c) => c.vampire).length;
     const counts = { ghosts: haunting.length - vampires, vampires, tombstones: dead.length, curses: curses.length };
     setCounts(hud, counts, { tick, found: scan.companies.length > 0 });
-    setTab(haunting.length);
+    setTab(haunting.length, vampires);
   };
   const refresh = () => {
     scan = { ...scanned, companies: markKnownVampires(catches.reduce((all, [company, api]) => mergeVampire(all, company, api), scanned.companies)) };
@@ -343,6 +348,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       clipQueued = false;
       const into = Math.max(0, Math.round(win.innerHeight - footer.getBoundingClientRect().top));
       croot.style.setProperty("--hg-footer-in", `${into}px`);
+      const h = hud.getBoundingClientRect();
+      findings.hidden = h.height > 0 && h.top >= 0 && h.bottom <= win.innerHeight;
     });
   };
   win.addEventListener("scroll", clipToFooter, { passive: true });
