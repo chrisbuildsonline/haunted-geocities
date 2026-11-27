@@ -92,7 +92,7 @@ describe("the fixed layers stop at the footer", () => {
   });
 });
 
-describe("the page's tint and guestbook frame end where the footer starts", () => {
+describe("the guestbook frame ends where the footer starts", () => {
   test("on a page shorter than the viewport their height is the footer's top, not the viewport's", async () => {
     const t = setup();
     stubMain(t.win, () => ({ left: 300, right: 980, top: 60, bottom: 400 }));
@@ -102,7 +102,7 @@ describe("the page's tint and guestbook frame end where the footer starts", () =
     footer.getBoundingClientRect = () => ({ top: 500, bottom: 800, left: 0, right: 1280, width: 1280, height: 300, x: 0, y: 500 }) as DOMRect;
     t.win.dispatchEvent(new t.win.Event("resize"));
     await new Promise((r) => setTimeout(r, 10));
-    expect(pageCss(t.doc)).toMatch(/html::before \{[^}]*height: 500px !important/);
+    expect(pageCss(t.doc)).toMatch(/html::after \{[^}]*height: 500px !important/);
   });
 });
 

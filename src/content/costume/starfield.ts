@@ -100,6 +100,13 @@ export const pageTextRects = (doc: Document): DOMRect[] => {
   return textNodes(doc).flatMap((t) => m.textRects(t));
 };
 
+/** Client rects of the page's pictures, video, canvases, frames and inline SVG, in view (ghosts never stand on them). */
+export const pageMediaRects = (doc: Document): DOMRect[] =>
+  [...doc.body.querySelectorAll("img, picture, video, canvas, iframe, svg, object, embed")]
+    .slice(0, 400)
+    .map((e) => e.getBoundingClientRect())
+    .filter((r) => r.width > 0 && r.height > 0);
+
 /** Gutter widths, or null on narrow pages where neither gutter reaches a lane (64px). */
 export function gutterWidths(col: Column, viewportWidth: number): Column | null {
   const left = Math.max(0, col.left);

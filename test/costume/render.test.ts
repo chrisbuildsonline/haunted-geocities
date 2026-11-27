@@ -98,15 +98,15 @@ const rule = (css: string, sel: string) => css.match(new RegExp(`${sel}\\s*\\{([
 test("column is recomputed after restyle", () => {
   const { win, doc } = setup();
   // Times New Roman sets the column wider than the page's own font did.
-  stubMain(win, () => (pageCss(doc).includes("Times New Roman") ? { left: 300, right: 980, top: 60, bottom: 700 } : { left: 500, right: 780, top: 60, bottom: 400 }));
+  // (text wider than the look's 800px table, 240-1040 at 1280, pushes the column out past it)
+  stubMain(win, () => (pageCss(doc).includes("Times New Roman") ? { left: 150, right: 1100, top: 60, bottom: 700 } : { left: 500, right: 780, top: 60, bottom: 400 }));
   renderCostume(doc);
   const css = pageCss(doc);
-  expect(rule(css, "html::before")).toContain("left: 296px");
-  expect(rule(css, "html::before")).toContain("width: 688px");
-  expect(rule(css, "html::after")).toContain("left: 290px");
+  expect(rule(css, "html::after")).toContain("left: 140px");
+  expect(rule(css, "html::after")).toContain("width: 970px");
 });
 
-test("375px page: edge frame shown, guestbook frame hidden, tint and restyle applied", () => {
+test("375px page: full-overlay mode, guestbook frame hidden, tint (as the body's background) and restyle applied", () => {
   const { win, doc } = setup({ width: 375 });
   stubMain(win, () => ({ left: 0, right: 375, top: 60, bottom: 700 }));
   const root = renderCostume(doc);
@@ -114,7 +114,8 @@ test("375px page: edge frame shown, guestbook frame hidden, tint and restyle app
   expect([...root.querySelectorAll<HTMLElement>(".gutter")].every((g) => g.hidden)).toBe(true);
   const css = pageCss(doc);
   expect(css).not.toContain("html::after");
-  expect(rule(css, "html::before")).toContain("mix-blend-mode: multiply");
+  expect(css).not.toContain("html::before");
+  expect(css).toContain("body { background: #ffffcc !important; }");
   expect(css).toContain('font-family: "Times New Roman"');
   expect(css).toContain("padding-left: calc(0px + 12px) !important");
 });
@@ -126,10 +127,10 @@ test("1280px page: guestbook frame drawn, edge frame hidden", () => {
   expect(byId(root, "edge-frame")!.hidden).toBe(true);
   const css = pageCss(doc);
   expect(css).toContain("html::after");
-  expect(css).not.toContain("padding-left");
-  // the gutters stop short of the frame's outer line, so the frame is never under the starfield
+  expect(css).not.toContain("calc(0px + 12px)");
+  // the gutters (the look's 800px table at 240) stop short of the frame's outer line
   const left = root.querySelector<HTMLElement>(".gutter.left")!;
-  expect(parseFloat(left.style.width)).toBe(300 - 11);
+  expect(parseFloat(left.style.width)).toBe(240 - 11);
 });
 
 test("costume host never intercepts pointer hits", () => {
@@ -140,7 +141,7 @@ test("costume host never intercepts pointer hits", () => {
   const edge = byId(root, "edge-frame")!;
   expect(edge.closest("[aria-hidden=true]")).not.toBeNull();
   expect(edge.querySelectorAll("button, a, [tabindex]")).toHaveLength(0);
-  for (const sel of ["html::before"]) expect(rule(pageCss(doc), sel)).toContain("pointer-events: none !important");
+  expect(pageCss(doc)).not.toContain("html::before");
   // Every page link, button and form control is still what a hit at its position finds.
   for (const el of doc.querySelectorAll("a, button, input")) {
     const r = el.getBoundingClientRect();

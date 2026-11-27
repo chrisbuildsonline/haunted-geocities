@@ -187,3 +187,62 @@ test("on a phone the table folds to one column: no side columns, the furniture a
   expect(fold.all).toBeGreaterThanOrEqual(6);
   expect(await page.evaluate(() => ({ maxWidth: getComputedStyle(document.body).maxWidth, scroll: document.documentElement.scrollWidth <= innerWidth }))).toEqual({ maxWidth: "none", scroll: true });
 });
+
+/** Every rect of the page's own visible text and pictures in the viewport. */
+const pageRects = (page: Page) =>
+  page.evaluate(() => {
+    const out: { what: string; left: number; top: number; right: number; bottom: number }[] = [];
+    const inView = (r: DOMRect) => r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const p = n.parentElement;
+      if (!n.nodeValue?.trim() || !p || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      for (const r of range.getClientRects()) if (inView(r)) out.push({ what: `text "${n.nodeValue.trim().slice(0, 30)}"`, left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+    }
+    for (const e of document.body.querySelectorAll("img, picture, video, canvas, iframe, svg")) {
+      const r = e.getBoundingClientRect();
+      if (inView(r)) out.push({ what: `<${e.localName}>`, left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+    }
+    return out;
+  });
+
+for (const width of [1280, 375]) {
+  for (const [file, preset] of [["article.html", ""], ["article.html", "flame-skull"], ["index.html", "cloud-angel"], ["hero.html", "matrix-den"], ["hero.html", "spiderweb-attic"]] as const) {
+    test(`nothing of ours covers the page's text or pictures: ${file} ${preset || "own look"} @${width}`, async ({ context, sw }) => {
+      test.setTimeout(60_000);
+      // hero.html's HSTS-preloaded tracker hosts are upgraded to https: answer them here (as e2e/photo-page.spec.ts does)
+      await context.route(/^https?:\/\/(google-analytics\.com|digitalgov\.gov):4321\//, (route) =>
+        route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>' }),
+      );
+      const page = await context.newPage();
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(at("127.0.0.1", `${file}${preset ? `?hgtheme=${preset}` : ""}`));
+      await haunt(sw, page);
+      await settle(page);
+      const inShadow = await shadowOf(page);
+      const ours = await inShadow(function () {
+        const sel = "#top-bands, #welcome, .fur-col:not([hidden]), .deco, #lanes .ghost, #lanes .vampire, .spark";
+        return [...this.querySelectorAll(sel)].map((e) => {
+          const r = e.getBoundingClientRect();
+          return { what: e.id || e.className, left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+        }).filter((r) => r.right > r.left && r.bottom > r.top);
+      });
+      const theirs = await pageRects(page);
+      expect(theirs.length).toBeGreaterThan(0);
+      const hits = ours.flatMap((o) => theirs.filter((t) => o.left < t.right - 1 && t.left < o.right - 1 && o.top < t.bottom - 1 && t.top < o.bottom - 1).map((t) => `${o.what} over ${t.what}`));
+      expect(hits).toEqual([]);
+      // no tint, filter or blend over the page, and the page's pictures keep their own colours
+      const paint = await page.evaluate(() => ({
+        tint: getComputedStyle(document.documentElement, "::before").content,
+        blend: [getComputedStyle(document.documentElement, "::after").mixBlendMode, getComputedStyle(document.documentElement, "::before").mixBlendMode],
+        images: [...document.querySelectorAll("img, picture, video")].map((e) => `${getComputedStyle(e).filter}|${getComputedStyle(e).mixBlendMode}|${getComputedStyle(e).opacity}`),
+      }));
+      expect(paint.tint).toBe("none");
+      expect(paint.blend.every((b) => b === "normal")).toBe(true);
+      for (const i of paint.images) expect(i).toBe("none|normal|1");
+      await page.screenshot({ path: `${SHOTS}/clear-${file.replace(".html", "")}-${preset || "own"}-${width}.png` });
+    });
+  }
+}

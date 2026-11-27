@@ -83,7 +83,7 @@ describe("pickLook", () => {
     for (const h of hosts(400)) {
       const l = pickLook(h, "classic-crypt");
       expect({ tile: l.tile, palette: l.palette, fonts: l.fonts, heading: l.heading, bevel: l.bevel, layout: l.layout, density: l.density, dressing: l.dressing, prefix: l.prefix, furniture: l.furniture }).toEqual({
-        tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", bevel: "ridge", layout: "full", density: "normal", dressing: "frames", prefix: "none", furniture: [],
+        tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", bevel: "ridge", layout: "table800", density: "normal", dressing: "frames", prefix: "none", furniture: [],
       });
     }
   });

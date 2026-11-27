@@ -11,7 +11,13 @@ import { LAYOUT } from "./tokens";
 
 export type PageLook = { theme: Theme | null; overlay: boolean; tint: Box | null; frame: Box | null; hidden: boolean; blocks: Blocks | null };
 /** The seeded look's part of the page sheet: fonts, its own rules (marker, headings, dividers) and the tint/frame look. */
-export type SiteLook = { fonts: { body: string; heading: string }; css: () => string; layers: LayerLook };
+export type SiteLook = {
+  fonts: { body: string; heading: string };
+  css: () => string;
+  layers: LayerLook;
+  /** The look's backgrounds, drawn behind the page (never over it): the tile on html, the tint on a light page's body. */
+  backgrounds: (tint: boolean) => string;
+};
 export type PageSheet = { update(lift: number): void; set(look: Partial<PageLook>): void; remove(): void };
 
 /** A computed length usable inside calc() ("0" is not). */
@@ -42,7 +48,8 @@ export function addPageSheet(doc: Document, site?: SiteLook): PageSheet {
       `:root { scroll-padding-top: calc(${scrollTop} + ${bands}px) !important; }`,
       look.theme ? restyleCss(look.theme, site?.fonts) : "",
       look.blocks ? blocksCss(look.blocks) : "",
-      columnLayersCss({ tint: look.theme?.tint ? look.tint : null, frame: look.overlay ? null : look.frame, hidden: look.hidden, look: site?.layers }),
+      site && !look.hidden ? site.backgrounds(!!look.theme?.tint) : "",
+      columnLayersCss({ tint: site ? null : look.theme?.tint ? look.tint : null, frame: look.overlay ? null : look.frame, hidden: look.hidden, look: site?.layers }),
     ]
       .filter(Boolean)
       .join("\n");

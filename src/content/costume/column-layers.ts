@@ -35,11 +35,11 @@ export function documentHeight(doc: Document): number {
   return Math.max(win.innerHeight, Math.ceil(body));
 }
 
-const place = (b: Box) =>
+const place = (b: Box, z = Z) =>
   `position: absolute !important; display: block !important; box-sizing: border-box !important; ` +
   `left: ${b.left}px !important; top: ${b.top}px !important; width: ${b.width}px !important; height: ${b.height}px !important; ` +
   `margin: 0 !important; padding: 0 !important; transform: none !important; ` +
-  `content: "" !important; pointer-events: none !important; z-index: ${Z} !important;`;
+  `content: "" !important; pointer-events: none !important; z-index: ${z} !important;`;
 
 /** A seeded look's tint and frame: the tint colour and its pale pattern, the bevel style and colours. */
 export type LayerLook = { tint: string; pattern: string | null; bevel: "ridge" | "outset" | "inset" | "double"; light: string; dark: string; glow: string };
@@ -60,7 +60,8 @@ export function columnLayersCss(o: { tint: Box | null; frame: Box | null; hidden
       : bevel === "double" ? [`6px double ${hi}`, ""]
       : [`6px solid !important; border-color: ${bevel === "outset" ? `${hi} ${lo} ${lo} ${hi}` : `${lo} ${hi} ${hi} ${lo}`}`, ""];
     out.push(
-      `html${FRAME} { ${place(o.frame)} border: ${border} !important; ` +
+      // A seeded look's frame is under the page (z-index -1): it shows round the table, never over the page.
+      `html${FRAME} { ${place(o.frame, o.look ? -1 : Z)} border: ${border} !important; ` +
         `box-shadow: ${inner}0 0 0 1px ${PAGE.frameLine}, 0 0 6px 1px ${glow} !important; ` +
         `background: none !important; mix-blend-mode: normal !important; ${opacity} }`,
     );

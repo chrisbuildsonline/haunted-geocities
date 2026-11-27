@@ -23,7 +23,6 @@ export const CELL_PAD = 16;
  */
 export function layoutGeometry(l: Look, vw: number): Geometry {
   const L = LAYOUTS[l.layout];
-  if (!L.main) return { collapsed: false, main: null, left: null, right: null };
   for (const [left, right] of [[L.left, L.right], [L.left, 0], [0, 0]] as const) {
     const total = left + L.main + right;
     if (vw < total + 2 * SIDE_ROOM) continue;
@@ -38,7 +37,7 @@ export function layoutCss(g: Geometry): string {
   if (!g.main) return "";
   return (
     `body { box-sizing: border-box !important; width: auto !important; min-width: 0 !important; max-width: ${g.main.w}px !important; ` +
-    `margin-left: ${g.main.x}px !important; margin-right: 0 !important; padding-left: ${CELL_PAD}px !important; padding-right: ${CELL_PAD}px !important; overflow-x: clip !important; }`
+    `margin-left: ${g.main.x}px !important; margin-right: 0 !important; padding-left: ${CELL_PAD}px !important; padding-right: ${CELL_PAD}px !important; }`
   );
 }
 

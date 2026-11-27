@@ -20,17 +20,17 @@ describe("layoutGeometry", () => {
     expect(layoutGeometry(look("links3"), 375)).toEqual({ collapsed: true, main: null, left: null, right: null });
   });
 
-  test("full width leaves the page alone: no rules", () => {
-    const g = layoutGeometry(look("full"), 1280);
-    expect(g.main).toBeNull();
-    expect(layoutCss(g)).toBe("");
+  test("a collapsed page keeps its own width: no rules", () => {
+    expect(layoutCss(layoutGeometry(look("table800"), 375))).toBe("");
   });
 
   test("the body is held to its cell, with padding so text never touches a column", () => {
     const css = layoutCss(layoutGeometry(look("nav2"), 1280));
     expect(css).toContain("max-width: 620px !important;");
     expect(css).toContain("margin-left: 420px !important;");
-    expect(css).toContain("padding-left: 16px !important; padding-right: 16px !important; overflow-x: clip !important;");
+    expect(css).toContain("padding-left: 16px !important; padding-right: 16px !important; }");
+    // nothing of the page is clipped
+    expect(css).not.toContain("overflow");
   });
 });
 

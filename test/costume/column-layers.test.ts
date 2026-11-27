@@ -28,33 +28,38 @@ test("frame and tint follow scroll and resize", async () => {
   expect(tintBox({ left: 2, right: 798, height: 900 }, 800)).toEqual({ left: 0, top: 0, width: 800, height: 900 });
   expect(frameBox({ left: 2, right: 798, height: 900 }, 800)).toEqual({ left: 0, top: 0, width: 800, height: 900 });
 
-  // A resize that moves the column moves them with it.
+  // A resize that moves the column moves the frame with it. The look's 800px table (240-1040 at 1280) is
+  // part of the column, so the frame goes round the table and round any text wider than it.
   const { win, doc } = setup();
   let col = { left: 300, right: 980, top: 60, bottom: 700 };
   stubMain(win, () => col);
   renderCostume(doc);
-  expect(rule(pageCss(doc), "html::before")).toContain("left: 296px");
+  expect(rule(pageCss(doc), "html::after")).toContain("left: 230px");
   col = { left: 100, right: 700, top: 60, bottom: 700 };
   win.dispatchEvent(new win.Event("resize"));
   await new Promise((r) => win.requestAnimationFrame(r));
   await flush();
-  expect(rule(pageCss(doc), "html::before")).toContain("left: 96px");
   expect(rule(pageCss(doc), "html::after")).toContain("left: 90px");
 });
 
-test("tint present on light page, absent on dark page", () => {
+test("the tint is the light page's own background, behind its content; nothing is laid over the page", () => {
   const light = setup();
   stubMain(light.win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   renderCostume(light.doc);
-  const tint = rule(pageCss(light.doc), "html::before");
-  expect(tint).toContain("background: #ffffcc");
-  expect(tint).toContain("mix-blend-mode: multiply");
+  const css = pageCss(light.doc);
+  expect(css).toContain("body { background: #ffffcc !important; }");
+  expect(css).toMatch(/html \{ background: #000033 url\("data:image\/svg\+xml,[^"]+"\) repeat fixed !important; \}/);
+  expect(css).not.toContain("html::before");
+  expect(css).not.toContain("mix-blend-mode: multiply");
+  // the frame is under the page (z-index -1)
+  expect(rule(css, "html::after")).toContain("z-index: -1 !important");
   const dark = setup({ html: DARK });
   stubMain(dark.win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   renderCostume(dark.doc);
-  const css = pageCss(dark.doc);
-  expect(css).not.toContain("html::before");
-  expect(css).toContain("html::after"); // the frame is on dark pages too
+  const dcss = pageCss(dark.doc);
+  expect(dcss).not.toContain("body { background:");
+  expect(dcss).not.toContain("html::before");
+  expect(dcss).toContain("html::after"); // the frame is on dark pages too
 });
 
 test("both layers have pointer-events none", () => {

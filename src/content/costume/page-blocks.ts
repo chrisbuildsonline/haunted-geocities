@@ -226,11 +226,14 @@ const RAISED = `border-radius: 0 !important; border-style: solid !important; bor
 
 export function blocksCss(b: Blocks): string {
   const out: string[] = [];
+  // Nothing is painted over a dark block or a photo: it shows as the page drew it. Light text set on a
+  // picture gets a hard text-shadow so it reads on any part of the photo.
   for (const d of b.dark) {
-    if (d.photo) out.push(`${d.path} { border-radius: 0 !important; background-color: ${P.crypt} !important; box-shadow: ${PANEL_FRAME} !important; }`);
-    else out.push(`${d.path} { border-radius: 0 !important; box-shadow: ${CRYPT_BEVEL} !important;${d.ground ? ` background-color: ${P.crypt} !important;` : ""} }`);
+    if (!d.photo && d.ground) continue;
+    out.push(`${d.path} { text-shadow: 1px 1px 2px ${P.ink}, 0 0 4px ${P.ink} !important; }`);
+    // button links have a ground of their own: no shadow on them
+    if (d.keep.length) out.push(`:is(${d.keep.join(", ")}) { text-shadow: none !important; }`);
   }
-  for (const o of b.outline) out.push(`${o} { ${RAISED} }`);
   // The dark page's link colours, checked on the crypt in a dark block and on a band's lightest colour;
   // button links and site chrome keep theirs.
   const links = (boxes: { path: string; keep: string[] }[], on: string) => {

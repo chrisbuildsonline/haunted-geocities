@@ -14,8 +14,8 @@ test("restyle gone and adoptedStyleSheets equal pre-haunt after unhaunt", async 
   expect(pageCss(doc)).toContain("Times New Roman");
   recs.length = 0;
   await leaveCostume(doc);
-  // the tint and frame wipe away behind the ghost before the sheet goes
-  expect(recs.some((r) => r.el === doc.documentElement && r.opts.pseudoElement === "::before")).toBe(true);
+  // the frame wipes away behind the ghost before the sheet goes (the tint is the body's own background)
+  expect(recs.some((r) => r.el === doc.documentElement && r.opts.pseudoElement === "::after")).toBe(true);
   expect(doc.querySelector("hg-crypt")).toBeNull();
   expect(doc.adoptedStyleSheets).toEqual([a, b]);
   expect(pageCss(doc)).not.toContain("Times New Roman");

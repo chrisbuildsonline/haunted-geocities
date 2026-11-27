@@ -85,7 +85,7 @@ export function lookShadowCss(l: Look): string {
     `.strip { background-image: ${digitsUrl(counter.digit, counter.cell)}; }`,
     `.cell, .odo { background: ${counter.cell}; }`,
     // The banner: the tile, a bevelled plaque with the WordArt title between two sprites, the divider under it.
-    `#welcome { position: absolute; left: 0; right: 0; top: 48px; z-index: 2147483647; box-sizing: border-box; height: ${welcomeHeight(l)}px; padding-top: ${tall ? 10 : 6}px; ` +
+    `#welcome { position: absolute; left: 0; right: 0; top: 48px; z-index: 0; box-sizing: border-box; height: ${welcomeHeight(l)}px; padding-top: ${tall ? 10 : 6}px; ` +
       `background-color: ${c.ground}; background-image: ${tile}; pointer-events: none; transition: opacity 200ms linear; }`,
     `#welcome.costume-hidden { opacity: 0; }`,
     `.wb-plaque { box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; width: fit-content; max-width: calc(100% - 32px); height: ${tall ? 66 : 48}px; margin: 0 auto; padding: 0 12px; ` +
@@ -112,9 +112,12 @@ export function lookShadowCss(l: Look): string {
     `.tab { box-sizing: border-box; height: 24px; padding: 3px 10px 0; background: #cccccc; color: #000000; border: 2px solid; border-color: #ffffff #666666 transparent #ffffff; border-bottom: 0; font: 12px/16px ${f.body}; text-decoration: none; white-space: nowrap; pointer-events: auto; }`,
     `@media (max-width: ${WELCOME.phoneBelow - 1}px) { .wb-tabs { display: none; } }`,
     // The furniture columns: a bevelled frame cell beside the page, the pieces stacked in it.
-    `.fur-col { position: absolute; z-index: 2147483647; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 8px 6px; overflow: hidden; ` +
+    `.fur-col { position: absolute; z-index: -1; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 8px 6px; overflow: hidden; ` +
       `background-color: ${c.band}; border: 3px ${l.bevel === "inset" ? "inset" : "outset"} ${c.bevelLight}; box-shadow: ${HARD_SHADOW}; pointer-events: none; transition: opacity 200ms linear; }`,
     `.fur-col.costume-hidden, #fur-bottom.costume-hidden { opacity: 0; }`,
+    // Nothing of ours floats over the page: the starfield is the page's own background now (lookPageCss), so
+    // the fixed gutter fills and the phone edge frame are not drawn.
+    `#starfield .gutter, #edge-frame { display: none !important; }`,
     `.fur-col.costume-hidden a, #fur-bottom.costume-hidden a { pointer-events: none; }`,
     `.fur { box-sizing: border-box; padding: 6px; background: ${c.plaque}; color: ${c.plaqueText}; border: 2px ${bevel.replace("3px ", "")}; font: 12px/16px ${f.body}; text-align: center; overflow-wrap: anywhere; }`,
     `.fur p { margin: 2px 0; }`,
@@ -158,6 +161,19 @@ export function rainbowHeadings(doc: Document, max = 24): string[] {
   return out;
 }
 
+/**
+ * The look's backgrounds, behind the page and never over it: the tile on <html> (seen round the 1998 table)
+ * and, on a light page, the tint and its pale pattern on <body>, under the page's own boxes.
+ */
+export function lookBackgrounds(l: Look, tint: boolean): string {
+  const c = paletteOf(l);
+  const pattern = tintPattern(l);
+  return [
+    `html { background: ${c.ground} url("${lookTiles(l).stars}") repeat fixed !important; }`,
+    tint ? `body { background: ${c.tint}${pattern ? ` url("${pattern}") repeat` : ""} !important; }` : "",
+  ].filter(Boolean).join("\n");
+}
+
 /** The look's page-sheet rules: the theme marker, the heading effect, the <hr> divider and image bevels. */
 export function lookPageCss(l: Look, o: { rainbow?: string[]; dark?: boolean } = {}): string {
   const c = paletteOf(l);
@@ -177,7 +193,7 @@ export function lookPageCss(l: Look, o: { rainbow?: string[]; dark?: boolean } =
   }
   out.push(`:where(hr) { height: 16px !important; border: 0 !important; background: url("${svgData(dividerPx(l.divider, c), 64, 16)}") repeat-x !important; image-rendering: pixelated; }`);
   const frameW = l.dressing === "frames" ? 6 : 3;
-  out.push(`:where(main, article) img { outline: ${frameW}px ${l.dressing === "frames" ? "ridge" : l.bevel} ${c.bevelLight} !important; outline-offset: -${frameW}px !important; }`);
+  out.push(`:where(main, article) img { outline: ${frameW}px ${l.dressing === "frames" ? "ridge" : l.bevel} ${c.bevelLight} !important; outline-offset: 0 !important; }`);
   out.push(...dressingCss(l, !!o.dark));
   return out.join("\n");
 }

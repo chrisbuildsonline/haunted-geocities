@@ -42,7 +42,7 @@ describe("theme CSS", () => {
     expect(css).toContain(`@media (max-width: ${WELCOME.phoneBelow - 1}px) { :root { --hg-welcome: 56px; } }`);
     expect(css).toMatch(/:where\(hr\) \{ height: 16px !important; border: 0 !important; background: url\("data:image\/svg\+xml,/);
     // images get a bevel drawn as an outline, so nothing moves
-    expect(css).toContain(":where(main, article) img { outline: 3px outset #ff9900 !important; outline-offset: -3px !important; }");
+    expect(css).toContain(":where(main, article) img { outline: 3px outset #ff9900 !important; outline-offset: 0 !important; }");
   });
 
   test("the rainbow fill goes only on the measured headings, and never on a dark page", () => {

@@ -84,10 +84,8 @@ export const TRAILS = ["stars", "sparkles", "bats", "hearts", "fire"] as const;
 /**
  * The page's 1998 structure. `main` is the width the page's own body is held to; `left` and `right` are
  * the furniture columns beside it (a nav frame, Cool Links); `align` centres the table or keeps it left.
- * "full" (Classic Crypt only) leaves the page's width alone.
  */
 export const LAYOUTS = {
-  full: { main: 0, left: 0, right: 0, align: "center" },
   table640: { main: 640, left: 0, right: 0, align: "center" },
   table800: { main: 800, left: 0, right: 0, align: "center" },
   left760: { main: 760, left: 0, right: 0, align: "left" },
@@ -135,7 +133,7 @@ export const PRESETS: readonly Preset[] = [
   p("spiderweb-attic", "Spiderweb Attic", { tile: "web", palette: "midnight", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "bats", layout: "nav2", density: "normal", dressing: "fieldset", prefix: "skull", banner: 4 }),
   p("toxic-dump", "Toxic Waste Dump", { tile: "slime", palette: "toxic", fonts: "comic", heading: "blink", divider: "drips", sprites: "spooky", bevel: "inset", counter: "green", trail: "sparkles", layout: "table640", density: "normal", dressing: "bullets", prefix: "skull", banner: 7 }),
   p("bubblegum-club", "Bubblegum Heart Club", { tile: "hearts", palette: "bubblegum", fonts: "comic", heading: "rainbow", divider: "rainbow", sprites: "love", bevel: "outset", counter: "red", trail: "hearts", layout: "links3", density: "cluttered", dressing: "bullets", prefix: "star", banner: 3 }),
-  p("classic-crypt", "Classic Crypt", { tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "stars", layout: "full", density: "normal", dressing: "frames", prefix: "none", banner: 0 }, true),
+  p("classic-crypt", "Classic Crypt", { tile: "stars", palette: "crypt", fonts: "classic", heading: "comic", divider: "skulls", sprites: "spooky", bevel: "ridge", counter: "green", trail: "stars", layout: "table800", density: "normal", dressing: "frames", prefix: "none", banner: 0 }, true),
   p("ufo-crash", "UFO Crash Site", { tile: "planets", palette: "midnight", fonts: "verdana", heading: "outline", divider: "rainbow", sprites: "space", bevel: "double", counter: "blue", trail: "stars", layout: "rightlinks", density: "normal", dressing: "fieldset", prefix: "star", banner: 4 }),
   p("cyber-cafe", "Cyber Cafe 2000", { tile: "checker", palette: "teal", fonts: "verdana", heading: "wordart", divider: "rainbow", sprites: "web", bevel: "outset", counter: "blue", trail: "sparkles", layout: "links3", density: "cluttered", dressing: "cells", prefix: "none", banner: 5 }),
   p("haunted-dungeon", "Haunted Dungeon", { tile: "bricks", palette: "crypt", fonts: "georgia", heading: "outline", divider: "skulls", sprites: "spooky", bevel: "inset", counter: "red", trail: "bats", layout: "table800", density: "sparse", dressing: "frames", prefix: "skull", banner: 7 }),
@@ -169,7 +167,7 @@ const OPTIONS: { [K in VaryAxis]: readonly Axes[K][] } = {
   banner: BANNERS.map((_, i) => i),
   counter: Object.keys(COUNTERS) as (keyof typeof COUNTERS)[],
   trail: TRAILS,
-  layout: (Object.keys(LAYOUTS) as (keyof typeof LAYOUTS)[]).filter((l) => l !== "full"),
+  layout: Object.keys(LAYOUTS) as (keyof typeof LAYOUTS)[],
   density: DENSITIES,
   dressing: DRESSINGS,
   prefix: PREFIXES,

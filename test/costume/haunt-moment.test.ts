@@ -548,7 +548,7 @@ describe("hero haunt moment", () => {
   });
 });
 
-test("clip-path reveal covers frame and tint", () => {
+test("clip-path reveal covers the frame (the tint is the body's own background, nothing to wipe)", () => {
   const { win, doc, recs } = setup();
   stubMain(win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   const root = renderCostume(doc);
@@ -558,13 +558,11 @@ test("clip-path reveal covers frame and tint", () => {
   expect(root.getElementById("starfield")!.contains(root.getElementById("edge-frame"))).toBe(true);
   const field = clip(root.getElementById("starfield")!);
   expect(field?.opts).toMatchObject({ delay: 700, duration: 900 });
-  // the page-sheet layers get the same wipe, shifted into their own box (tint at x=296, frame at x=290)
-  const tint = clip(doc.documentElement, "::before");
+  // the frame gets the same wipe, shifted into its own box (round the look's 800px table: x=230)
+  expect(clip(doc.documentElement, "::before")).toBeUndefined();
   const frame = clip(doc.documentElement, "::after");
-  expect(tint?.opts).toMatchObject({ delay: 700, duration: 900, easing: field!.opts.easing });
-  expect(frame?.opts).toMatchObject({ delay: 700, duration: 900 });
-  expect(tint!.keyframes.map((k) => k.clipPath)).toEqual(["inset(-8px calc(100% - -80px + 296px) -8px -8px)", "inset(-8px calc(100% - (100vw - 16px) + 296px) -8px -8px)"]);
-  expect(String(frame!.keyframes[0]!.clipPath)).toContain("+ 290px");
+  expect(frame?.opts).toMatchObject({ delay: 700, duration: 900, easing: field!.opts.easing });
+  expect(frame!.keyframes.map((k) => k.clipPath)).toEqual(["inset(-8px calc(100% - -80px + 230px) -8px -8px)", "inset(-8px calc(100% - (100vw - 16px) + 230px) -8px -8px)"]);
 });
 
 test("graveyard slides with the HUD, no extra phase", async () => {

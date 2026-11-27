@@ -218,29 +218,14 @@ describe("photo heroes (cdc.gov)", () => {
     expect(findBlocks(doc, { darkPage: true })).toMatchObject({ dark: [], outline: [] });
   });
 
-  test("css: the panel is a crypt window drawn round its text, outside its box (nothing moves); the outline button a raised 1998 button", () => {
-    const css = blocksCss({ dark: [{ path: "body > :nth-child(1)", ground: true, keep: [], photo: true }], bands: [], search: [], outline: ["body > :nth-child(2)"] });
+  test("css: nothing is painted over a photo or its panel; its text gets a hard shadow and its links the dark-page colours; outline buttons keep their look", () => {
+    const css = blocksCss({ dark: [{ path: "body > :nth-child(1)", ground: true, keep: ["body > :nth-child(1) > a"], photo: true }], bands: [], search: [], outline: ["body > :nth-child(2)"] });
     const panel = css.match(/(?:^|\n)body > :nth-child\(1\) \{([^}]*)\}/)![1]!;
-    expect(panel).toContain("border-radius: 0 !important");
-    expect(panel).toContain(`background-color: ${P.crypt} !important`);
-    // 12px of crypt ground round the text, a 3px bevel, a 1px line and the hard shadow, all outside the box
-    expect(panel).toContain(
-      `box-shadow: 0 0 0 12px ${P.crypt}, -3px -3px 0 12px ${P.hudBevelLight}, 3px 3px 0 12px ${P.bevelDark}, 0 0 0 15px ${P.bevelDark}, 0 0 0 16px ${P.ink}, 4px 4px 0 16px ${P.ink} !important`,
-    );
-    expect(panel).not.toMatch(/inset|padding|margin|width/);
-    // its text links take the dark page's colours, as in a dark block
+    expect(panel.trim()).toBe(`text-shadow: 1px 1px 2px ${P.ink}, 0 0 4px ${P.ink} !important;`);
+    expect(css).toContain(":is(body > :nth-child(1) > a) { text-shadow: none !important; }");
+    expect(css).not.toMatch(/background-color|box-shadow|border-radius/);
     expect(css).toContain(`:is(body > :nth-child(1)) a:link`);
-    const button = css.match(/(?:^|\n)body > :nth-child\(2\) \{([^}]*)\}/)![1]!;
-    for (const d of [
-      "border-radius: 0 !important", "border-style: solid !important", `border-color: ${P.hudBevelLight} ${P.bevelDark} ${P.bevelDark} ${P.hudBevelLight} !important`,
-      // its violet face is an inset shadow over no ground, so it still reads as an outline button when measured again
-      "background-color: transparent !important", "background-image: none !important", `color: ${P.bone} !important`, `box-shadow: inset 0 0 0 999px ${P.cryptViolet}, 2px 2px 0 ${P.ink} !important`,
-    ]) {
-      expect({ d, ok: button.includes(d) }).toEqual({ d, ok: true });
-    }
-    // its border keeps its width, so nothing moves; bone on the violet reads
-    expect(button).not.toMatch(/border-width|padding|margin/);
-    expect(contrastRatio(P.bone, P.cryptViolet)).toBeGreaterThanOrEqual(4.5);
+    expect(css).not.toContain("body > :nth-child(2) {");
   });
 });
 
@@ -264,11 +249,13 @@ describe("blocksCss", () => {
   const css = blocksCss(blocks);
   const dark = themeFor(P.crypt);
 
-  test("dark blocks: square, the HUD's bevel, 1px line and hard shadow; the crypt ground only where the page had a colour", () => {
-    expect(css).toMatch(/body > :nth-child\(3\) \{[^}]*border-radius: 0 !important/);
-    expect(css).toContain(`box-shadow: inset 0 0 0 1px ${P.ink}, inset 3px 3px 0 ${P.hudBevelLight}, inset -3px -3px 0 ${P.bevelDark}, 4px 4px 0 ${P.ink} !important`);
-    expect(css).toMatch(new RegExp(`body > :nth-child\\(3\\) > :nth-child\\(1\\) \\{[^}]*background-color: ${P.crypt} !important`));
-    expect(css).not.toMatch(new RegExp(`body > :nth-child\\(3\\) \\{[^}]*background-color`));
+  test("dark blocks keep their own ground: no crypt colour, bevel or shadow is painted on them; text on a picture gets a text-shadow", () => {
+    const onBlocks = css.split("\n").filter((l) => l.startsWith("body > :nth-child(3)")).join("\n");
+    expect(onBlocks).not.toMatch(/border-radius|box-shadow|background/);
+    expect(css).not.toContain(`background-color: ${P.crypt}`);
+    // the first block draws a picture (ground false): its text gets the shadow; the second has its own colour: nothing
+    expect(css).toMatch(/body > :nth-child\(3\) \{ text-shadow: /);
+    expect(css).not.toMatch(/body > :nth-child\(3\) > :nth-child\(1\) \{ text-shadow/);
   });
 
   test("dark blocks: their text links take the dark-page colours, button links and site chrome keep theirs", () => {
@@ -328,8 +315,8 @@ describe("blocksCss", () => {
     const { doc } = setup();
     const page = addPageSheet(doc);
     page.set({ theme: themeFor("#ffffff"), blocks });
-    expect(pageCss(doc)).toContain(`background-color: ${P.crypt} !important`);
+    expect(pageCss(doc)).toContain(`background-color: ${P.ghostWhite} !important`);
     page.set({ blocks: null });
-    expect(pageCss(doc)).not.toContain(`background-color: ${P.crypt} !important`);
+    expect(pageCss(doc)).not.toContain(`background-color: ${P.ghostWhite} !important`);
   });
 });

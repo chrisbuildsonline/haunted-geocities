@@ -11,11 +11,11 @@ import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud"
 import { findBlocks } from "./page-blocks";
 import { pageTheme } from "./page-theme";
 import { watchReducedMotion } from "./reduced-motion";
-import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageTextRects, paintTile, type Column } from "./starfield";
+import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageMediaRects, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
 import { LAYOUT } from "./tokens";
 import { pickLook } from "./themes";
-import { buildWelcome, fontsOf, lookPageCss, lookShadowCss, lookSprites, lookTiles, paletteOf, rainbowHeadings, spriteMarkup, tintPattern } from "./theme-css";
+import { buildWelcome, fontsOf, lookBackgrounds, lookPageCss, lookShadowCss, lookSprites, lookTiles, paletteOf, rainbowHeadings, spriteMarkup, tintPattern } from "./theme-css";
 import { trailSvg } from "./theme-art";
 import { buildColumn, buildPiece, buildTabs, harvest, layoutCss, layoutGeometry, placeFurniture, type Geometry } from "./furniture";
 import trackerJson from "../../data/trackers.json";
@@ -175,6 +175,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const page = addPageSheet(doc, {
     fonts: fontsOf(look),
     css: () => lookPageCss(look, { rainbow, dark }) + "\n" + layoutCss(geom),
+    backgrounds: (tint) => lookBackgrounds(look, tint),
     layers: { tint: palette.tint, pattern: tintPattern(look), bevel: look.bevel, light: palette.bevelLight, dark: palette.bevelDark, glow: palette.glow },
   });
   let lift = 0;
@@ -231,7 +232,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     const span = { ...(overlay ? { left: 0, right: width } : { left: col.left + win.scrollX, right: col.right + win.scrollX }), height: pageEnd };
     const empty = col.right <= col.left;
     drawn = {
-      tint: !empty && theme.tint ? tintBox(span, width) : null,
+      // a seeded look draws its tint as the body's own background, not as a layer over the page
+      tint: null,
       frame: !empty && !overlay ? frameBox(span, width) : null,
     };
     page.set(drawn);
@@ -290,7 +292,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     // The footer graveyard is the full roll: every company, in lane mode too.
     updateDocked(graveyard, scan.companies, opts);
     const b = bounds();
-    slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, pageTextRects(doc));
+    // Ghosts stand only where the page has nothing: clear of its text and of its pictures and frames.
+    slots = planSlots(gutters, doc.documentElement.clientWidth || win.innerWidth, b.top, b.bottom, [...pageTextRects(doc), ...pageMediaRects(doc)]);
     updateGhosts(lanes, overlay ? [] : scan.companies, slots, opts);
     pad();
   };
