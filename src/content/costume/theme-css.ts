@@ -118,6 +118,7 @@ export function lookShadowCss(l: Look): string {
     // Nothing of ours floats over the page: the starfield is the page's own background now (lookPageCss), so
     // the fixed gutter fills and the phone edge frame are not drawn.
     `#starfield .gutter, #edge-frame { display: none !important; }`,
+    `#crypt-footer.page-locked { display: none !important; }`,
     `.fur-col.costume-hidden a, #fur-bottom.costume-hidden a { pointer-events: none; }`,
     `.fur { box-sizing: border-box; padding: 6px; background: ${c.plaque}; color: ${c.plaqueText}; border: 2px ${bevel.replace("3px ", "")}; font: 12px/16px ${f.body}; text-align: center; overflow-wrap: anywhere; }`,
     `.fur p { margin: 2px 0; }`,

@@ -192,6 +192,9 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const measure = () => {
     geom = layoutGeometry(look, vw());
     fill();
+    // A page that pins its body while a dialog is open (a cookie wall's scroll lock) leaves our in-flow footer
+    // as the document's only content, at its top: keep the footer out of sight until the body is back in flow.
+    footer.classList.toggle("page-locked", win.getComputedStyle(doc.body).position === "fixed");
     const theme = pageTheme(doc, palette);
     dark = theme.dark;
     rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
