@@ -196,6 +196,6 @@ Requirements 56 to 82, design part "Page structure". The code of 13.1 to 13.6 wa
   - Req: 57, 60, 75, 76, 77, 81
   - Test: `e2e/themes.spec.ts` → `"two sites get two different page structures"`, `"the page collapses to one column at 375 and un-haunts byte for byte"`, `"links3 drops its right column first"`. `bun run test:e2e` exits 0.
 
-- [ ] 13.9 Add visual baselines for the structure to `e2e-visual/visual.spec.ts`: `nav2` (`flame-skull`), `rightlinks` (`cloud-angel`) and `links3` (`matrix-den`) on `article.html` at 1280 and `flame-skull` at 375 (collapsed, furniture at the bottom), forced with `?hgtheme=`, motion reduced and the clock fixed. Make them with `bun run visual:baselines` and look at each PNG: the columns sit beside the table, the frame goes round all of it, no text is cut, and the 375 shot has no column.
+- [x] 13.9 Add visual baselines for the structure to `e2e-visual/visual.spec.ts`: `nav2` (`flame-skull`), `rightlinks` (`cloud-angel`) and `links3` (`matrix-den`) on `article.html` at 1280 and `flame-skull` at 375 (collapsed, furniture at the bottom), forced with `?hgtheme=`, motion reduced and the clock fixed. Make them with `bun run visual:baselines` and look at each PNG: the columns sit beside the table, the frame goes round all of it, no text is cut, and the 375 shot has no column.
   - Req: 57, 58, 59, 77, 81
   - Test: `bun run test:visual` exits 0. `git status` shows only the new PNGs and the spec file.
