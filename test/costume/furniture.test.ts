@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { Window } from "happy-dom";
-import { buildPiece, buildTabs, harvest, layoutCss, layoutGeometry, placeFurniture } from "../../src/content/costume/furniture";
+import { buildPiece, buildTabs, findOverflow, harvest, heldCss, layoutCss, layoutGeometry, placeFurniture } from "../../src/content/costume/furniture";
 import { FURNITURE, pickLook, type Look } from "../../src/content/costume/themes";
 
 const look = (layout: Look["layout"], furniture: Look["furniture"] = []) => ({ ...pickLook("x.test", "flame-skull"), layout, furniture });
@@ -91,5 +91,25 @@ describe("harvest and the pieces", () => {
     expect(news.textContent).toContain("<img src=x onerror=alert(1)>");
     const awards = () => buildPiece(doc, "awards", look("nav2"), h).textContent;
     expect(awards()).toBe(awards());
+  });
+});
+
+describe("findOverflow", () => {
+  test("holds the outermost page box that sticks out past the viewport (a 100vw header), once, and never a fixed one", () => {
+    const win = new Window({ url: "https://site.test/", width: 1280, height: 800 });
+    const doc = win.document as unknown as Document;
+    doc.write(`<!doctype html><html><body><header id="h"><button id="menu">Menu</button></header><p id="p">text</p><div id="fixed" style="position:fixed">x</div></body></html>`);
+    const right: Record<string, number> = { h: 1530, menu: 1460, p: 1200, fixed: 1400 };
+    for (const [id, r] of Object.entries(right)) {
+      (doc.getElementById(id) as unknown as { getBoundingClientRect: () => object }).getBoundingClientRect = () => ({ left: 250, right: r, width: r - 250, top: 0, bottom: 10, height: 10 });
+    }
+    const held = new Set<string>();
+    const path = (e: Element) => `#${e.id}`;
+    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toBe(true);
+    expect([...held]).toEqual(["#h"]);
+    expect(findOverflow(doc, "hg-crypt", 1280, held, path)).toBe(false);
+    expect(heldCss(held)).toBe(":is(#h) { max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }");
+    expect(heldCss(new Set())).toBe("");
+    win.happyDOM.abort();
   });
 });

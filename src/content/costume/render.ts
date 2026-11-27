@@ -17,7 +17,8 @@ import { LAYOUT } from "./tokens";
 import { pickLook } from "./themes";
 import { buildWelcome, fontsOf, lookBackgrounds, lookPageCss, lookShadowCss, lookSprites, lookTiles, paletteOf, rainbowHeadings, spriteMarkup, tintPattern } from "./theme-css";
 import { trailSvg } from "./theme-art";
-import { buildColumn, buildPiece, buildTabs, harvest, layoutCss, layoutGeometry, placeFurniture, type Geometry } from "./furniture";
+import { buildColumn, buildPiece, buildTabs, findOverflow, harvest, heldCss, layoutCss, layoutGeometry, placeFurniture, type Geometry } from "./furniture";
+import { cssPath } from "./page-blocks";
 import trackerJson from "../../data/trackers.json";
 import { resolveNeighborhood } from "../../data/neighborhood";
 import { LINK_CHECK_ORIGINS, type ContentRequest, type Curse, type DeadLink, type TrackerData } from "../../data/types";
@@ -172,11 +173,13 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   };
   let rainbow: string[] = [];
   let dark = false;
+  // The page's boxes that stuck out past the viewport once the body was held to its cell (sticky for the haunt).
+  const held = new Set<string>();
   // The page's own html background, read before the look puts its tile there (light or dark is judged on it).
   const htmlBg = htmlBackground(doc);
   const page = addPageSheet(doc, {
     fonts: fontsOf(look),
-    css: () => lookPageCss(look, { rainbow, dark }) + "\n" + layoutCss(geom),
+    css: () => [lookPageCss(look, { rainbow, dark }), layoutCss(geom), geom.main ? heldCss(held) : ""].join("\n"),
     backgrounds: (tint) => lookBackgrounds(look, tint),
     layers: { tint: palette.tint, pattern: tintPattern(look), bevel: look.bevel, light: palette.bevelLight, dark: palette.bevelDark, glow: palette.glow },
   });
@@ -201,6 +204,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     dark = theme.dark;
     rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
     page.set({ theme, blocks: findBlocks(doc, { darkPage: theme.dark }) });
+    // Nothing of the page may end up off screen: a box wider than the cell (a 100vw header) is held to it.
+    if (geom.main && findOverflow(doc, HOST_TAG, vw(), held, cssPath)) page.set({});
     const top = topOffset(doc);
     bands.style.top = `${top}px`;
     welcome.style.top = `${top + LAYOUT.neighborhoodBar + LAYOUT.marquee}px`;
@@ -226,6 +231,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       col = widen(computeContentColumn(doc));
     }
     gutters = overlay ? null : gutterWidths(col, vw());
+    // The haunt moment's parade drifts up these gutters, beside the table, never over the page.
+    croot.dataset.gutters = gutters ? `${gutters.left},${gutters.right}` : "";
     layoutStarfield(starfield, gutters, FRAME_OUT);
     edgeFrame.hidden = !overlay;
     // Document x; in full-overlay mode the whole page is the column, so the tint spans it.

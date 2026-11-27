@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { renderCostume } from "../../src/content/costume/render";
 import { flush, LANE_ORDER, setup, stubMain, TRACKER_ENTRIES, withTrackers, type Rec } from "./helpers";
-import { PARADE_GLOW, paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
+import { PARADE_GLOW, paradeLanes, paradeOf, playHaunt, playUnhaunt } from "../../src/content/costume/haunt-moment";
 import { hemTint, orderCompanies, riseIn, tintsOf } from "../../src/content/costume/ghosts";
 import type { CompanyHit } from "../../src/data/types";
 import { costumeCss, scanUrl } from "../../src/content/costume/styles";
@@ -21,6 +21,8 @@ function croot(n: number, opts: { reduced?: boolean } = {}) {
   el.innerHTML =
     `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"><span class="strip"></span><span class="strip"></span></div>` +
     `<div id="lanes">${ghosts.join("")}<button class="vampire" data-company="V"><span class="sprite"></span><span class="tag">V</span></button></div>`;
+  // the costume's last layout: 320px of empty gutter each side of the table, where the parade drifts up
+  el.dataset.gutters = "320,320";
   return { ...s, el };
 }
 
@@ -597,4 +599,36 @@ test("in lane mode the footer graveyard (always drawn) slides with the HUD, once
   const slides = (id: string) => recs.filter((r) => r.el === root.getElementById(id)).length;
   expect(slides("graveyard")).toBe(slides("hud"));
   expect(slides("hud")).toBe(1);
+});
+
+describe("the parade never crosses the page", () => {
+  test("it drifts up the empty gutters beside the table, sized to fit, alternating sides", () => {
+    const { el, win } = croot(0);
+    el.dataset.gutters = "160,100";
+    const lanes = paradeLanes(el, win.innerWidth)!;
+    expect(lanes).toHaveLength(6);
+    for (const [i, l] of lanes.entries()) {
+      if (i % 2 === 0) expect(l.left + l.size).toBeLessThanOrEqual(160 - 16);
+      else expect(l.left).toBeGreaterThanOrEqual(win.innerWidth - 100 + 16);
+      expect(l.size).toBeLessThanOrEqual(i % 2 === 0 ? 144 : 84);
+    }
+  });
+
+  test("with no gutter of room (a phone, a full-width page) it rides the marquee band instead", () => {
+    const { el, win } = croot(0);
+    el.dataset.gutters = "40,30";
+    expect(paradeLanes(el, win.innerWidth)).toBeNull();
+    el.dataset.gutters = "";
+    expect(paradeLanes(el, win.innerWidth)).toBeNull();
+    playHaunt(el, false);
+    expect(el.querySelector<HTMLElement>("#fx")!.dataset.parade).toBe("band");
+    for (const s of el.querySelectorAll<HTMLElement>("#fx .spirit")) expect(parseFloat(s.style.width)).toBeLessThanOrEqual(24);
+  });
+
+  test("the Webmaster's Ghost flies along the bands and the banner, not across the page's middle", () => {
+    const { el } = croot(0);
+    playHaunt(el, false);
+    expect(el.querySelector<HTMLElement>("#fx")!.style.getPropertyValue("--hg-sweep-top")).toMatch(/^\d+px$/);
+    expect(costumeCss({ stars: "a", twinkle: "b" })).toContain(".webmaster { position: absolute; left: 0; top: var(--hg-sweep-top, calc(50% - 48px));");
+  });
 });

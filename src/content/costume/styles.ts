@@ -214,7 +214,7 @@ button:focus-visible { ${ring} }
 .phosphor { position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px; background: ${P.phosphor}; opacity: 0; }
 .vignette { position: absolute; inset: 0; opacity: .4; background: radial-gradient(ellipse at center, transparent 45%, ${P.crypt} 100%); }
 .sweep { position: absolute; top: 0; bottom: 0; left: 0; width: 96px; }
-.webmaster { position: absolute; left: 0; top: calc(50% - 48px); width: 96px; height: 96px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
+.webmaster { position: absolute; left: 0; top: var(--hg-sweep-top, calc(50% - 48px)); width: 96px; height: 96px; filter: drop-shadow(0 0 6px ${P.spectral}) drop-shadow(0 0 2px ${P.ghostShade}); }
 .webmaster svg { display: block; width: 96px; height: 96px; image-rendering: pixelated; }
 .leaving .webmaster svg { transform: scaleX(-1); }
 .ectoplasm { position: absolute; top: 0; bottom: 0; left: -16px; width: 32px; background-image: ${checkerUrl(P.ectoplasm)}; background-size: 4px 4px; }

@@ -72,6 +72,30 @@ const phoneRide = (vw: number) => vw + SPRITES.paradeGhostPhone[0] + 2 * PARADE_
 const paradeSize = (near: boolean, vw: number) =>
   (isPhone(vw) ? (near ? SPRITES.paradeGhostPhone : SPRITES.paradeGhostPhoneFar) : near ? SPRITES.paradeGhost : SPRITES.paradeGhostFar)[0];
 
+/** Room kept between a gutter parade ghost and the table's frame (its 11px reach and the ghost's glow). */
+const LANE_KEEP = 16;
+/** The least a gutter must give a parade ghost; with less on both sides the parade rides the marquee band. */
+const LANE_MIN = 48;
+
+/**
+ * Where each parade ghost drifts up: in the empty gutters beside the page's table (never over the page),
+ * alternating sides, sized to fit; null when neither gutter has room (a phone, a full-width page), and the
+ * parade rides the marquee band. The gutters come from the costume's last layout (`data-gutters` on #crypt-root).
+ */
+export function paradeLanes(croot: HTMLElement, vw: number): { left: number; size: number }[] | null {
+  if (isPhone(vw)) return null;
+  const [gl, gr] = (croot.dataset.gutters ?? "").split(",").map(Number);
+  const room = { left: (gl || 0) - LANE_KEEP, right: (gr || 0) - LANE_KEEP };
+  const sides = (["left", "right"] as const).filter((s) => room[s] >= LANE_MIN);
+  if (!sides.length) return null;
+  return PARADE.map((p, i) => {
+    const side = sides[i % sides.length]!;
+    const size = Math.min(paradeSize(p.near, vw), room[side]);
+    const left = side === "left" ? Math.floor((room.left - size) / 2) : vw - (gr || 0) + LANE_KEEP + Math.floor((room.right - size) / 2);
+    return { left, size };
+  });
+}
+
 /**
  * The six parade ghosts: the page's companies first, each with its name tag (none on a phone, where
  * the band has no room), then decorative fillers in the hem tints left over, up to six.
@@ -111,7 +135,9 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
   else {
     fx.innerHTML = `<div class="scan"></div><div class="vignette"></div><div class="parade"></div>${SWEEP()}<div class="roll"></div><div class="lid top"></div><div class="lid bottom"></div><div class="phosphor"></div>`;
     const vw = doc.defaultView!.innerWidth;
-    const phone = isPhone(vw);
+    const lanes = paradeLanes(croot, vw);
+    const phone = !lanes;
+    fx.dataset.parade = phone ? "band" : "gutters";
     const spirits = buildSpirits(doc, parade, phone);
     // The caption that ends the parade: the page's tracker count, as text.
     const caption = Object.assign(doc.createElement("div"), { className: "found", textContent: `Trackers found: ${found}` });
@@ -121,13 +147,15 @@ function buildFx(croot: HTMLElement, crt: boolean, parade: readonly ParadeGhost[
     const band = marqueeTop(croot);
     spirits.forEach((s, i) => {
       const p = PARADE[i]!;
-      const size = paradeSize(p.near, vw);
-      const left = phone ? 0 : Math.round(p.x * Math.max(0, vw - size));
+      const size = lanes ? lanes[i]!.size : SPRITES.paradeGhostPhone[0] * (p.near ? 1 : 2 / 3);
+      const left = lanes ? lanes[i]!.left : 0;
       Object.assign(s.style, { left: `${left}px`, width: `${size}px`, height: `${size}px` });
       if (phone) s.style.top = `${band + (L.marquee - size) / 2}px`;
     });
     // Its place is set in playHaunt, once it can be measured.
     caption.style.left = "0px";
+    // The Webmaster's Ghost flies along the top bands and the welcome banner (ours), not across the page's text.
+    fx.style.setProperty("--hg-sweep-top", `${Math.max(0, band - L.neighborhoodBar)}px`);
   }
   croot.append(fx);
   return fx;
@@ -223,13 +251,14 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   // On a phone the text fills the screen, so they ride the marquee band left to right instead, spaced out.
   const { innerHeight: vh, innerWidth: vw } = win;
   run(q(".roll"), [{ transform: "translateY(-100%)" }, { transform: `translateY(${vh}px)` }], { ...at(H.roll), easing: "linear", fill: "both" });
-  fx.querySelectorAll(".spirit").forEach((s, i) => {
-    const p = PARADE[i]!;
-    const size = paradeSize(p.near, vw);
-    const path = isPhone(vw)
+  // In the gutters beside the page's table they drift straight up (no sideways drift out of the gutter).
+  const band = fx.dataset.parade === "band";
+  fx.querySelectorAll<HTMLElement>(".spirit").forEach((s, i) => {
+    const size = parseFloat(s.style.width) || paradeSize(PARADE[i]!.near, vw);
+    const path = band
       ? [{ transform: `translate(-${size + PARADE_GLOW}px, 0px)` }, { transform: `translate(${vw + PARADE_GLOW}px, 0px)` }]
-      : [{ transform: `translate(0px, ${vh + PARADE_GLOW}px)` }, { transform: `translate(${p.drift}px, -${size + PARADE_GLOW}px)` }];
-    const [stagger, duration] = isPhone(vw) ? [H.paradePhoneStagger, H.paradePhoneMs] : [H.paradeStagger, H.paradeMs];
+      : [{ transform: `translate(0px, ${vh + PARADE_GLOW}px)` }, { transform: `translate(0px, -${size + PARADE_GLOW}px)` }];
+    const [stagger, duration] = band ? [H.paradePhoneStagger, H.paradePhoneMs] : [H.paradeStagger, H.paradeMs];
     run(s, path, { delay: H.paradeStart + i * stagger, duration, easing: "linear", fill: "both" });
   });
   // The caption keeps to the marquee band at every width (costume chrome, never the page's text): it rides

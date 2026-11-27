@@ -48,6 +48,38 @@ export function layoutCss(g: Geometry): string {
   );
 }
 
+/** At most this many of the page's boxes are held to the cell, and at most this many are looked at. */
+const MAX_HELD = 40;
+const MAX_LOOKED = 3000;
+
+/**
+ * The page's outermost boxes that stick out past the viewport's right edge once the body is held to its cell
+ * (a header 100vw wide, as on nps.gov, carries its Menu button off screen). Added to `held` (kept for the haunt,
+ * so a box fixed once stays fixed); true when one was added.
+ */
+export function findOverflow(doc: Document, skip: string, vw: number, held: Set<string>, path: (e: Element) => string): boolean {
+  const win = doc.defaultView!;
+  const sticks = (e: Element | null) => !!e && e !== doc.body && e.getBoundingClientRect().right > vw + 1;
+  let added = false;
+  const all = doc.body.querySelectorAll("*");
+  for (let i = 0; i < all.length && i < MAX_LOOKED && held.size < MAX_HELD; i++) {
+    const e = all[i]!;
+    if (e.localName === skip || !sticks(e) || sticks(e.parentElement)) continue;
+    const r = e.getBoundingClientRect();
+    if (r.width <= 0 || r.left >= vw || win.getComputedStyle(e).position === "fixed") continue;
+    const p = path(e);
+    if (!held.has(p)) {
+      held.add(p);
+      added = true;
+    }
+  }
+  return added;
+}
+
+/** The rule that holds those boxes to the body's cell: no wider than it, no margin pulling them out. */
+export const heldCss = (held: Set<string>) =>
+  held.size ? `:is(${[...held].join(", ")}) { max-width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; }` : "";
+
 export type Harvest = { nav: { text: string; href: string }[]; out: { text: string; href: string }[]; headings: string[] };
 
 const clean = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();

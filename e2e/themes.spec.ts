@@ -249,3 +249,40 @@ for (const width of [1280, 375]) {
     });
   }
 }
+
+for (const width of [1280, 375]) {
+  for (const preset of ["", "flame-skull"]) {
+    test(`the haunt moment's ghosts never cross the page either: parade and Webmaster's Ghost, ${preset || "own look"} @${width}`, async ({ context, sw }) => {
+      test.setTimeout(60_000);
+      const page = await context.newPage();
+      await page.setViewportSize({ width, height: 800 });
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await page.goto(at("127.0.0.1", `article.html${preset ? `?hgtheme=${preset}` : ""}`));
+      const cdp = await context.newCDPSession(page);
+      await cdp.send("Animation.enable");
+      await cdp.send("Animation.setPlaybackRate", { playbackRate: 0 }); // the moment holds until seeked
+      await haunt(sw, page);
+      const inShadow = await shadowOf(page);
+      await expect.poll(() => inShadow(function () { return this.querySelectorAll("#fx .parade > .spirit").length; })).toBe(6);
+      const theirs = await pageRects(page);
+      const hits: string[] = [];
+      let seen = 0;
+      for (const t of [800, 1000, 1200, 1400, 1800, 2200, 2600, 3000]) {
+        const ours = await inShadow(function (at: number) {
+          for (const a of [...this.getAnimations(), ...document.getAnimations()]) {
+            a.pause();
+            a.currentTime = at;
+          }
+          return [...this.querySelectorAll("#fx .spirit, #fx .webmaster")].map((e) => {
+            const r = e.getBoundingClientRect();
+            return { what: `${e.className}@${at}`, left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+          }).filter((r) => r.right > r.left && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth);
+        }, t);
+        seen += ours.length;
+        for (const o of ours) for (const p of theirs) if (o.left < p.right - 1 && p.left < o.right - 1 && o.top < p.bottom - 1 && p.top < o.bottom - 1) hits.push(`${o.what} over ${p.what}`);
+      }
+      expect(seen).toBeGreaterThan(10); // the ghosts really were on screen at those moments
+      expect(hits).toEqual([]);
+    });
+  }
+}
