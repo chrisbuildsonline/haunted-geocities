@@ -2,7 +2,7 @@
 // It builds the shipping extension, clicks Haunt in its popup and films the parade through to the
 // "Trackers found: N" caption at rest. It writes docs/real-site-haunt.gif (the first page), a still of the
 // caption on each page (docs/real-site-caption-<slug>.png) and docs/real-site.json (each page, the
-// date, its count and its parade's companies).
+// date, its count, its parade's companies, and the boxes of the still's ghosts and restyled panels).
 // A docs tool, not a check: live pages change and networks fail, so it is in no CI or Docker stage,
 // and the committed files are the record. There is no fixture server and no host-resolver rule here:
 // every tracker in the shot is one the live page really loaded.
@@ -12,6 +12,7 @@ import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, statSync, writeF
 import { resolve } from "node:path";
 import { scrollToEnd, shadowOf, tabIdOf } from "../e2e/fixtures";
 import { afternoonZone } from "./afternoon";
+import { pickStill, type Box, type Frame } from "./still-frame";
 
 /**
  * US government pages: public-domain works (17 U.S.C. 105) that load their trackers with no consent
@@ -23,7 +24,14 @@ const PAGES = [
 ];
 const FPS = 6;
 const SLOW = 0.2; // the page's animation clock runs at a fifth of real time, so every frame is caught on time
-const VIEW = { width: 1280, height: 800 };
+/**
+ * The window is taller than the shot. The parade crosses the window bottom to top in a fixed time, so in a
+ * taller window it is still low when the caption lands, and there is a frame where every named ghost is in
+ * the shot with none over the page's crypt window (in an 800px window the caption lands as the flock covers
+ * it). Every frame, GIF and stills alike, is the top SHOT of the window.
+ */
+const VIEW = { width: 1280, height: 1400 };
+const SHOT = { width: 1280, height: 1000 };
 const GIF = "docs/real-site-haunt.gif";
 
 /** ffmpeg, `frames` to a 560px GIF at FPS with 128 colours, palette first (as e2e/readme.shots.ts does). */
@@ -69,7 +77,26 @@ async function capture(slug: string, url: string, gif: boolean) {
 
     let n = 0;
     const name = (k: number) => `${frames}/f${String(k).padStart(3, "0")}.png`;
-    const frame = () => page.screenshot({ path: name(n++), caret: "initial" });
+    const frame = () => page.screenshot({ path: name(n++), caret: "initial", clip: { x: 0, y: 0, ...SHOT } });
+    // The restyled panels in the shot: the crypt windows (page-sheet rules on a `body > …` path that frame a
+    // box and set no colour, unlike the search fields and the raised buttons) that hold a button.
+    const panels = () =>
+      page.evaluate((shot) => {
+        const rules = document.adoptedStyleSheets.flatMap((s) => [...s.cssRules]) as CSSStyleRule[];
+        const paths = new Set(rules.filter((r) => /^body > /.test(r.selectorText ?? "") && r.style.boxShadow && !r.style.color).map((r) => r.selectorText));
+        const isButton = (a: Element) => {
+          const cs = getComputedStyle(a);
+          return cs.boxShadow !== "none" || !/^(transparent|rgba\(.*,\s*0\))$/.test(cs.backgroundColor);
+        };
+        const boxes = [...paths]
+          .flatMap((p) => [...document.querySelectorAll(p)])
+          .filter((w) => [...w.querySelectorAll("a[href], button")].some(isButton))
+          .map((w) => w.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.bottom > 0 && r.top < shot.height)
+          .map((r) => JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom) }));
+        // A carousel's slides stack in one place: each box once.
+        return [...new Set(boxes)].map((b) => JSON.parse(b) as { left: number; top: number; right: number; bottom: number });
+      }, SHOT);
     // Half a second of the live page first.
     await frame();
     for (let i = 1; i < FPS / 2; i++) copyFileSync(name(0), name(n++));
@@ -100,31 +127,39 @@ async function capture(slug: string, url: string, gif: boolean) {
       };
     });
 
-    // The 3000ms moment and the caption's hold (to 3600), one frame every 1/6s of page time. Each frame notes
-    // where the caption is and which named parade ghosts are wholly on screen.
-    const captionAt: { k: number; mid: number; ghosts: string[] }[] = [];
+    // The 3000ms moment and the caption's hold (to 3600), one frame every 1/6s of page time. Each frame with
+    // the caption wholly in the shot notes where it is and every parade ghost's box.
+    const captionAt: Omit<Frame, "panels">[] = [];
     for (let k = 1; k <= 3.5 * FPS; k++) {
-      await page.waitForTimeout(Math.max(0, start + (k * 1000) / FPS / SLOW - Date.now()));
+      const due = start + (k * 1000) / FPS / SLOW;
+      await page.waitForTimeout(Math.max(0, due - Date.now()));
+      if (Date.now() - due > 100) console.log(`real-site: ${slug} frame ${n} is ${Date.now() - due}ms late`);
       const at = n;
       await frame();
-      const seen = await inShadow(function (view: { width: number; height: number }) {
-        const inView = (r: DOMRect) => r.left >= 0 && r.right <= view.width && r.top >= 0 && r.bottom <= view.height;
+      const seen = await inShadow(function (shot: { width: number; height: number }) {
+        const box = (r: DOMRect) => ({ left: Math.round(r.left), top: Math.round(r.top), right: Math.round(r.right), bottom: Math.round(r.bottom) });
         const r = this.querySelector("#fx .found")?.getBoundingClientRect();
-        const ghosts = [...this.querySelectorAll<HTMLElement>("#fx .spirit[data-company]")].filter((s) => inView(s.getBoundingClientRect())).map((s) => s.dataset.company!);
-        return r && inView(r) ? { mid: (r.top + r.bottom) / 2, ghosts } : null;
-      }, VIEW);
+        const ghosts = [...this.querySelectorAll<HTMLElement>("#fx .spirit")].map((s) => ({ ...(s.dataset.company ? { company: s.dataset.company } : {}), box: box(s.getBoundingClientRect()) }));
+        return r && r.left >= 0 && r.right <= shot.width && r.top >= 0 && r.bottom <= shot.height ? { mid: (r.top + r.bottom) / 2, ghosts } : null;
+      }, SHOT);
       if (seen) captionAt.push({ k: at, ...seen });
     }
+    // The panels are the page's layout, which the parade does not move: measured once, with the costume on.
+    const inShot = await panels();
     await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 });
+    console.log(`real-site: ${slug} restyled panels in the shot ${JSON.stringify(inShot)}`);
 
-    // The still: the caption in the marquee band (off the page's text) with as many named tracker ghosts
-    // in the frame as the parade gives it (the latest such frame, where the caption has come furthest).
+    // The still: the caption in the marquee band (off the page's text), no parade ghost over a restyled
+    // window, and as many named tracker ghosts wholly in the shot as such a frame gives (scripts/still-frame.ts).
     expect(captionAt.length).toBeGreaterThan(0);
-    const most = Math.max(...captionAt.map((c) => c.ghosts.length));
-    const still = captionAt.filter((c) => c.ghosts.length === most).at(-1)!;
-    expect(still.mid).toBeLessThan(VIEW.height / 3);
-    expect(still.ghosts.length).toBeGreaterThanOrEqual(Math.min(3, parade.companies.length));
-    copyFileSync(name(still.k), `docs/real-site-caption-${slug}.png`);
+    const still = pickStill(captionAt.map((c) => ({ ...c, panels: inShot })), SHOT);
+    expect(still, "a frame with no parade ghost over a restyled panel").not.toBeNull();
+    console.log(`real-site: ${slug} still is frame ${still!.k}, showing ${still!.shows.join(", ")}`);
+    expect(still!.panels.length).toBeGreaterThan(0);
+    expect(still!.mid).toBeLessThan(SHOT.height / 3);
+    expect(still!.shows.length).toBeGreaterThanOrEqual(Math.min(3, parade.companies.length));
+    copyFileSync(name(still!.k), `docs/real-site-caption-${slug}.png`);
+    const stillClear: { panels: Box[]; ghosts: Box[] } = { panels: still!.panels, ghosts: still!.ghosts.map((g) => g.box) };
     if (gif) {
       // Let the moment play out (no finite animation left but the marquee), then hold the settled page
       // for a second and a half before the loop starts again.
@@ -178,7 +213,7 @@ async function capture(slug: string, url: string, gif: boolean) {
 
     const found = Number(/^Trackers found: (\d+)$/.exec(parade.caption)?.[1]);
     expect(found).toBeGreaterThan(0);
-    return { trackersFound: found, parade: parade.companies, stillShows: still.ghosts };
+    return { trackersFound: found, parade: parade.companies, stillShows: still!.shows, stillClear };
   } finally {
     await context.close();
   }

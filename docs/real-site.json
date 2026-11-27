@@ -17,7 +17,55 @@
         "U.S. General Services Administration",
         "Crazy Egg",
         "Google Ads (Google)"
-      ]
+      ],
+      "stillClear": {
+        "panels": [
+          {
+            "left": 80,
+            "top": 271,
+            "right": 640,
+            "bottom": 475
+          }
+        ],
+        "ghosts": [
+          {
+            "left": 91,
+            "top": 526,
+            "right": 235,
+            "bottom": 670
+          },
+          {
+            "left": 860,
+            "top": 649,
+            "right": 956,
+            "bottom": 745
+          },
+          {
+            "left": 472,
+            "top": 723,
+            "right": 616,
+            "bottom": 867
+          },
+          {
+            "left": 1125,
+            "top": 840,
+            "right": 1221,
+            "bottom": 936
+          },
+          {
+            "left": 270,
+            "top": 935,
+            "right": 366,
+            "bottom": 1031
+          },
+          {
+            "left": 785,
+            "top": 1019,
+            "right": 929,
+            "bottom": 1163
+          }
+        ]
+      }
     },
     {
       "page": "https://www.cdc.gov/",
@@ -32,7 +80,61 @@
         "Google Analytics (Google)",
         "U.S. General Services Administration",
         "Google Ads (Google)"
-      ]
+      ],
+      "stillClear": {
+        "panels": [
+          {
+            "left": 735,
+            "top": 285,
+            "right": 1210,
+            "bottom": 486
+          },
+          {
+            "left": 735,
+            "top": 285,
+            "right": 1210,
+            "bottom": 414
+          }
+        ],
+        "ghosts": [
+          {
+            "left": 91,
+            "top": 510,
+            "right": 235,
+            "bottom": 654
+          },
+          {
+            "left": 860,
+            "top": 633,
+            "right": 956,
+            "bottom": 729
+          },
+          {
+            "left": 472,
+            "top": 707,
+            "right": 616,
+            "bottom": 851
+          },
+          {
+            "left": 1125,
+            "top": 824,
+            "right": 1221,
+            "bottom": 920
+          },
+          {
+            "left": 270,
+            "top": 919,
+            "right": 366,
+            "bottom": 1015
+          },
+          {
+            "left": 785,
+            "top": 1002,
+            "right": 929,
+            "bottom": 1146
+          }
+        ]
+      }
     }
   ]
 }

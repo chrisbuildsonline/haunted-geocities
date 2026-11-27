@@ -45,7 +45,7 @@ describe("real-site proof", () => {
     expect(read("scripts/real-site.pw.ts")).toContain("stillShows");
   });
 
-  test("the GIF is a 560px GIF under 2 MB, and each caption still is a 1280px PNG under 1 MB", () => {
+  test("the GIF is a 560px GIF under 2 MB, and each caption still is a 1280px PNG at most 1000px tall, under a byte a pixel", () => {
     const gif = readFileSync(join(root, GIF));
     expect(gif.subarray(0, 6).toString("latin1")).toBe("GIF89a");
     expect(gif.readUInt16LE(6)).toBe(560);
@@ -54,7 +54,9 @@ describe("real-site proof", () => {
       const png = readFileSync(join(root, p.still));
       expect(png.subarray(1, 4).toString("latin1")).toBe("PNG");
       expect(png.readUInt32BE(16)).toBe(1280);
-      expect(png.length).toBeLessThan(1024 * 1024);
+      // The shot is the top of a taller window (scripts/real-site.pw.ts): its weight goes with its pixels.
+      expect(png.readUInt32BE(20)).toBeLessThanOrEqual(1000);
+      expect(png.length).toBeLessThan(png.readUInt32BE(16) * png.readUInt32BE(20));
     }
   });
 
