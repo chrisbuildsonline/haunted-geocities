@@ -33,6 +33,8 @@ for (const [width, height] of [[375, 740], [1280, 800]] as const) {
     await page.waitForTimeout(3700); // the haunt moment settles
     const inShadow = await shadowOf(page);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    // e2e/fixtures.ts pins the browser to 15:xx at launch (16 if the hour turned since): never the witching hour in a still
+    expect([15, 16]).toContain(await page.evaluate(() => new Date().getHours()));
     // news.html: six companies, Hotjar and Taboola among them known vampires
     expect(await look(inShadow)).toMatchObject({ text: "Trackers 6 / Vampires 2", shown: true, inView: true, oneLine: true, besideIcon: true, hudBelowFold: true });
     expect((await look(inShadow)).font).toBeGreaterThanOrEqual(12);

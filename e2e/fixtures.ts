@@ -1,6 +1,7 @@
 import { test as base, chromium, expect, type BrowserContext, type Page, type Worker } from "@playwright/test";
 import { resolve } from "node:path";
 import { FIXTURE_PORT } from "../playwright.config";
+import { afternoonZone } from "../scripts/afternoon";
 
 // The e2e build (vite build --mode e2e → dist-e2e/) is the shipping extension plus
 // host_permissions for http://127.0.0.1/* and http://localhost/*. Reason: activeTab is only
@@ -61,6 +62,8 @@ export const test = base.extend<Fixtures>({
     const context = await chromium.launchPersistentContext("", {
       channel: "chromium", // bundled Chromium in new headless mode: runs extensions without a display
       headless: true,
+      // The costume reads the local clock (local 00:00-00:59 is the witching hour): every run and shot lives on an ordinary afternoon.
+      timezoneId: afternoonZone(),
       args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`, `--host-resolver-rules=${HOST_RULES}`],
     });
     await use(context);

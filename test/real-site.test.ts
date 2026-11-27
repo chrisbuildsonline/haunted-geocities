@@ -101,6 +101,16 @@ describe("real-site proof", () => {
     expect(read("scripts/real-site.pw.ts")).toMatch(/timezoneId: afternoonZone\(\)/);
   });
 
+  test("the e2e, visual and README-shot browser lives on that afternoon too, so no run or docs shot catches the witching hour", () => {
+    const fixtures = read("e2e/fixtures.ts");
+    expect(fixtures).toMatch(/import \{ afternoonZone \} from "\.\.\/scripts\/afternoon"/);
+    const launch = fixtures.slice(fixtures.indexOf("launchPersistentContext("));
+    expect(launch.slice(0, launch.indexOf("});"))).toMatch(/timezoneId: afternoonZone\(\)/);
+    // the README shots and the visual tests launch through that same fixture
+    expect(read("e2e/readme.shots.ts")).toMatch(/from "\.\/fixtures"/);
+    expect(read("e2e-visual/visual.spec.ts")).toMatch(/from "\.\.\/e2e\/fixtures"/);
+  });
+
   test("docs:realsite runs the live capture with the shipping build, outside every gate", () => {
     expect(scripts["docs:realsite"]).toBe("vite build && playwright test --config playwright.realsite.config.ts");
     const source = read("scripts/real-site.pw.ts");
