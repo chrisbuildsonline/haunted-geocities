@@ -83,9 +83,10 @@ test("HUD @700", async ({ context, sw, extensionId }) => {
 
 /**
  * news.html mid-moment, motion on: every animation in the costume and on the page sheet is paused at
- * `at` ms. Wide (2000ms): the ghosts high on the page, each with its name on its hem, and the caption
- * riding into the marquee band; phone (2200ms): the last ghosts of the train in the marquee band under
- * the whole address, the caption riding in behind them.
+ * `at` ms. 1280 (2000ms): the ghosts high up the gutters, each with its name on its hem, and the caption
+ * riding into the marquee band; 700 (2000ms, no gutter room, so the train rides the band): the train in
+ * the marquee band with the caption just setting off behind it; phone (2200ms): the last ghosts of the
+ * train in the marquee band under the whole address, the caption riding in behind them.
  */
 function hauntParade(width: number) {
   const at = width <= 400 ? 2200 : 2000;
