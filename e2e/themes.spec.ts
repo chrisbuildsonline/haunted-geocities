@@ -167,3 +167,23 @@ test("two sites get two different page structures: the page's width and the furn
   expect(other.width).toBeLessThan(other.before);
   expect(other.furniture.length).toBeGreaterThanOrEqual(2);
 });
+
+test("on a phone the table folds to one column: no side columns, the furniture at the bottom, no sideways scroll", async ({ context, sw }) => {
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(at("127.0.0.1", "article.html?hgtheme=matrix-den"));
+  await haunt(sw, page);
+  await settle(page);
+  const inShadow = await shadowOf(page);
+  const fold = await inShadow(function () {
+    return {
+      columns: [...this.querySelectorAll(".fur-col")].filter((c) => !(c as HTMLElement).hidden).length,
+      bottom: this.querySelectorAll("#fur-bottom .fur").length,
+      all: this.querySelectorAll(".fur").length,
+    };
+  });
+  expect(fold.columns).toBe(0);
+  expect(fold.bottom).toBe(fold.all);
+  expect(fold.all).toBeGreaterThanOrEqual(6);
+  expect(await page.evaluate(() => ({ maxWidth: getComputedStyle(document.body).maxWidth, scroll: document.documentElement.scrollWidth <= innerWidth }))).toEqual({ maxWidth: "none", scroll: true });
+});
