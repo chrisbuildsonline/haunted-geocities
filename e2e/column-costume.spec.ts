@@ -171,7 +171,9 @@ test("375px: links and form still clickable, form submits", async ({ context, sw
   await page.screenshot({ path: `${SHOTS}/index-375.png` });
   const inShadow = await shadowOf(page);
   expect(await inShadow(function () { return (this.getElementById("edge-frame") as HTMLElement).hidden; })).toBe(false);
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement, "::before").content)).toBe('""');
+  // the tint is the body's own background (nothing laid over the page); no frame on a phone
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement, "::before").content)).toBe("none");
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(255, 255, 204)");
   expect(await page.evaluate(() => getComputedStyle(document.documentElement, "::after").content)).toBe("none");
   // every link and control is what a hit at its centre finds (scrolled clear of the bands and HUD)
   const misses = await page.evaluate(async () => {
@@ -218,7 +220,8 @@ test("unhaunt: outerHTML and document.adoptedStyleSheets equal pre-haunt, body f
   await settle(page);
   await page.screenshot({ path: `${SHOTS}/column-1280.png` });
   const haunted = await look();
-  expect(haunted).toMatchObject({ font: expect.stringMatching(/^"Times New Roman"/), link: "rgb(0, 0, 255)", sheets: 2, own: true, tint: '""' });
+  // the tint is the body's background now, never an html::before layer over the page
+  expect(haunted).toMatchObject({ font: expect.stringMatching(/^"Times New Roman"/), link: "rgb(0, 0, 255)", sheets: 2, own: true, tint: "none" });
   await unhaunt(sw, tabId);
   await expect(page.locator("hg-crypt")).toHaveCount(0);
   expect(await look()).toEqual(before);

@@ -31,6 +31,9 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
     const cs = (s: string) => getComputedStyle(q(s)!);
     const gutters = [...this.querySelectorAll(".gutter")].filter((g) => !(g as HTMLElement).hidden);
     return {
+      gutterDisplay: gutters.map((g) => getComputedStyle(g).display),
+      htmlTile: getComputedStyle(document.documentElement).backgroundImage.startsWith('url("data:image/svg'),
+      tableLeft: document.body.getBoundingClientRect().left,
       layers: [...q("#crypt-root")!.children].map((c) => c.id),
       gutters: gutters.map((g) => g.getBoundingClientRect().width),
       gutterOpacity: getComputedStyle(gutters[0]!).opacity,
@@ -55,11 +58,10 @@ test("haunt renders the starfield gutters, top bands and HUD inside the closed s
   });
   expect(look.layers.slice(0, 5)).toEqual(["starfield", "lanes", "markers", "top-bands", "cards"]);
   expect(look.fxGone).toBe(true);
-  expect(look.gutters).toHaveLength(2);
-  expect(look.gutters[0]).toBeGreaterThanOrEqual(64);
-  expect(look.gutters[0]).toBeLessThanOrEqual(look.column.left + 1);
-  expect(look.gutters[1]).toBeLessThanOrEqual(look.vw - look.column.right + 1);
-  expect(look.gutterOpacity).toBe("0.92");
+  // the gutters are planned (for the ghost lanes) but not drawn: the starfield is the page's own html background
+  expect(look.gutterDisplay).toEqual(["none", "none"]);
+  expect(look.htmlTile).toBe(true);
+  expect(look.tableLeft).toBeGreaterThanOrEqual(64);
   expect(look.starTile).toBe(true);
   expect(look.bar).toEqual([0, 24, "rgb(51, 0, 102)", "rgb(255, 255, 204)"]);
   // The fixture is served from 127.0.0.1: an IP literal has the fixed Area51 address.

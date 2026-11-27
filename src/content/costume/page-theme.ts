@@ -59,15 +59,20 @@ function opaque(css: string): string | null {
   return toHex(toRgb(c.hex).map((v) => 255 - (255 - v) * c.alpha) as Rgb);
 }
 
-/** The page's background: body, else html when the body is transparent, else white. Images are ignored. */
-export function pageBackground(doc: Document): string {
+/**
+ * The page's background: body, else html when the body is transparent, else white. Images are ignored.
+ * `html`: the html background the page had before the look painted its tile there (read once, up front).
+ */
+export function pageBackground(doc: Document, html?: string | null): string {
   const win = doc.defaultView!;
-  for (const el of [doc.body, doc.documentElement]) {
-    const c = el && opaque(win.getComputedStyle(el).backgroundColor || "");
-    if (c) return c;
-  }
-  return "#ffffff";
+  const body = doc.body && opaque(win.getComputedStyle(doc.body).backgroundColor || "");
+  if (body) return body;
+  if (html !== undefined) return html ?? "#ffffff";
+  return opaque(win.getComputedStyle(doc.documentElement).backgroundColor || "") ?? "#ffffff";
 }
+
+/** The html element's own background colour now, or null when transparent. */
+export const htmlBackground = (doc: Document) => opaque(doc.defaultView!.getComputedStyle(doc.documentElement).backgroundColor || "");
 
 export type Theme = {
   /** Background luminance under 0.4. */
@@ -99,7 +104,7 @@ export function themeFor(pageBg: string, c: LinkColours = CLASSIC): Theme {
 }
 
 export const isDarkPage = (doc: Document) => themeFor(pageBackground(doc)).dark;
-export const pageTheme = (doc: Document, c?: LinkColours) => themeFor(pageBackground(doc), c);
+export const pageTheme = (doc: Document, c?: LinkColours, html?: string | null) => themeFor(pageBackground(doc, html), c);
 
 const TIMES = `"Times New Roman", Times, serif`;
 const COMIC = `"Comic Sans MS", "Comic Sans", "Chalkboard SE", "Comic Neue", cursive`;

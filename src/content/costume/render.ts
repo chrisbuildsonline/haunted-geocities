@@ -9,7 +9,7 @@ import { documentHeight, FRAME, FRAME_OUT, frameBox, TINT, tintBox, type Box } f
 import { paradeOf, playHaunt, playUnhaunt, type Moment, type Reveal } from "./haunt-moment";
 import { buildHud, icon, sampleBottomLift, setCounts, setOdometer } from "./hud";
 import { findBlocks } from "./page-blocks";
-import { pageTheme } from "./page-theme";
+import { htmlBackground, pageTheme } from "./page-theme";
 import { watchReducedMotion } from "./reduced-motion";
 import { buildEdgeFrame, buildStarfield, computeContentColumn, gutterWidths, layoutStarfield, pageMediaRects, pageTextRects, paintTile, type Column } from "./starfield";
 import { costumeCss } from "./styles";
@@ -172,6 +172,8 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   };
   let rainbow: string[] = [];
   let dark = false;
+  // The page's own html background, read before the look puts its tile there (light or dark is judged on it).
+  const htmlBg = htmlBackground(doc);
   const page = addPageSheet(doc, {
     fonts: fontsOf(look),
     css: () => lookPageCss(look, { rainbow, dark }) + "\n" + layoutCss(geom),
@@ -195,7 +197,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
     // A page that pins its body while a dialog is open (a cookie wall's scroll lock) leaves our in-flow footer
     // as the document's only content, at its top: keep the footer out of sight until the body is back in flow.
     footer.classList.toggle("page-locked", win.getComputedStyle(doc.body).position === "fixed");
-    const theme = pageTheme(doc, palette);
+    const theme = pageTheme(doc, palette, htmlBg);
     dark = theme.dark;
     rainbow = look.heading === "rainbow" && !dark ? rainbowHeadings(doc) : [];
     page.set({ theme, blocks: findBlocks(doc, { darkPage: theme.dark }) });

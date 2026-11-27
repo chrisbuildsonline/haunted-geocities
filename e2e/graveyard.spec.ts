@@ -75,12 +75,12 @@ test("375px: graveyard shows one sprite per company in lane order", async ({ con
   await page.screenshot({ path: `${SHOTS}/narrow-375.png` });
 });
 
-test("full-width page: graveyard shown, no lanes", async ({ context, sw }) => {
+test("full-width page in the look's 960px table: graveyard shown, the ghosts in the gutter lanes beside the table", async ({ context, sw }) => {
   const { page, inShadow } = await hauntAt(context, sw, 1280, "wide.html");
   const s = await strip(inShadow);
   expect(s.shown).toBe(true);
   expect(s.companies).toEqual(["Criteo", "AdTheorent", "Hotjar", "Taboola"]);
-  expect(s.lanes).toBe(0);
+  expect(s.lanes).toBe(4);
   expect([s.gap, s.sameInsets]).toEqual([12, true]);
   await page.screenshot({ path: `${SHOTS}/wide-1280.png` });
 });

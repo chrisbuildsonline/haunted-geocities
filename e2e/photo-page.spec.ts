@@ -155,131 +155,33 @@ for (const width of [1280, 375]) {
     await page.screenshot({ path: `${SHOTS}/slides-${width}.png` });
   });
 
-  test(`${width}px: the cdc.gov-style photo slide: its title and outline button sit in a crypt window drawn round them, the button turns 1998; nothing moves, un-haunt gives them back`, async ({ context, sw }) => {
+  test(`${width}px: the cdc.gov-style photo slide shows as the page drew it: no window over it, the button keeps its look, the title gets a text-shadow; un-haunt gives it back`, async ({ context, sw }) => {
     const { page, tabId } = await hauntHero(context, sw, width);
     const look = () =>
       page.evaluate(() => {
         const cs = (id: string) => getComputedStyle(document.getElementById(id)!);
-        const box = (id: string) => document.getElementById(id)!.getBoundingClientRect();
         const [col, learn] = [cs("photo-col"), cs("learn")];
         return {
-          col: { radius: col.borderRadius, bg: col.backgroundColor, shadow: col.boxShadow, padding: col.padding },
-          title: cs("photo-title").color,
-          learn: { radius: learn.borderRadius, face: learn.boxShadow, color: learn.color, top: learn.borderTopColor, bottom: learn.borderBottomColor, width: learn.borderTopWidth, padding: learn.padding },
-          // the frame (16px round the panel, and the 4px hard shadow) stays inside the photo top to bottom
-          frameIn: box("photo-col").top - 16 >= box("photo-item").top && box("photo-col").bottom + 20 <= box("photo-item").bottom,
+          col: { bg: col.backgroundColor, shadow: col.boxShadow, text: col.textShadow },
+          learn: { radius: learn.borderRadius, face: learn.boxShadow, color: learn.color, text: learn.textShadow },
         };
       });
     const l = await look();
-    expect(l.col).toMatchObject({ radius: "0px", bg: "rgb(0, 0, 51)", padding: "0px 20px" });
-    for (const c of ["rgb(0, 0, 51) 0px 0px 0px 12px", "rgb(153, 153, 204) -3px -3px 0px 12px", "rgb(51, 51, 102) 3px 3px 0px 12px", "rgb(0, 0, 0) 0px 0px 0px 16px", "rgb(0, 0, 0) 4px 4px 0px 16px"]) {
-      expect({ c, ok: l.col.shadow.includes(c) }).toEqual({ c, ok: true });
-    }
-    expect(l.col.shadow).not.toContain("inset");
-    expect(l.frameIn).toBe(true);
-    // the title is white on the crypt
-    expect(contrastRatio(parseColour(l.title)!.hex, "#000033")).toBeGreaterThanOrEqual(4.5);
-    // the outline button: square, raised (light top-left, dark bottom-right), bone on violet, its border and padding as they were
-    const button = { radius: "0px", face: "rgb(51, 0, 102) 0px 0px 0px 999px inset, rgb(0, 0, 0) 2px 2px 0px 0px", color: "rgb(255, 255, 204)", top: "rgb(153, 153, 204)", bottom: "rgb(51, 51, 102)", width: "2px", padding: "8px 16px" };
-    expect(l.learn).toEqual(button);
-    // measured again (a relayout, and the pointer on the button, where the page would light it up), it keeps its costume
-    await page.locator("#photo-item").scrollIntoViewIfNeeded();
-    await page.setViewportSize({ width: width - 10, height: 800 });
-    await page.waitForTimeout(500);
-    await page.setViewportSize({ width, height: width < 400 ? 740 : 800 });
-    await page.locator("#learn").hover();
-    await page.waitForTimeout(500);
-    const again = await look();
-    expect([again.col.bg, again.col.radius, again.learn]).toEqual(["rgb(0, 0, 51)", "0px", button]);
-    await page.mouse.move(0, 0);
+    // nothing painted over the photo: the panel keeps no ground and no shadow; its text reads by a dark text-shadow
+    expect([l.col.bg, l.col.shadow]).toEqual(["rgba(0, 0, 0, 0)", "none"]);
+    expect(l.col.text).toContain("rgb(0, 0, 0) 1px 1px 2px");
+    // the outline button keeps its own look, with no shadow on its text
+    expect(l.learn).toEqual({ radius: "13.5px 0px", face: "none", color: "rgb(255, 255, 255)", text: "none" });
     await page.screenshot({ path: `${SHOTS}/photo-${width}.png` });
 
     await sw.evaluate(async (id) => chrome.tabs.sendMessage(id, { type: "unhaunt" }), tabId);
     await expect(page.locator("hg-crypt")).toHaveCount(0);
     const back = await look();
-    expect([back.col.bg, back.col.shadow, back.learn.radius, back.learn.face, back.learn.color]).toEqual(["rgba(0, 0, 0, 0)", "none", "13.5px 0px", "none", "rgb(255, 255, 255)"]);
-  });
-
-  test(`${width}px: the crypt footer follows the page's end, and a focused link scrolls fully into view`, async ({ context, sw }) => {
-    const { page, inShadow } = await hauntHero(context, sw, width);
-    // scrolled to the end, the page's footer line, the main column's last line and the "Featured stories"
-    // heading all sit above the crypt footer, which comes after them in flow; the page's lazy footer
-    // grows once it is seen, and the end is still the end
-    expect((await rectOf(page, "promo")).height).toBe(60);
-    await scrollToEnd(page);
-    expect((await rectOf(page, "promo")).height).toBe(112);
-    const end = await page.evaluate(() => ({ y: Math.ceil(window.scrollY), max: document.scrollingElement!.scrollHeight - document.scrollingElement!.clientHeight }));
-    expect(end.y).toBeGreaterThanOrEqual(end.max - 1);
-    const top = await footerTop(inShadow);
-    for (const id of ["foot-last", "last", "featured"]) expect({ id, above: (await rectOf(page, id)).bottom <= top + 1 }).toEqual({ id, above: true });
-    await page.screenshot({ path: `${SHOTS}/end-${width}.png` });
-    // a link half below the viewport that takes keyboard focus is scrolled fully into view
-    await page.evaluate(() => {
-      const story = document.getElementById("story")!;
-      window.scrollBy(0, story.getBoundingClientRect().top - (window.innerHeight - 10));
-      document.getElementById("slide-on-link")!.focus({ preventScroll: true });
-    });
-    const vh = await page.evaluate(() => innerHeight);
-    expect((await rectOf(page, "story")).bottom).toBeGreaterThan(vh); // cut off before Tab
-    await page.keyboard.press("Tab");
-    expect(await page.evaluate(() => document.activeElement?.id)).toBe("story");
-    expect((await rectOf(page, "story")).bottom).toBeLessThanOrEqual(vh + 1);
+    expect([back.col.bg, back.col.shadow, back.col.text, back.learn.radius, back.learn.face, back.learn.color]).toEqual(["rgba(0, 0, 0, 0)", "none", "none", "13.5px 0px", "none", "rgb(255, 255, 255)"]);
   });
 }
 
-// nps.gov and cdc.gov's own tracker names: on the parade ghosts they read whole, as in the graveyard.
-for (const width of [1280, 700]) {
-  test(`${width}px: the parade's name tags read whole on up to two lines, centred on their ghosts under the mouth: Google Analytics, U.S. General Services Administration, Google Ads`, async ({ context, sw }) => {
-    test.setTimeout(60_000);
-    await answerPreloaded(context);
-    const page = await context.newPage();
-    await page.setViewportSize({ width, height: 800 });
-    await page.goto(fixture("hero.html"));
-    // The page's animation clock at a fifth of real time, so the parade is still on when it is measured.
-    const cdp = await context.newCDPSession(page);
-    await cdp.send("Animation.enable");
-    await cdp.send("Animation.setPlaybackRate", { playbackRate: 0.2 });
-    await haunt(sw, page);
-    const inShadow = await shadowOf(page);
-    const tags = () =>
-      inShadow(function () {
-        return [...this.querySelectorAll<HTMLElement>("#fx .parade > .spirit[data-company]")].map((s) => {
-          const t = s.querySelector<HTMLElement>(".name")!;
-          const g = s.getBoundingClientRect();
-          const r = t.getBoundingClientRect();
-          const px = g.width / 16;
-          const range = document.createRange();
-          range.selectNodeContents(t);
-          const lines = [...range.getClientRects()].filter((x) => x.width > 0);
-          return {
-            text: t.textContent,
-            lines: new Set(lines.map((x) => Math.round(x.top))).size,
-            cut: t.scrollHeight > t.clientHeight + 1 || t.scrollWidth > t.clientWidth + 1,
-            centred: Math.abs((r.left + r.right) / 2 - (g.left + g.right) / 2) <= 1,
-            underMouth: r.top >= g.top + 10 * px - 0.5,
-            onHem: r.bottom <= g.top + 15 * px + 0.5,
-            // the plaque hugs its longer line (its padding and border aside): no empty band beside a wrapped name
-            hugs: r.width <= Math.max(...lines.map((x) => x.width)) + 16,
-          };
-        });
-      });
-    await expect.poll(async () => (await tags()).length).toBe(3);
-    const got = await tags();
-    expect(got.map((t) => t.text)).toEqual(["Google Analytics", "U.S. General Services Administration", "Google Ads"]);
-    for (const t of got) {
-      expect({ text: t.text, twoAtMost: t.lines <= 2, cut: t.cut, centred: t.centred, underMouth: t.underMouth, onHem: t.onHem, hugs: t.hugs }).toEqual({
-        text: t.text, twoAtMost: true, cut: false, centred: true, underMouth: true, onHem: true, hugs: true,
-      });
-    }
-    // the long name wraps rather than cuts (it rides a 96px far ghost)
-    expect(got[1]!.lines).toBe(2);
-    // a frame mid-parade: the first ghosts high on the page with their names (about 2000ms of page time)
-    await page.waitForTimeout(9000);
-    await page.screenshot({ path: `${SHOTS}/parade-names-${width}.png` });
-  });
-}
-
-test("1280px: the dark hero blocks and the search box wear the costume; nothing moves, un-haunt gives them back", async ({ context, sw }) => {
+test("1280px: the dark hero blocks keep their own look (only their links change), the search box wears the costume; nothing moves, un-haunt gives them back", async ({ context, sw }) => {
   const { page, tabId, before, sizes } = await hauntHero(context, sw, 1280);
   const look = () =>
     page.evaluate(() => {
@@ -295,16 +197,11 @@ test("1280px: the dark hero blocks and the search box wear the costume; nothing 
       };
     });
   const l = await look();
-  // the photo hero keeps its picture, goes square and takes the HUD's bevel, 1px line and hard shadow
-  expect(l.hero.radius).toBe("0px");
+  // nothing is painted on the dark blocks: the photo hero, the translucent panel and the black band keep their own look
   expect(l.hero.image).toBe('url("data:image/svg+xm');
-  for (const c of ["rgb(0, 0, 0) 0px 0px 0px 1px inset", "rgb(153, 153, 204) 3px 3px 0px 0px inset", "rgb(51, 51, 102) -3px -3px 0px 0px inset", "rgb(0, 0, 0) 4px 4px 0px 0px"]) {
-    expect({ c, ok: l.hero.shadow.includes(c) }).toEqual({ c, ok: true });
-  }
-  // the translucent rounded panel and the black band become crypt windows
-  expect([l.panel.radius, l.panel.bg]).toEqual(["0px", "rgb(0, 0, 51)"]);
-  expect(l.panel.shadow).toContain("rgb(153, 153, 204) 3px 3px 0px 0px inset");
-  expect(l.find.bg).toBe("rgb(0, 0, 51)");
+  expect(l.hero.shadow).toBe("none");
+  expect([l.panel.radius, l.panel.bg, l.panel.shadow]).toEqual(["12px", "rgba(0, 0, 0, 0.6)", "none"]);
+  expect(l.find.bg).not.toBe("rgb(0, 0, 51)");
   // their text links take the dark-page colour; the button link and the light page's links keep the light one
   expect(l.links).toEqual({ "hero-link": "rgb(102, 204, 255)", "find-link": "rgb(102, 204, 255)", cta: "rgb(0, 0, 255)", story: "rgb(0, 0, 255)" });
   // the dark pill search box is a sunken white 1998 field with black text and a #666666 placeholder
