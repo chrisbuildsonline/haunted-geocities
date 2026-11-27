@@ -263,13 +263,14 @@ export function playHaunt(croot: HTMLElement, reduced: boolean, reveal: Reveal[]
   });
   // The caption keeps to the marquee band at every width (costume chrome, never the page's text): it rides
   // in from the left edge at the phone train's speed (its ride in a second), rests centred in the band
-  // under the address bar and holds there to captionOut, a beat after the 3000ms moment. On a phone it
-  // sets off one beat behind the last ghost, so the gap to it holds on the way in.
+  // under the address bar and holds there to captionOut, a beat after the 3000ms moment. When the train
+  // rides the band (a phone, a page with no gutter room) it sets off one beat behind the last ghost, so
+  // the gap to it holds on the way in.
   const caption = q(".found") as HTMLElement;
   const [w, h] = [caption.offsetWidth, caption.offsetHeight || 22];
   const restX = Math.round((vw - w) / 2);
   caption.style.top = `${marqueeTop(croot) + (L.marquee - h) / 2}px`;
-  const start = isPhone(vw) ? H.captionPhoneStart : H.captionStart;
+  const start = band ? H.captionPhoneStart : H.captionStart;
   const rest = start + ((restX + w) * H.paradePhoneMs) / phoneRide(vw);
   const resting = { transform: `translate(${restX}px, 0px)` };
   run(caption, [{ transform: "translate(-100%, 0px)" }, { ...resting, offset: (rest - start) / (H.captionOut - start) }, resting], {

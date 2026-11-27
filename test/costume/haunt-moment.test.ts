@@ -370,11 +370,14 @@ describe("hero haunt moment", () => {
   // At every width the caption keeps to the marquee band (costume chrome, never the page's text): it rides
   // in from the left edge at the phone train's speed (its ride in a second), rests centred in the band and
   // holds there to captionOut, a beat after the 3000ms moment.
-  for (const [vw, vh, start] of [[1280, 800, H.captionStart], [700, 667, H.captionStart], [401, 667, H.captionStart], [375, 667, H.captionPhoneStart]] as const) {
-    test(`@${vw}: the caption, Trackers found: N, rides into the marquee band under the bar, rests centred and holds to ${H.captionOut}`, () => {
+  // With gutter room the flock drifts up them and the caption sets off early; a train in the band (a phone,
+  // a page with no gutter room) has it set off one beat behind the last ghost.
+  for (const [vw, vh, gutters, start] of [[1280, 800, "320,320", H.captionStart], [700, 667, "120,120", H.captionStart], [700, 667, "", H.captionPhoneStart], [401, 667, "", H.captionPhoneStart], [375, 667, "", H.captionPhoneStart]] as const) {
+    test(`@${vw}${gutters ? " with gutters" : ""}: the caption, Trackers found: N, rides into the marquee band under the bar, rests centred and holds to ${H.captionOut}`, () => {
       const s = setup({ width: vw, height: vh });
       const el = s.doc.body.appendChild(s.doc.createElement("div"));
       el.innerHTML = `<div id="starfield"></div><div id="top-bands"></div><div id="markers"></div><div id="hud"></div><div id="lanes"></div>`;
+      el.dataset.gutters = gutters;
       Object.defineProperty(el.querySelector("#top-bands")!, "offsetTop", { value: 20 });
       withCaptionSize(s.win, 130, 22, () => playHaunt(el, false, [], [{ company: "Criteo", tint: "#99ccff" }], 9));
       const found = el.querySelector<HTMLElement>("#fx .parade > .found")!;

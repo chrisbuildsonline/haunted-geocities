@@ -43,7 +43,8 @@ const paradeDrawn = (inShadow: Awaited<ReturnType<typeof shadowOf>>) =>
     }));
   });
 
-for (const width of [1280, 700] as const) {
+// 700 is a full-width page (no gutter room beside the table), so its parade rides the band like a phone's
+for (const width of [1280] as const) {
   test(`@${width}: six big ghosts, the page's own tracker companies with their names on their hems, cross the whole page bottom to top, the tracker count caption rests in the marquee band, a scanline roll passes once, no overflow`, async ({ context, sw }) => {
     test.setTimeout(90_000);
     const page = await context.newPage();
@@ -180,10 +181,10 @@ for (const width of [1280, 700] as const) {
   });
 }
 
-test("@375: the parade keeps off the reading column and the address bar, a train of six 24/16px ghosts in the marquee band with the caption behind, never over text", async ({ context, sw }) => {
+for (const width of [375, 700] as const) test(`@${width}: the parade keeps off the reading column and the address bar, a train of six 24/16px ghosts in the marquee band with the caption behind, never over text`, async ({ context, sw }) => {
   test.setTimeout(90_000);
   const page = await context.newPage();
-  await openNews(page, 375);
+  await openNews(page, width);
   const cdp = await context.newCDPSession(page);
   await cdp.send("Animation.enable");
   await cdp.send("Animation.setPlaybackRate", { playbackRate: 0.2 });
@@ -252,15 +253,15 @@ test("@375: the parade keeps off the reading column and the address bar, a train
     samples.push(s);
     if (!shot && s.spirits.filter((b) => visible(b, s.vw, s.vh)).length >= 3) {
       shot = true;
-      await page.screenshot({ path: `${OUT}/parade-375.png` });
+      await page.screenshot({ path: `${OUT}/parade-${width}.png` });
     }
     if (!captionShot && s.found && s.found.left > 8 && s.found.left + s.found.width < s.vw / 2 + 60) {
       captionShot = true;
-      await page.screenshot({ path: `${OUT}/parade-caption-375.png` });
+      await page.screenshot({ path: `${OUT}/parade-caption-${width}.png` });
     }
     if (!restShot && s.found && visible(s.found, s.vw, s.vh) && Math.abs(s.found.left + s.found.width / 2 - s.vw / 2) < 1 && s.spirits.every((b) => !visible(b, s.vw, s.vh))) {
       restShot = true;
-      await page.screenshot({ path: `${OUT}/parade-rest-375.png` });
+      await page.screenshot({ path: `${OUT}/parade-rest-${width}.png` });
     }
     if (!s.fx) break;
   }
