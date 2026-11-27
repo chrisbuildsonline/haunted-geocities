@@ -91,6 +91,16 @@ describe("real-site proof", () => {
     }
   });
 
+  test("the capture runs in a time zone where it is mid-afternoon, never the witching hour (local 00:00-00:59)", async () => {
+    const { afternoonZone } = await import("../scripts/afternoon");
+    for (let h = 0; h < 24; h++) {
+      const now = new Date(Date.UTC(2026, 10, 27, h, 30));
+      const hour = new Intl.DateTimeFormat("en-US", { timeZone: afternoonZone(now), hour: "numeric", hourCycle: "h23" }).format(now);
+      expect({ h, hour }).toEqual({ h, hour: "15" });
+    }
+    expect(read("scripts/real-site.pw.ts")).toMatch(/timezoneId: afternoonZone\(\)/);
+  });
+
   test("docs:realsite runs the live capture with the shipping build, outside every gate", () => {
     expect(scripts["docs:realsite"]).toBe("vite build && playwright test --config playwright.realsite.config.ts");
     const source = read("scripts/real-site.pw.ts");

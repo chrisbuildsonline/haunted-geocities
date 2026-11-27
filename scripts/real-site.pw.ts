@@ -11,6 +11,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { scrollToEnd, shadowOf, tabIdOf } from "../e2e/fixtures";
+import { afternoonZone } from "./afternoon";
 
 /**
  * US government pages: public-domain works (17 U.S.C. 105) that load their trackers with no consent
@@ -54,6 +55,8 @@ async function capture(slug: string, url: string, gif: boolean) {
     channel: "chromium",
     headless: true,
     viewport: VIEW,
+    // The shipping build reads the local clock (the witching hour): the shots live on an ordinary afternoon.
+    timezoneId: afternoonZone(),
     args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`],
   });
   try {

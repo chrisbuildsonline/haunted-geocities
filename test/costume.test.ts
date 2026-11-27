@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Window } from "happy-dom";
@@ -48,7 +48,9 @@ type Mq = { matches: boolean; listeners: ((e: { matches: boolean }) => void)[] }
 
 /** A happy-dom page with Element.animate recorded and prefers-reduced-motion under test control. */
 function setup(opts: { reduced?: boolean } = {}) {
-  const win = new Window({ url: "https://haunt.example/", width: 1280, height: 800 });
+  // An ordinary afternoon, whatever the real clock says: local 00:00-00:59 is the witching hour, which puts its own marquee line up.
+  setSystemTime(new Date(2026, 10, 3, 15, 0));
+  const win =new Window({ url: "https://haunt.example/", width: 1280, height: 800 });
   win.document.write(PAGE);
   const recs: Rec[] = [];
   (win.Element.prototype as unknown as { animate: unknown }).animate = function (
@@ -86,6 +88,7 @@ const props = (r: Rec) => r.keyframes.flatMap((k) => Object.keys(k)).filter((k) 
 const windows: Window[] = [];
 afterEach(() => {
   for (const w of windows.splice(0)) w.happyDOM.abort();
+  setSystemTime();
 });
 
 // ---------- tokens ----------
