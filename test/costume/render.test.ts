@@ -115,7 +115,7 @@ test("375px page: full-overlay mode, guestbook frame hidden, tint (as the body's
   const css = pageCss(doc);
   expect(css).not.toContain("html::after");
   expect(css).not.toContain("html::before");
-  expect(css).toContain("body { background: #ffffcc !important; }");
+  expect(css).toContain("body { background: #ffffcc content-box !important; }");
   expect(css).toContain('font-family: "Times New Roman"');
   expect(css).toContain("padding-left: calc(0px + 12px) !important");
 });

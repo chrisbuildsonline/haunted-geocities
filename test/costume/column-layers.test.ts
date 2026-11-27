@@ -47,7 +47,7 @@ test("the tint is the light page's own background, behind its content; nothing i
   stubMain(light.win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   renderCostume(light.doc);
   const css = pageCss(light.doc);
-  expect(css).toContain("body { background: #ffffcc !important; }");
+  expect(css).toContain("body { background: #ffffcc content-box !important; }");
   expect(css).toMatch(/html \{ background: #000033 url\("data:image\/svg\+xml,[^"]+"\) repeat fixed !important; \}/);
   expect(css).not.toContain("html::before");
   expect(css).not.toContain("mix-blend-mode: multiply");

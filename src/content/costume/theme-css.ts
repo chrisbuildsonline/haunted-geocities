@@ -85,7 +85,7 @@ export function lookShadowCss(l: Look): string {
     `.strip { background-image: ${digitsUrl(counter.digit, counter.cell)}; }`,
     `.cell, .odo { background: ${counter.cell}; }`,
     // The banner: the tile, a bevelled plaque with the WordArt title between two sprites, the divider under it.
-    `#welcome { position: absolute; left: 0; right: 0; top: 48px; z-index: 0; box-sizing: border-box; height: ${welcomeHeight(l)}px; padding-top: ${tall ? 10 : 6}px; ` +
+    `#welcome { position: absolute; left: 0; right: 0; top: 48px; z-index: -1; box-sizing: border-box; height: ${welcomeHeight(l)}px; padding-top: ${tall ? 10 : 6}px; ` +
       `background-color: ${c.ground}; background-image: ${tile}; pointer-events: none; transition: opacity 200ms linear; }`,
     `#welcome.costume-hidden { opacity: 0; }`,
     `.wb-plaque { box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; width: fit-content; max-width: calc(100% - 32px); height: ${tall ? 66 : 48}px; margin: 0 auto; padding: 0 12px; ` +
@@ -171,7 +171,8 @@ export function lookBackgrounds(l: Look, tint: boolean): string {
   const pattern = tintPattern(l);
   return [
     `html { background: ${c.ground} url("${lookTiles(l).stars}") repeat fixed !important; }`,
-    tint ? `body { background: ${c.tint}${pattern ? ` url("${pattern}") repeat` : ""} !important; }` : "",
+    // content-box: the tint stays off the body's padding (the bands and the banner sit there, under the page)
+    tint ? `body { background: ${c.tint}${pattern ? ` url("${pattern}") repeat` : ""} content-box !important; }` : "",
   ].filter(Boolean).join("\n");
 }
 

@@ -9,7 +9,7 @@ test("Hide fades the frame and takes the tint and tile backgrounds away, restyle
   const { win, doc } = setup();
   stubMain(win, () => ({ left: 300, right: 980, top: 60, bottom: 700 }));
   const root = renderCostume(doc);
-  expect(pageCss(doc)).toContain("body { background: #ffffcc !important; }");
+  expect(pageCss(doc)).toContain("body { background: #ffffcc content-box !important; }");
   (root.querySelector("#hud button.hide") as HTMLButtonElement).click();
   let css = pageCss(doc);
   expect(css).not.toContain("body { background:");
@@ -20,7 +20,7 @@ test("Hide fades the frame and takes the tint and tile backgrounds away, restyle
   expect(doc.adoptedStyleSheets).toHaveLength(1);
   (root.getElementById("show-tab") as HTMLButtonElement).click();
   css = pageCss(doc);
-  expect(css).toContain("body { background: #ffffcc !important; }");
+  expect(css).toContain("body { background: #ffffcc content-box !important; }");
   expect(rule(css, "html::after")).toContain("opacity: 1");
 });
 
