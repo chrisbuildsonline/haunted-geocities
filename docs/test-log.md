@@ -1,25 +1,30 @@
 # Test log
 
 - Date: 2026-11-28
-- Commit: `fe369fe`
+- Commit: `a7e8204`
 
-Every check ran on `fe369fe`, the last code commit. Only this log and its guard test changed after it.
+Every check ran on `a7e8204`, the last code commit. Only this log changed after it.
 
 | Check | Command | Tests | Exit code |
 |---|---|---|---|
 | Typecheck | `bun run typecheck` | no errors | 0 |
-| Unit | `bun run test` | 1489 passed, 0 failed | 0 |
-| E2E | `bun run test:e2e` | 200 passed, 0 failed | 0 |
+| Unit | `bun run test` | 1503 passed, 0 failed | 0 |
+| E2E | `bun run test:e2e` | 210 passed, 0 failed | 0 |
 | Visual | `bun run test:visual` (the step inside `bun run docker:test`) | 38 passed, 0 failed | 0 |
-| Docker | `bun run docker:test` | typecheck, 1489 unit, manifest lint, 200 e2e, 38 visual | 0 |
+| Docker | `bun run docker:test --no-cache` | typecheck, 1501 unit (2 git checks skip, no .git in the image), manifest lint, 210 e2e, 38 visual | 0 |
 
 The visual baselines are made in the Playwright Docker image, which installs Comic Neue. On the host (no Comic Neue)
-`bun run test:visual` fails its font check and the comic-face shots (`30 failed`, `8 passed (3.9m)`, exit 1), so the
-Visual row is the run inside the image.
+`bun run test:visual` fails its font check and the comic-face shots, so the Visual row is the run inside the image.
+
+The first `bun run docker:test` on `a7e8204` came back with every layer `CACHED` (an earlier build had the same
+inputs) and printed no runner output, so it was run again with `--no-cache`. That run is the one below.
+
+The unit run on the host is the one after this log was written: before it, the guard that the log names the last
+code commit failed on the old sha (`1502 pass`, `1 fail`), which is the check doing its job.
 
 ## Captured output
 
-The summary lines each runner printed on `fe369fe`, copied as they came.
+The summary lines each runner printed on `a7e8204`, copied as they came.
 
 ### Typecheck
 
@@ -32,47 +37,48 @@ $ tsc --noEmit
 ```
 bun test v1.4.2 (744846f84)
 
- 1489 pass
+ 1503 pass
  0 fail
- 121508 expect() calls
-Ran 1489 tests across 92 files. [10.24s]
+ 121578 expect() calls
+Ran 1503 tests across 93 files. [10.26s]
 ```
 
 ### E2E
 
 ```
-  200 passed (12.6m)
+  210 passed (13.4m)
 ```
 
 ### Visual
 
 ```
 #16 [stage-5 5/5] RUN bun run test:visual
-#16 83.34   38 passed (1.3m)
-#16 DONE 83.4s
+#16 84.95   38 passed (1.3m)
+#16 DONE 85.0s
 ```
 
 ### Docker
 
 ```
 #12 [stage-5 1/5] RUN bun run typecheck
-#12 0.182 $ tsc --noEmit
+#12 0.247 $ tsc --noEmit
 #12 DONE 0.6s
 #13 [stage-5 2/5] RUN bun run test
-#13 10.40  1489 pass
-#13 10.40  0 fail
-#13 10.40  121508 expect() calls
-#13 10.40 Ran 1489 tests across 92 files. [10.13s]
-#13 DONE 10.5s
+#13 12.91  1501 pass
+#13 12.91  2 skip
+#13 12.91  0 fail
+#13 12.91  121574 expect() calls
+#13 12.91 Ran 1503 tests across 93 files. [12.63s]
+#13 DONE 13.0s
 #14 [stage-5 3/5] RUN bun run lint:manifest
-#14 2.687 lint:manifest: ok
-#14 DONE 2.7s
+#14 0.647 lint:manifest: ok
+#14 DONE 0.7s
 #15 [stage-5 4/5] RUN bun run test:e2e
-#15 798.4   200 passed (12.4m)
-#15 DONE 798.4s
+#15 877.4   210 passed (13.4m)
+#15 DONE 877.4s
 #16 [stage-5 5/5] RUN bun run test:visual
-#16 83.34   38 passed (1.3m)
-#16 DONE 83.4s
+#16 84.95   38 passed (1.3m)
+#16 DONE 85.0s
 #17 naming to docker.io/library/haunted-geocities:test done
-#17 DONE 0.6s
+#17 DONE 6.3s
 ```
