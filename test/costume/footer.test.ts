@@ -147,12 +147,37 @@ describe("findings strip beside the ghost icon", () => {
     await scroll();
     expect(strip(root).hidden).toBe(false);
   });
+  test("never over the HUD: on a phone, where the HUD runs under the strip, it goes while their boxes would cross", async () => {
+    const t = setup({ width: 360, height: 640 });
+    (t.win as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (cb: () => void) => setTimeout(cb, 0);
+    const root = renderCostume(t.doc);
+    const hud = root.getElementById("hud")!;
+    let top = 2000;
+    hud.getBoundingClientRect = () => domRect({ left: 16, right: 344, top, bottom: top + 88 });
+    // the strip's fixed box at 360: right 48px, bottom 16px, 24px tall
+    strip(root).getBoundingClientRect = () => domRect({ left: 130, right: 312, top: 600, bottom: 624 });
+    const scroll = async () => {
+      t.win.dispatchEvent(new t.win.Event("scroll"));
+      await new Promise((r) => setTimeout(r, 5));
+    };
+    await scroll();
+    expect(strip(root).hidden).toBe(false);
+    top = 610; // the HUD's top 30px peek in under the strip
+    await scroll();
+    expect(strip(root).hidden).toBe(true);
+    top = 630; // only its top 10px on screen, still under the strip
+    await scroll();
+    expect(strip(root).hidden).toBe(true);
+    top = 2000;
+    await scroll();
+    expect(strip(root).hidden).toBe(false);
+  });
   test("a 24px plaque to the left of the 40px icon, centred on it, one line, never taking a click", () => {
     const r = rule("#findings");
     expect(r).toMatch(/position: absolute; right: 52px; bottom: calc\(20px \+ var\(--hg-lift, 0px\)\)/);
     expect(r).toMatch(/height: 24px/);
     expect(r).toMatch(/white-space: nowrap/);
-    expect(r).toMatch(/font: 12px\/22px/);
+    expect(r).toMatch(/font: 14px\/22px/);
     expect(r).toMatch(/pointer-events: none/);
     expect(css.slice(css.indexOf("@media (max-width: 400px)"))).toMatch(/#findings \{ right: 48px; bottom: calc\(16px \+ var\(--hg-lift, 0px\)\); \}/);
     // Hide fades it with the costume; only the icon stays
