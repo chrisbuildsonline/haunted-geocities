@@ -165,9 +165,12 @@ describe("findings strip beside the ghost icon", () => {
     top = 610; // the HUD's top 30px peek in under the strip
     await scroll();
     expect(strip(root).hidden).toBe(true);
-    top = 630; // only its top 10px on screen, still under the strip
+    top = 620; // only its top 20px on screen, still under the strip's last 4px
     await scroll();
     expect(strip(root).hidden).toBe(true);
+    top = 630; // its top 10px on screen, below the strip: nothing to cover
+    await scroll();
+    expect(strip(root).hidden).toBe(false);
     top = 2000;
     await scroll();
     expect(strip(root).hidden).toBe(false);

@@ -308,6 +308,19 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   let exorcised = new Set<string>();
   let settled = false;
   const bounds = () => ({ top: bands.offsetTop + bands.offsetHeight, bottom: win.innerHeight });
+  // A card stands clear of the HUD, and of the whole footer when opened from the page: in the first band
+  // of the viewport that holds it (`need`: a card's 120px least or the 248px stone, 8px clear each side),
+  // above the footer, above the HUD or under the HUD; else anywhere between the bands and the bottom.
+  const cardBounds = (opener: HTMLElement, need = 136) => {
+    const b = bounds();
+    const h = hud.getBoundingClientRect();
+    const fits = [
+      ...(footer.contains(opener) ? [] : [{ top: b.top, bottom: Math.min(b.bottom, footer.getBoundingClientRect().top) }]),
+      { top: b.top, bottom: Math.min(b.bottom, h.top) },
+      { top: Math.max(b.top, h.bottom), bottom: b.bottom },
+    ];
+    return fits.find((f) => f.bottom - f.top >= need) ?? b;
+  };
   let slots: Slot[] = [];
   // Lane mode fills the lanes and hides the strip; full-overlay mode (no lane) empties the lanes and
   // docks every company in the strip. A company is never in both.
@@ -325,13 +338,13 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const tombs = mountTombstones(markers, {
     slots: () => slots,
     fade: () => settled && !motion.matches,
-    onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: bounds(), reduced: motion.matches, play }),
+    onOpen: (d, opener) => openTombstoneCard(cards, d, opener, { bounds: cardBounds(opener, 264), reduced: motion.matches, play }),
   });
   // Curse badges: beside their elements, never on them.
   const badges = mountCurses(markers, {
     slots: () => slots,
     fade: () => settled && !motion.matches,
-    onOpen: (c, opener) => openCurseCard(cards, c, opener, { bounds: bounds(), reduced: motion.matches, play }),
+    onOpen: (c, opener) => openCurseCard(cards, c, opener, { bounds: cardBounds(opener), reduced: motion.matches, play }),
   });
   let stopped = false;
   const commit = () => {
@@ -364,7 +377,7 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
   const onOpen = (company: string, opener: HTMLElement) => {
     const hit = scan.companies.find((c) => c.company === company);
     const listed = Object.hasOwn((trackerJson as TrackerData).entities, company);
-    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), listed, send, bounds: bounds(), reduced: motion.matches, play });
+    if (hit) openCard(cards, hit, opener, { exorcised: exorcised.has(company), listed, send, bounds: cardBounds(opener), reduced: motion.matches, play });
   };
   const setExorcised = (companies: string[]) => {
     exorcised = new Set(companies);
@@ -465,7 +478,11 @@ export function renderCostume(doc: Document = document, { quiet = false }: { qui
       const into = Math.max(0, Math.round(win.innerHeight - footer.getBoundingClientRect().top));
       croot.style.setProperty("--hg-footer-in", `${into}px`);
       const h = hud.getBoundingClientRect();
-      findings.hidden = h.height > 0 && h.top >= 0 && h.bottom <= win.innerHeight;
+      // Gone once the HUD is wholly on screen, and while any of the HUD runs under it (a phone's HUD spans the width).
+      findings.hidden = false;
+      const f = findings.getBoundingClientRect();
+      const under = f.left < h.right && f.right > h.left && f.top < h.bottom && f.bottom > h.top;
+      findings.hidden = h.height > 0 && ((h.top >= 0 && h.bottom <= win.innerHeight) || under);
     });
   };
   win.addEventListener("scroll", clipToFooter, { passive: true });

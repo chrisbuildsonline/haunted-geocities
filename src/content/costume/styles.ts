@@ -77,7 +77,11 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .sign { display: block; width: 48px; height: 24px; overflow: hidden; flex: none; image-rendering: pixelated; }
 .sign-strip { display: block; width: 96px; height: 24px; background-image: ${signsUrl()}; animation: hg-sign 1000ms steps(2) infinite; }
 @keyframes hg-sign { from { transform: translateX(0); } to { transform: translateX(-96px); } }
-#marquee { height: ${L.marquee}px; background-color: ${P.crypt}; background-image: ${stars}; color: ${P.ectoplasm}; font: 14px ${COMIC}; line-height: ${L.marquee}px; overflow: hidden; white-space: nowrap; text-shadow: 1px 1px 0 ${P.ink}; box-shadow: inset 0 -1px 0 ${P.ink}; }
+#marquee { position: relative; height: ${L.marquee}px; background-color: ${P.crypt}; background-image: ${stars}; color: ${P.ectoplasm}; font: 14px ${COMIC}; line-height: ${L.marquee}px; overflow: hidden; white-space: nowrap; text-shadow: 1px 1px 0 ${P.ink}; box-shadow: inset 0 -1px 0 ${P.ink}; }
+/* The line dissolves into the band before either edge: 8px of solid crypt, then an 8px dither. */
+#marquee::before, #marquee::after { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; z-index: 1; border: 0 solid ${P.crypt}; background: ${checkerUrl(P.crypt)}; }
+#marquee::before { left: 0; border-left-width: 8px; }
+#marquee::after { right: 0; border-right-width: 8px; }
 .marquee-track { display: inline-block; padding-left: 100%; background-color: ${P.crypt}; background-clip: content-box; border: solid ${P.crypt}; border-width: 0 8px; animation: hg-marquee 20s linear 1 both; }
 @keyframes hg-marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 .tab-hidden *, .tab-hidden *::after { animation-play-state: paused !important; }
@@ -104,7 +108,7 @@ export function costumeCss(tiles: { stars: string; twinkle: string }): string {
 .ring-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 #show-tab { position: absolute; right: 8px; bottom: calc(8px + var(--hg-lift, 0px)); width: 40px; height: 48px; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0; box-shadow: ${HARD_SHADOW}; font-size: 12px; line-height: 13px; pointer-events: auto; }
-#findings { position: absolute; right: 52px; bottom: calc(20px + var(--hg-lift, 0px)); z-index: 5; box-sizing: border-box; height: 24px; padding: 0 6px; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; box-shadow: ${HARD_SHADOW}; font: 12px/22px ${COMIC}; white-space: nowrap; pointer-events: none; }
+#findings { position: absolute; right: 52px; bottom: calc(20px + var(--hg-lift, 0px)); z-index: 5; box-sizing: border-box; height: 24px; padding: 0 6px; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; box-shadow: ${HARD_SHADOW}; font: 14px/22px ${COMIC}; white-space: nowrap; pointer-events: none; }
 #show-tab svg { display: block; image-rendering: pixelated; }
 #show-tab .count { font: bold 12px/13px ${COMIC}; }
 .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
@@ -131,10 +135,10 @@ button:focus-visible { ${ring} }
 .sprite svg { display: block; image-rendering: pixelated; }
 @keyframes hg-bob { from { transform: translateY(-${M.ghostBob.px}px); } to { transform: translateY(${M.ghostBob.px}px); } }
 @keyframes hg-sway { from { transform: translateX(-${M.ghostSway.px}px); } to { transform: translateX(${M.ghostSway.px}px); } }
-.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: ${P.crypt}; color: ${P.bone}; border: 1px solid ${P.spectral}; font: 12px/16px ${COMIC}; transform-origin: 50% 0; }
+.tag, .stack { box-sizing: border-box; max-width: min(12ch, 100%); margin-top: 4px; padding: 1px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: var(--tint, ${P.bone}); color: ${P.crypt}; border: 1px solid ${P.ink}; font: 14px/16px ${COMIC}; transform-origin: 50% 0; }
 .stack { position: absolute; display: flex; align-items: center; justify-content: center; height: 48px; margin: 0; padding: 0; font: bold 13px ${COMIC}; box-shadow: ${HARD_SHADOW}; }
 .exorcised .sprite { opacity: .4; }
-.exorcised .tag { color: ${P.bevelLight}; }
+.exorcised .tag { background: ${P.crypt}; color: ${P.bevelLight}; }
 .stamp { position: absolute; top: 15px; left: 50%; padding: 0 2px; transform: translateX(-50%) rotate(-12deg); background: ${P.crypt}; color: ${P.curse}; border: 2px solid ${P.curse}; font: bold 12px/14px ${COMIC}; box-shadow: 2px 2px 0 ${P.ink}; }
 .ghost:focus-visible { ${ring} }
 
@@ -246,6 +250,7 @@ button:focus-visible { ${ring} }
 .reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation: none !important; transition: opacity ${M.base}ms linear !important; }
 .reduced-motion .sprite { transition: none !important; }
 .reduced-motion.fled .sprite { transform: none; }
+.reduced-motion #marquee::before, .reduced-motion #marquee::after { display: none; }
 .reduced-motion .marquee-track { display: block; width: fit-content; max-width: 100%; box-sizing: border-box; padding: 0; overflow: hidden; text-overflow: ellipsis; transform: none; }
 #edge-frame, #edge-frame * { animation: none !important; transition: none !important; }
 `;

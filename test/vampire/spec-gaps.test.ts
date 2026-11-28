@@ -42,12 +42,12 @@ const rule = (sheet: string, selector: string) => {
 };
 
 describe("8.4 vampire label", () => {
-  test("is the ghost label: Comic Sans 12px bone on crypt, 1px spectral border, 12ch with ellipsis", () => {
+  test("is the ghost label: Comic Sans 14px crypt ink on bone (a vampire has no hem tint), 1px black border, 12ch with ellipsis", () => {
     const tag = rule(css, ".tag, .stack");
-    expect(tag).toContain("background: #000033;");
-    expect(tag).toContain("color: #ffffcc;");
-    expect(tag).toContain("border: 1px solid #6633cc;");
-    expect(tag).toContain('font: 12px/16px "Comic Sans MS"');
+    expect(tag).toContain("background: var(--tint, #ffffcc);");
+    expect(tag).toContain("color: #000033;");
+    expect(tag).toContain("border: 1px solid #000000;");
+    expect(tag).toContain('font: 14px/16px "Comic Sans MS"');
     expect(tag).toContain("max-width: min(12ch, 100%);");
     expect(tag).toMatch(/overflow: hidden;.*text-overflow: ellipsis;.*white-space: nowrap;/);
   });

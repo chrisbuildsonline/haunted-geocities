@@ -111,6 +111,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - Right side: the 48×24 under-construction sign. It is static, or 2 frames at 1 Hz with motion allowed.
 - **Marquee (24px):** `#000033` ground, Comic Sans MS 14px, `#66ff99` text. It cycles lines such as `~*~ Welcome to my haunted homepage!!! ~*~ 7 ghosts are watching you ~*~ Best viewed at 800x600 ~*~`. Implemented as a CSS `translateX` keyframe. Never `<marquee>`.
   - **Stars never touch the text:** the band carries the starfield tile, but the line rides on a solid `#000033` plaque: the text box plus an 8px `#000033` border at each end (`background-clip: content-box`, so the 100% lead-in padding stays clear and the band's stars show around the line). Under reduced motion the plaque shrinks to the line, flush left, cut with an ellipsis.
+  - **Never cut at the viewport edge:** while it moves, the line dissolves into the band before either edge: an 8px cap of solid `#000033` at each end, then an 8px `#000033` checker dither, over the line (`#marquee::before` / `::after`). No ink of the line reaches the outer 8px at 1280 or 360. The still line under reduced motion starts on its own 8px plaque edge, so the caps are not drawn there.
 - **Placement:** the bands sit at `top: 0`. If page UI is fixed or sticky at y=0 (sampled with `elementsFromPoint` along the top row), the bands sit just below it.
 
 ### HUD (guestbook / hit-counter strip)
@@ -145,7 +146,7 @@ The costume dresses the page itself, not only its edges. Everything here is rule
   - When slots run out, the last slot becomes a `+N` stack token.
   - With no lane at all (phones, full-width pages: full-overlay mode), the lanes stay empty and every ghost and vampire docks in the graveyard strip above the HUD instead (see "Docked graveyard"). A company is never in a lane and the strip at once; widening the page moves them back into the lanes. Ghosts are never drawn over page text.
 - **Glow:** `filter: drop-shadow(0 0 6px #6633cc) drop-shadow(0 0 2px #ccffff)`. This is the cool spectral backlight (ref 07).
-- **Label:** under the sprite. Comic Sans 12px `#ffffcc` on `#000033`, 1px `#6633cc` border, max 12ch with ellipsis. The tag drops the owner in brackets (`Google Analytics (Google)` reads `Google Analytics`, `Google Ads (Google)` reads `Google Ads`), so one owner's companies never share a cut-off prefix; the full name stays in the accessible name and the card title (`tagName` in `ghosts.ts`). Exorcised, the label text is `#ccccff`.
+- **Label:** under the sprite, a lit name plaque like the parade's tags: Comic Sans 14px/16px `#000033` on the ghost's own hem tint (a vampire, which has no hem, on bone `#ffffcc`), 1px `#000000` border, max 12ch with ellipsis. The ink holds 9:1 or more on every ground, and every ground stands off the dark crypt by 9:1 or more, so the tag reads on the starfield at a glance (the jury read the old 12px bone-on-crypt tag as tiny and dim). The tint is the sprite's `--tint`, moved with it when a redraw changes the hem. The tag drops the owner in brackets (`Google Analytics (Google)` reads `Google Analytics`, `Google Ads (Google)` reads `Google Ads`), so one owner's companies never share a cut-off prefix; the full name stays in the accessible name and the card title (`tagName` in `ghosts.ts`). Exorcised, the tag goes dark: `#ccccff` on `#000033` (13:1).
 - **Card** (click or Enter):
   - Title bar: company name.
   - Body: category, `Haunts these domains:` (Times New Roman 13px list), `Seen 12 times on this page`.
@@ -190,9 +191,9 @@ The costume's bottom is a 1998 page footer at the very end of the page, in norma
 The footer, with the HUD's counts, sits at the page's end, so the first screen would only show the icon's number. One line beside the icon keeps the findings on the first screen, at 375 and 1280 alike. It is part of the icon's fixed cluster, not a floating HUD.
 
 - `#findings`: `Trackers N / Vampires M`. N is the icon's number (companies still haunting, ghosts and vampires); M is the vampires among them. Exorcise and Let it back change it with the icon. A clean page reads `Trackers 0 / Vampires 0`.
-- Box: a 24px plaque 4px left of the icon and centred on it (`right: 52px; bottom: calc(20px + var(--hg-lift))`; at 400px or less `right: 48px; bottom: calc(16px + var(--hg-lift))`). `#000033` ground, Comic Sans MS 12px `#ffffcc`, 1px `#6633cc` border, hard shadow `4px 4px 0 #000000`, like the haunt moment's `Trackers found: N` caption it follows. One line, never wrapped.
+- Box: a 24px plaque 4px left of the icon and centred on it (`right: 52px; bottom: calc(20px + var(--hg-lift))`; at 400px or less `right: 48px; bottom: calc(16px + var(--hg-lift))`). `#000033` ground, Comic Sans MS 14px `#ffffcc` (19.5:1), 1px `#6633cc` border, hard shadow `4px 4px 0 #000000`, like the haunt moment's `Trackers found: N` caption it follows. One line, never wrapped.
 - `pointer-events: none` (clicks reach the page) and `aria-hidden` (the icon's name and the HUD say it to screen readers).
-- Shown until the HUD is wholly on screen (scrolled to the footer, re-checked on scroll and resize), then gone so it never covers the HUD; it comes back above it. Hide fades it with the costume; only the icon stays.
+- Shown until the HUD is wholly on screen (scrolled to the footer, re-checked on scroll and resize), then gone so it never covers the HUD; it comes back above it. It is also gone while its box would cross the HUD's: on a phone the HUD spans the width, so as the HUD scrolls in under the strip, the strip steps aside. Hide fades it with the costume; only the icon stays.
 
 ### Secrets (easter eggs)
 
@@ -247,7 +248,7 @@ Only on a haunted page (the listeners live and die with the costume), never touc
 - **Body:** 12px padding, Comic Sans 13px `#ffffcc`, links `#66ff99` underlined. The category tag is 12px; the footnote and the vampire's one line on fingerprinting are 12px `#ccccff` (13:1).
 - **Smallest text:** 12px anywhere in the costume and the popup (`minText`).
 - **Buttons:** Win95. Face `#cccccc`, text `#000000`, 2px bevel `#ffffff`/`#666666`. The default button gets an extra 1px `#000000` ring. 24px tall, 8px side padding.
-- **Placement:** anchored beside the sprite or marker, toward the page centre. Clamped to the viewport between the bands and the HUD.
+- **Placement:** anchored beside the sprite or marker, toward the page centre. Clamped to the viewport under the bands, and never over the HUD: it stands in the first band of the viewport that holds it (a card's 120px least, or the 248px stone, with 8px clear each side): above the crypt footer while the footer is on screen (a card opened from the page; one opened from the graveyard skips this), else above the HUD, else under it. At 1280 a stone opened with the footer in view stands above the footer; on a phone, where the footer takes most of the screen, it stands above or under the HUD.
 - **Keyboard:** focus moves into the card. Esc closes it, and focus returns to the opener.
 
 ### Empty states
@@ -274,6 +275,7 @@ All overlay text meets 4.5:1:
 - `#000000`/`#cccccc` is 13.1:1.
 - `#ffffcc`/`#660000` is 13:1.
 - `#ffffcc`/`#330066` is 15.3:1.
+- Name tags: `#000033` on the hem tints and on bone is 9.1:1 (`#cc99ff`) to 19.5:1 (`#ffffcc`).
 
 ### Themes (a seeded look per site)
 

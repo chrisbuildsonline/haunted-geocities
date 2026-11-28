@@ -106,7 +106,7 @@ for (const width of [1280, 375]) {
         gapAfter: i < tags.length - 1 ? tags[i + 1]!.left - r.right : 12,
       };
     }, GSA);
-    expect(tag).toMatchObject({ text: GSA, fontSize: "12px", lineHeight: "16px", lines: 3, cut: false, split: [], inRow: true });
+    expect(tag).toMatchObject({ text: GSA, fontSize: "14px", lineHeight: "16px", lines: 3, cut: false, split: [], inRow: true });
     expect(tag.gapBefore).toBeGreaterThanOrEqual(12 - 1);
     expect(tag.gapAfter).toBeGreaterThanOrEqual(12 - 1);
     await page.screenshot({ path: `${SHOTS}/long-tag-${width}.png` });

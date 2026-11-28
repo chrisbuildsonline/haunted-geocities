@@ -136,7 +136,7 @@ for (const [width, height] of SIZES) {
     }
   });
 
-  test(`${width}: a tombstone opened with the footer on screen stands clear of the graveyard and the HUD`, async ({ context, sw, extensionId }) => {
+  test(`${width}: a tombstone opened with the footer on screen stands clear of the HUD, and of the whole footer where it fits above it`, async ({ context, sw, extensionId }) => {
     const page = await context.newPage();
     await page.setViewportSize({ width, height });
     await page.goto(fixture("links.html"));
@@ -158,9 +158,13 @@ for (const [width, height] of SIZES) {
     await page.mouse.click(at!.x, at!.y);
     await expect.poll(() => inShadow(function () { return getComputedStyle(this.querySelector("#cards .tombstone-card")!).opacity; })).toBe("1");
     const card = (await box(inShadow, "#cards .tombstone-card"))!;
-    expect(crosses(card, (await box(inShadow, "#crypt-footer"))!)).toBe(false);
+    // Clear of the whole footer where the 248px stone fits above it (8px each side), as at 1280; on a
+    // phone, where the footer takes most of the screen, still clear of the HUD.
+    if (at!.footerTop - 48 >= 264) expect(crosses(card, (await box(inShadow, "#crypt-footer"))!)).toBe(false);
+    if (width === 1280) expect(at!.footerTop - 48).toBeGreaterThanOrEqual(264);
     expect(crosses(card, (await box(inShadow, "#hud"))!)).toBe(false);
     expect(card.top).toBeGreaterThanOrEqual(48);
+    expect(card.bottom).toBeLessThanOrEqual(height);
     await page.mouse.move(0, 0);
     await page.screenshot({ path: `test-results/hud-clear/tombstone-${width}.png` });
   });

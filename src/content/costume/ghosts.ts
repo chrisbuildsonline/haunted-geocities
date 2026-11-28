@@ -45,7 +45,7 @@ export const byCountThenName = (a: CompanyHit, b: CompanyHit) => b.count - a.cou
 /** The company's shortest category ("Advertising" over "Ad Motivated Tracking"), else "Tracker". */
 export const categoryOf = (hit: CompanyHit) => hit.categories.reduce<string | undefined>((a, c) => (!a || c.length < a.length ? c : a), undefined) ?? "Tracker";
 
-const LABEL_ROOM = 96; // a 12ch Comic Sans 12px label
+const LABEL_ROOM = 96; // the widest lane tag (12ch, cut with an ellipsis)
 
 /**
  * Lane slots at a 72px pitch from `top` to `bottom` (the bands and the HUD), one lane centred in
@@ -161,7 +161,10 @@ export function makeSprite(doc: Document, hit: CompanyHit, tint: string | undefi
   el.setAttribute("type", "button");
   el.className = kind;
   el.dataset.company = hit.company;
-  if (tint) el.dataset.tint = tint;
+  if (tint) {
+    el.dataset.tint = tint;
+    el.style.setProperty("--tint", tint); // the tag's ground: the name is worn in the hem's colour
+  }
   el.innerHTML =
     kind === "ghost"
       ? `<span class="sway"><span class="bob"><span class="sprite">${ghostSvg(tint!)}</span></span></span><span class="tag"></span>`
@@ -193,6 +196,7 @@ export function spriteFor(doc: Document, old: Map<string, HTMLElement>, hit: Com
   else if (tint && el.dataset.tint !== tint) {
     // The order changed under it: redraw only the sprite; the button, its focus and label stay.
     el.dataset.tint = tint;
+    el.style.setProperty("--tint", tint);
     el.querySelector(".sprite")!.innerHTML = ghostSvg(tint);
   }
   const was = el.classList.contains("exorcised");
