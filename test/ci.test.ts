@@ -25,6 +25,12 @@ describe(".github/workflows/ci.yml", () => {
     expect(ci).toMatch(/^\s+pull_request:/m);
   });
 
+  // docs/test-log.md names the commit it ran on and test-log.test.ts checks it is in HEAD's history,
+  // so the checkout needs the whole history, not the default depth of 1
+  test("checks out the full history", () => {
+    expect(ci).toMatch(/uses: actions\/checkout@v\d+\n\s+with:\n\s+fetch-depth: 0$/m);
+  });
+
   test("sets up bun with oven-sh/setup-bun and installs from the lockfile", () => {
     expect(ci).toMatch(/uses: oven-sh\/setup-bun@v\d/);
     expect(ci).toContain("bun install --frozen-lockfile");
